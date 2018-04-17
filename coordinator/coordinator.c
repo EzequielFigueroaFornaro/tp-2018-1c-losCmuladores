@@ -48,7 +48,7 @@ int accept_connection(int server_socket){
 
 	if (client_socket == -1){
 		log_error(logger, "Could not accept connection.");
-		return -1; //TODO acá habría que cerrar socket con algúna llamada a algo de commons y matar el proceso.
+		return -1; //TODO Ver qué hacer, cómo manejar este error...no debería matar el proceso...
 	}
 
 	log_info(logger, "Connection accepted !");
@@ -93,8 +93,25 @@ void send_configuration_to_instance(int instance_socket){
 	//TODO
 }
 
+//TODO testear.
+void receive_instance_header(int socket_fd){
+	log_info(logger, "Checking for instance request operation id");
+	int operation_id = -1;
 
-//TODO terminar de levantar la cfg que sea necesaria.
+	if(recv(socket_fd, operation_id, sizeof(int), 0) <= 0){
+		log_error(logger, "Could not receive instance header");
+		//TODO cerrar socket, free del header. Return
+	}
+
+	//0 es el id definido para request de conexion de una nueva instancia.
+	if(operation_id != 0){
+		log_error(logger, "Invalid operation Id. Should be 0 and was %d", operation_id);
+	}
+
+	log_info(logger, "Valid request operation id.");
+}
+
+
 void load_configuration(char* config_file_path){
 	char* port_name = "SERVER_PORT";
 
@@ -108,12 +125,32 @@ void load_configuration(char* config_file_path){
 void listen_for_instances(int server_socket) {
 	log_info(logger, "Waiting for instances...");
 	pthread_t instance_thread; //TODO ojo con la memoria. Esto es de prueba,
+	t_instance *aux_instance = (t_instance*) malloc(sizeof(t_instance)); //TODO hacer free.
+	t_list * connected_instances_thread_list;
+	connected_instances_thread_list = list_create();
 
-	if(pthread_create(&instance_thread, NULL, accept_connection(server_socket), NULL)){
-		log_error(logger, "Error while accepting instance connection.");
+	while(1){
+		int client_sock = accept_connection(server_socket);
+
+		if(pthread_create(&instance_thread, NULL, NULL, NULL)){
+			log_error(logger, "Error while accepting instance connection.");
+		};
+
+		//receive_instance_header(client_sock);
+
+		//aux_instance -> socket_id = client_sock;
+		//aux_instance -> instance_thread = instance_thread;
+		//log_info(logger, "Alloque bien");
+
+//		list_add(connected_instances_thread_list, aux_instance);
+	//	log_info(logger, "Guarde bien ne la lista.");
+
+		//free(aux_instance -> instance_thread);
+		//free(aux_instance-> socket_id);
+		//free(aux_instance);
+		log_info(logger, "New Instance !");
+		break;
 	}
-
-	log_info(logger, "New Instance !");
 }
 
 /*void* listen_for_instances(int server_socket) {

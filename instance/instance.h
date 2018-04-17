@@ -1,12 +1,12 @@
 /*
- * coordinator.h
+ * instance.h
  *
- *  Created on: 15 abr. 2018
+ *  Created on: 17 abr. 2018
  *      Author: utnso
  */
 
-#ifndef COORDINATOR_H_
-#define COORDINATOR_H_
+#ifndef INSTANCE_H_
+#define INSTANCE_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,11 +16,9 @@
 #include <readline/readline.h> // Para usar readline
 #include <commons/log.h>
 #include <commons/config.h>
-#include <commons/collections/list.h>
-#include <pthread.h>
 
-//#define PORT 8080
-int server_port;
+int coordinator_port;
+char *coordinator_ip;
 
 //Global variables.
 t_log * logger;
@@ -32,8 +30,7 @@ typedef struct  {
 } __attribute__((packed)) t_new_instance_header;
 
 typedef struct {
-	pthread_t instance_thread;
-	int socket_id;
-} __attribute__((packed)) t_instance;
 
-#endif /* COORDINATOR_H_ */
+} __attribute__((packed)) t_instance_configuration;
+
+#endif /* INSTANCE_H_ */
