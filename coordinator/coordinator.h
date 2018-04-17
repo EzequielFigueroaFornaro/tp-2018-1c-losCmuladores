@@ -27,9 +27,16 @@ t_log * logger;
 
 typedef struct  {
   int operation_id;
-  int entries_size;
   //TODO y algo más que no entendí del enunciado.
 } __attribute__((packed)) t_new_instance_header;
+
+typedef struct {
+	int operation_id;
+	long entries_size;
+	long entries_quantity;
+}__attribute((packed)) t_instance_configuration;
+
+t_instance_configuration *instance_configuration;
 
 typedef struct {
 	pthread_t instance_thread;

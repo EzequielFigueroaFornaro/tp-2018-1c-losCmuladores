@@ -119,7 +119,17 @@ void load_configuration(char* config_file_path){
 	t_config* config = config_create(config_file_path);
 
 	server_port = config_get_int_value(config, port_name);
+	//TODO asignar la cfg de instancias a "instance_configuration" declarado en .h .
 	log_info(logger, "OK.");
+}
+
+//TODO test.
+int send_instance_configuration(int client_sock){
+	if(send(client_sock, instance_configuration, sizeof(t_instance_configuration), 0) <= 0){
+		log_error(logger, "Could not send instance configuration.");
+		return 1;
+	}
+	return 0;
 }
 
 void listen_for_instances(int server_socket) {
@@ -132,11 +142,12 @@ void listen_for_instances(int server_socket) {
 	while(1){
 		int client_sock = accept_connection(server_socket);
 
-		if(pthread_create(&instance_thread, NULL, NULL, NULL)){
+		/*if(pthread_create(&instance_thread, NULL, NULL, NULL)){
 			log_error(logger, "Error while accepting instance connection.");
-		};
+		}*/
 
-		//receive_instance_header(client_sock);
+		receive_instance_header(client_sock);
+		send_instance_configuration(client_sock);
 
 		//aux_instance -> socket_id = client_sock;
 		//aux_instance -> instance_thread = instance_thread;

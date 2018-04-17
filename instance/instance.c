@@ -53,6 +53,12 @@ void receive_instance_configuration(int socket){
 		_exit_with_error(socket, error_msg, instance_configuration);
 	}
 
+	if (instance_configuration -> operation_id != 1){
+		char* error_msg = "Invalid operation Id. Could not receive instance configuration";
+		log_error(logger, error_msg);
+		_exit_with_error(socket, error_msg, instance_configuration);
+	}
+
 	log_info(logger, "Configuration successfully received !");
 }
 

@@ -23,14 +23,12 @@ char *coordinator_ip;
 //Global variables.
 t_log * logger;
 
-typedef struct  {
-  int operation_id;
-  int entries_size;
-  //TODO y algo más que no entendí del enunciado.
-} __attribute__((packed)) t_new_instance_header;
-
 typedef struct {
-
+	int operation_id;
+	long entries_size;
+	long entries_quantity;
 } __attribute__((packed)) t_instance_configuration;
+
+t_instance_configuration *instance_configuration = malloc(sizeof(t_instance_configuration));
 
 #endif /* INSTANCE_H_ */
