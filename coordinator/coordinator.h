@@ -16,6 +16,8 @@
 #include <readline/readline.h> // Para usar readline
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/collections/list.h>
+#include <pthread.h>
 
 //#define PORT 8080
 
@@ -23,7 +25,7 @@ int server_port;
 
 //Global variables.
 t_log * logger;
-
+t_list * connected_instances_thread_list = (t_list*) list_create;
 
 typedef struct  {
   int operation_id;

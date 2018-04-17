@@ -31,7 +31,7 @@ int start_server(int port){
 		return 1;
 	}
 
-	log_info(logger, "Listening on port %d", port);
+	log_info(logger, "Server Started. Listening on port %d", port);
 	listen(server_socket, 100);
 
 	return server_socket;
@@ -51,6 +51,7 @@ int accept_connection(int server_socket){
 		return -1; //TODO acá habría que cerrar socket con algúna llamada a algo de commons y matar el proceso.
 	}
 
+	log_info(logger, "Connection accepted !");
 	return client_socket;
 }
 
@@ -104,15 +105,49 @@ void load_configuration(char* config_file_path){
 	log_info(logger, "OK.");
 }
 
+void listen_for_instances(int server_socket) {
+	log_info(logger, "Waiting for instances...");
+	pthread_t instance_thread; //TODO ojo con la memoria. Esto es de prueba,
+
+	if(pthread_create(&instance_thread, NULL, accept_connection(server_socket), NULL)){
+		log_error(logger, "Error while accepting instance connection.");
+	}
+
+	log_info(logger, "New Instance !");
+}
+
+/*void* listen_for_instances(int server_socket) {
+	log_info(logger, "Waiting for instances...");
+	pthread_t aux_instance_thread;
+
+	int client_id;
+	while(true){
+		if(pthread_create(&aux_instance_thread, NULL, accept_connection(server_socket), &client_id)){
+			log_error(logger, "Error al conectar instancia.");//TODO
+		}
+
+		list_add(connected_instances_thread_list, aux_instance_thread);
+		log_info(logger, "Conexión nueva en thread nuevo !");
+	}
+}*/
+
 int main(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
+
 	int server_socket = start_server(server_port);
-	int client_socket = accept_connection(server_socket);
+	//Llama  escuchar instancias en otro thread para no bloquear el proceso.
+	pthread_t listener_thread;
+	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
+		log_error(logger, "Error in thread");
+		exit(1);
+	}
 
+	//int client_socket = accept_connection(server_socket);
+	//log_info(logger, "Acepte conexión. Client: %d", client_socket);
 
-	log_info(logger, "Acepte conexión. Client: %d", client_socket);
-	close(server_socket);
+	//close(server_socket);
+	pthread_join(listener_thread, NULL);
 	return EXIT_SUCCESS;
 }
