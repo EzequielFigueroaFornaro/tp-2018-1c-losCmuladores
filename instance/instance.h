@@ -17,7 +17,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 
-int coordinator_port;
+char *coordinator_port;
 char *coordinator_ip;
 
 //Global variables.
@@ -29,6 +29,6 @@ typedef struct {
 	long entries_quantity;
 } __attribute__((packed)) t_instance_configuration;
 
-t_instance_configuration *instance_configuration = malloc(sizeof(t_instance_configuration));
+t_instance_configuration *instance_configuration;// = malloc(sizeof(t_instance_configuration));
 
 #endif /* INSTANCE_H_ */

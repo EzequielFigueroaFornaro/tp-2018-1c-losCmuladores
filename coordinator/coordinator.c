@@ -27,18 +27,17 @@ int start_server(int port){
 	setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
 
 	if (bind(server_socket, (void*) &server_address, sizeof(server_address)) != 0){
-		perror("Error binding. Server not started.");
+		log_error(logger, "Error binding. Server not started.");
 		return 1;
 	}
 
 	log_info(logger, "Server Started. Listening on port %d", port);
-	listen(server_socket, 100);
+	listen(server_socket, 5); //TODO llevar a cfg
 
 	return server_socket;
 }
 
 //TODO llevar a commons
-//TODO levantar threads por c/conexion aceptada.
 int accept_connection(int server_socket){
 	struct sockaddr_in cli_addr;
 	socklen_t address_size;
@@ -93,25 +92,6 @@ void send_configuration_to_instance(int instance_socket){
 	//TODO
 }
 
-//TODO testear.
-void receive_instance_header(int socket_fd){
-	log_info(logger, "Checking for instance request operation id");
-	int operation_id = -1;
-
-	if(recv(socket_fd, operation_id, sizeof(int), 0) <= 0){
-		log_error(logger, "Could not receive instance header");
-		//TODO cerrar socket, free del header. Return
-	}
-
-	//0 es el id definido para request de conexion de una nueva instancia.
-	if(operation_id != 0){
-		log_error(logger, "Invalid operation Id. Should be 0 and was %d", operation_id);
-	}
-
-	log_info(logger, "Valid request operation id.");
-}
-
-
 void load_configuration(char* config_file_path){
 	char* port_name = "SERVER_PORT";
 
@@ -119,65 +99,62 @@ void load_configuration(char* config_file_path){
 	t_config* config = config_create(config_file_path);
 
 	server_port = config_get_int_value(config, port_name);
+	instance_configuration = malloc(sizeof(t_instance_configuration));
+	instance_configuration -> operation_id = 1;
+	instance_configuration -> entries_quantity = 100;
+	instance_configuration -> entries_size = 12;
 	//TODO asignar la cfg de instancias a "instance_configuration" declarado en .h .
 	log_info(logger, "OK.");
 }
 
 //TODO test.
 int send_instance_configuration(int client_sock){
-	if(send(client_sock, instance_configuration, sizeof(t_instance_configuration), 0) <= 0){
-		log_error(logger, "Could not send instance configuration.");
+	int status = send(client_sock, instance_configuration, sizeof(t_instance_configuration), 0);
+	if(status <= 0){
+		log_error(logger, "Could not send instance configuration.%d", status);
 		return 1;
 	}
 	return 0;
 }
 
+
+void *instance_connection_handler(int instance_socket){
+
+	//receive_instance_header(instance_socket);
+	send_instance_configuration(instance_socket);
+
+}
+
 void listen_for_instances(int server_socket) {
 	log_info(logger, "Waiting for instances...");
-	pthread_t instance_thread; //TODO ojo con la memoria. Esto es de prueba,
+    struct sockaddr_in client;
+	pthread_t instance_thread_id; //TODO ojo con la memoria. Esto es de prueba,
 	t_instance *aux_instance = (t_instance*) malloc(sizeof(t_instance)); //TODO hacer free.
 	t_list * connected_instances_thread_list;
 	connected_instances_thread_list = list_create();
 
-	while(1){
-		int client_sock = accept_connection(server_socket);
+	int client_sock;
 
-		/*if(pthread_create(&instance_thread, NULL, NULL, NULL)){
-			log_error(logger, "Error while accepting instance connection.");
-		}*/
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(addr);
 
-		receive_instance_header(client_sock);
-		send_instance_configuration(client_sock);
+	//TODO cómo me guardo el resultado de instance_connection_handler ??
+    while( (client_sock = accept(server_socket, (struct sockaddr *)&addr, &addrlen)) ) {
+            log_info(logger, "Connection request received.");
+            if( pthread_create( &instance_thread_id , NULL ,  instance_connection_handler, (void*) client_sock) < 0) {
+            	log_error(logger, "Could not create thread.");
+            }
 
-		//aux_instance -> socket_id = client_sock;
-		//aux_instance -> instance_thread = instance_thread;
-		//log_info(logger, "Alloque bien");
+            pthread_join(instance_thread_id, NULL);
+            //TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
+            //list_add(connected_instances_thread_list, instance_thread_id);
+            log_info(logger, "Connection accepted !");
+    }
 
-//		list_add(connected_instances_thread_list, aux_instance);
-	//	log_info(logger, "Guarde bien ne la lista.");
+	log_info(logger, "No espe");
 
-		//free(aux_instance -> instance_thread);
-		//free(aux_instance-> socket_id);
-		//free(aux_instance);
-		log_info(logger, "New Instance !");
-		break;
-	}
+
 }
-
-/*void* listen_for_instances(int server_socket) {
-	log_info(logger, "Waiting for instances...");
-	pthread_t aux_instance_thread;
-
-	int client_id;
-	while(true){
-		if(pthread_create(&aux_instance_thread, NULL, accept_connection(server_socket), &client_id)){
-			log_error(logger, "Error al conectar instancia.");//TODO
-		}
-
-		list_add(connected_instances_thread_list, aux_instance_thread);
-		log_info(logger, "Conexión nueva en thread nuevo !");
-	}
-}*/
 
 int main(int argc, char* argv[]) {
 	configure_logger();
@@ -185,16 +162,11 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	int server_socket = start_server(server_port);
-	//Llama  escuchar instancias en otro thread para no bloquear el proceso.
 	pthread_t listener_thread;
 	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
 		log_error(logger, "Error in thread");
 		exit(1);
 	}
-
-	//int client_socket = accept_connection(server_socket);
-	//log_info(logger, "Acepte conexión. Client: %d", client_socket);
-
 	//close(server_socket);
 	pthread_join(listener_thread, NULL);
 	return EXIT_SUCCESS;

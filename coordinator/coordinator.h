@@ -27,7 +27,7 @@ t_log * logger;
 
 typedef struct  {
   int operation_id;
-  //TODO y algo más que no entendí del enunciado.
+  //TODO lo que sea necesario.
 } __attribute__((packed)) t_new_instance_header;
 
 typedef struct {
