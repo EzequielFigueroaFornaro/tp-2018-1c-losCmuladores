@@ -14,6 +14,27 @@ void configure_logger() {
 	logger = log_create("coordinator.log", "coordinator", true, LOG_LEVEL_INFO);
 }
 
+void exit_gracefully(int code) {
+	log_destroy(logger);
+	exit(code);
+}
+
+void check_server_startup(int startup_result, int port) {
+	if (startup_result == 1) {
+		log_error(logger, "Error binding. Server not started.");
+		exit_gracefully(1);
+	}
+	log_info(logger, "Server Started. Listening on port %d", port);
+}
+
+void check_accept(int accept_result) {
+	if (accept_result == -1) {
+		log_error(logger, "Could not accept connection.");
+		exit_gracefully(1); // TODO Se supone que no debería matar el proceso
+	}
+	log_info(logger, "Connection accepted !");
+}
+
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //Recibe solicitud del ESI.
 //1)
@@ -133,23 +154,3 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-void check_server_startup(int startup_result, int port) {
-	if (startup_result == 1) {
-		log_error(logger, "Error binding. Server not started.");
-		exit_gracefully(1);
-	}
-	log_info(logger, "Server Started. Listening on port %d", port);
-}
-
-void check_accept(int accept_result) {
-	if (accept_result == -1) {
-		log_error(logger, "Could not accept connection.");
-		exit_gracefully(1); // TODO Se supone que no debería matar el proceso
-	}
-	log_info(logger, "Connection accepted !");
-}
-
-void exit_gracefully(int code) {
-	log_destroy(logger);
-	exit(code);
-}
