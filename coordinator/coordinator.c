@@ -37,44 +37,25 @@ void configure_logger() {
 	logger = log_create("coordinator.log", "coordinator", true, LOG_LEVEL_INFO);
 }
 
-//TODO llevar a commons
-int start_server(int port){
-	struct sockaddr_in server_address;
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = INADDR_ANY;
-	server_address.sin_port = htons(port);
-
-	int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-	int enabled = 1;
-	setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
-
-	if (bind(server_socket, (void*) &server_address, sizeof(server_address)) != 0){
-		log_error(logger, "Error binding. Server not started.");
-		return 1;
-	}
-
-	log_info(logger, "Server Started. Listening on port %d", port);
-	listen(server_socket, 5); //TODO llevar a cfg
-
-	return server_socket;
+void exit_gracefully(int code) {
+	log_destroy(logger);
+	exit(code);
 }
 
-//TODO llevar a commons
-int accept_connection(int server_socket){
-	struct sockaddr_in cli_addr;
-	socklen_t address_size;
-
-	address_size = sizeof(cli_addr);
-	int client_socket = accept(server_socket, (void*) &cli_addr, &address_size);
-
-	if (client_socket == -1){
-		log_error(logger, "Could not accept connection.");
-		return -1; //TODO Ver qué hacer, cómo manejar este error...no debería matar el proceso...
+void check_server_startup(int startup_result, int port) {
+	if (startup_result == 1) {
+		log_error(logger, "Error binding. Server not started.");
+		exit_gracefully(1);
 	}
+	log_info(logger, "Server Started. Listening on port %d", port);
+}
 
+void check_accept(int accept_result) {
+	if (accept_result == -1) {
+		log_error(logger, "Could not accept connection.");
+		exit_gracefully(1); // TODO Se supone que no debería matar el proceso
+	}
 	log_info(logger, "Connection accepted !");
-	return client_socket;
 }
 
 void load_configuration(char* config_file_path){
@@ -151,7 +132,8 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port);
+	int server_socket = start_server(server_port, 5); // TODO Llevar a conf
+	check_server_startup(server_socket, server_port);
 	pthread_t listener_thread;
 	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
 		log_error(logger, "Error in thread");
@@ -162,3 +144,4 @@ int main(int argc, char* argv[]) {
 	pthread_join(listener_thread, NULL);
 	return EXIT_SUCCESS;
 }
+
