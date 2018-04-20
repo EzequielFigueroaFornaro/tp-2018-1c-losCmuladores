@@ -24,6 +24,7 @@ int server_port;
 
 //Global variables.
 t_log * logger;
+t_list * instances_thread_list;
 
 typedef struct  {
   int operation_id;

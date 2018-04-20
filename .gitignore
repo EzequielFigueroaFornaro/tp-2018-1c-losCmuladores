@@ -35,10 +35,10 @@
 *.i*86
 *.x86_64
 *.hex
-**/coordinator
-**/instance
-**/ise
-**/planifier
+coordinator/**/coordinator
+instance/**/instance
+ise/**/ise
+planifier/**/planifier
 
 # Debug files
 *.dSYM/
