@@ -1,7 +1,7 @@
 TARGET = libcommons-library.so
 LIBS = -lcommons -pthread
 CC = gcc
-CFLAGS = -g -Wall -shared
+CFLAGS = -g -Wall -shared -fPIC
 
 .PHONY: default all clean
 
