@@ -60,6 +60,7 @@ dkms.conf
 
 #IDE configuration
 *.settings
-*.cproject
-*.project
+#*.cproject
+#*.project
 **/Debug
+**/Default
