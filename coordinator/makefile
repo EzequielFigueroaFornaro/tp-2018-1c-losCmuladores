@@ -6,8 +6,8 @@ TARGET = coordinator # Definimos la tarea que va a ejecutar make por defecto Y e
 LIBS = -lcommons -pthread -lcommons-library	 # Incluimos las bibliotecas que necesitamos, las commos y la biblio para el MD5
 CC = gcc # Vamos a usar gcc como compilador, porque nos encanta!
 CFLAGS = -g -Wall # Compilamos con los flags -g (con simbolos de debug) y -Wall (que nos muestre todos los warnings)
-LIBPATH = -L"$(PWD)/../commons-library"
-INCLUDES = -I"$(PWD)/../commons-library"
+LIBPATH = -L"$(PWD)../commons-library"
+INCLUDES = -I"$(PWD)../commons-library"
 
 # Ahora creemos las tareas del makefile
 # Cuando hagamos make sin argumentos, se ejecutará la tarea por default

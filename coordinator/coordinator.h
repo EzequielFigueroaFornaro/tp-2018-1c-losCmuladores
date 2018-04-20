@@ -22,6 +22,7 @@
 
 //#define PORT 8080
 int server_port;
+int server_max_connections;
 
 //Global variables.
 t_log * logger;

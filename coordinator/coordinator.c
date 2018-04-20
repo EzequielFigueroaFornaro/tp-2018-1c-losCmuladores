@@ -65,6 +65,7 @@ void load_configuration(char* config_file_path){
 	t_config* config = config_create(config_file_path);
 
 	server_port = config_get_int_value(config, port_name);
+	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
 	instance_configuration = malloc(sizeof(t_instance_configuration));
 	instance_configuration -> operation_id = 1;
 	instance_configuration -> entries_quantity = 100;
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, 5); // TODO Llevar a conf
+	int server_socket = start_server(server_port, server_max_connections);
 	check_server_startup(server_socket, server_port);
 	pthread_t listener_thread;
 	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
