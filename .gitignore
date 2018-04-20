@@ -62,4 +62,3 @@ dkms.conf
 *.settings
 *.cproject
 *.project
-**/Debug
