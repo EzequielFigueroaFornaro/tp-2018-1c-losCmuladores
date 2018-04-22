@@ -16,6 +16,7 @@
 #include <readline/readline.h> // Para usar readline
 #include <commons/log.h>
 #include <commons/config.h>
+#include "commons-sockets.h"
 
 char *coordinator_port;
 char *coordinator_ip;

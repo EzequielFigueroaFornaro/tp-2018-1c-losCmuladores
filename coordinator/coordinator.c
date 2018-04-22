@@ -34,18 +34,23 @@ void receive_statement_result_from_instance();
 void send_statement_result_to_ise();
 
 void configure_logger() {
-	logger = log_create("coordinator.log", "coordinator", true, LOG_LEVEL_INFO);
+	logger = log_create("coordinator.log", "coordinator", 1, LOG_LEVEL_INFO);
 }
 
 void exit_gracefully(int code) {
 	log_destroy(logger);
+	free(instance_configuration -> entries_quantity);
+	free(instance_configuration -> entries_size);
+	free(instance_configuration -> operation_id);
+	free(instance_configuration);
+
+	list_destroy(instances_thread_list);
 	exit(code);
 }
 
-void check_server_startup(int startup_result, int port) {
-	if (startup_result == 1) {
-		log_error(logger, "Error binding. Server not started.");
-		exit_gracefully(1);
+void check_server_startup(int server_socket, int port) {
+	if (server_socket == 1) {
+		_exit_with_error(server_socket, "Error binding. Server not started.", NULL);
 	}
 	log_info(logger, "Server Started. Listening on port %d", port);
 }
@@ -92,8 +97,6 @@ int send_instance_configuration(int client_sock){
 
 
 void *instance_connection_handler(int instance_socket){
-
-	//receive_instance_header(instance_socket);
 	send_instance_configuration(instance_socket);
 
 	t_instance *instance = (t_instance*) malloc(sizeof(t_instance));
@@ -127,19 +130,47 @@ void listen_for_instances(int server_socket) {
 
 }
 
+void sig_handler(int signo)
+{
+	if (signo == SIGSTOP){
+		printf("received SIGSTOP\n");
+		exit(-1);
+		}
+	if (signo == SIGKILL){
+			printf("received sigkill\n");
+			exit(0);
+	}
+}
+
+void _exit_with_error(int socket,char* error_msg, void * buffer){
+	if (buffer != NULL) {
+		free(buffer);
+	}
+	log_error(logger, error_msg);
+	close(socket);
+	exit_gracefully(1);
+}
+
+void signal_handler(int sig){
+    if (sig == SIGINT) {
+    	log_info(logger,"Caught signal for Ctrl+C\n");
+    	exit_gracefully(0);
+    }
+}
+
+
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	configure_logger();
+    signal(SIGINT,signal_handler);
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
-
 	int server_socket = start_server(server_port, server_max_connections);
 	check_server_startup(server_socket, server_port);
 	pthread_t listener_thread;
 	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
-		log_error(logger, "Error in thread");
-		exit(1);
-	}
+		_exit_with_error(server_socket, "Error in thread", NULL);
+	};
 
 	//close(server_socket);
 	pthread_join(listener_thread, NULL);
