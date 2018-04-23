@@ -14,7 +14,6 @@
 #include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close
 #include <readline/readline.h> // Para usar readline
-#include <commons/log.h>
 #include <commons/config.h>
 #include "commons-sockets.h"
 

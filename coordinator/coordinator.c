@@ -71,6 +71,10 @@ void load_configuration(char* config_file_path){
 
 	server_port = config_get_int_value(config, port_name);
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
+
+	planifier_ip = config_get_string_value(config, "PLANIFIER_IP");
+	planifier_port = config_get_string_value(config, "PLANIFIER_PORT");
+
 	instance_configuration = malloc(sizeof(t_instance_configuration));
 	instance_configuration -> operation_id = 1;
 	instance_configuration -> entries_quantity = 100;
@@ -119,7 +123,7 @@ void listen_for_instances(int server_socket) {
 
     while( (client_sock = accept(server_socket, (struct sockaddr *)&addr, &addrlen)) ) {
             log_info(logger, "Connection request received.");
-            if( pthread_create( &instance_thread_id , NULL ,  instance_connection_handler, (void*) client_sock) < 0) {
+            if( pthread_create( &instance_thread_id , NULL , (void*)instance_connection_handler, (void*) client_sock) < 0) {
             	log_error(logger, "Could not create thread.");
             }
             log_info(logger, "Connection accepted !");
@@ -148,6 +152,7 @@ void _exit_with_error(int socket,char* error_msg, void * buffer){
 	}
 	log_error(logger, error_msg);
 	close(socket);
+	close(planifier_socket);
 	exit_gracefully(1);
 }
 
@@ -166,9 +171,10 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 	int server_socket = start_server(server_port, server_max_connections);
+	planifier_socket = connect_to_planifier();
 	check_server_startup(server_socket, server_port);
 	pthread_t listener_thread;
-	if(pthread_create(&listener_thread, NULL, listen_for_instances, (void*) server_socket)){
+	if(pthread_create(&listener_thread, NULL, (void*)listen_for_instances, (void*) server_socket) < 0){
 		_exit_with_error(server_socket, "Error in thread", NULL);
 	};
 
@@ -177,3 +183,50 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
+void send_planifier_connection(int planifier_socket) {
+	int connection_type = 101;
+	int result = send(planifier_socket, &connection_type, sizeof(int), 0);
+	if (result < 0) {
+		_exit_with_error(planifier_socket, "Error trying to send planifier connection confirmation. Code: " + result, NULL);
+	} else {
+		log_info(logger, "Confirmacion de conexion con el planificador enviada");
+	}
+}
+
+void recv_planifier_connection(int planifier_socket) {
+	int status;
+	int result = recv(planifier_socket, &status, sizeof(int), MSG_WAITALL);
+	if (result < 0 || status != 1) {
+		_exit_with_error(planifier_socket, "Error trying to receive planifier connection confirmation.", NULL);
+	} else {
+		log_info(logger, "Confirmacion de conexion con el planificador recibida");
+	}
+}
+
+int connect_to_planifier() {
+	struct addrinfo hints;
+	struct addrinfo *server_info;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	getaddrinfo(planifier_ip, planifier_port, &hints, &server_info);
+
+	int planifier_socket = socket(server_info -> ai_family, server_info -> ai_socktype, server_info -> ai_protocol);
+
+	int connect_status = connect(planifier_socket, server_info -> ai_addr, server_info -> ai_addrlen);
+
+	freeaddrinfo(server_info);
+
+	if(connect_status == -1){
+		log_error(logger, "No se pudo conectar al planificador!");
+		exit_gracefully(1);
+	} else {
+		send_planifier_connection(planifier_socket);
+		recv_planifier_connection(planifier_socket);
+	}
+
+	log_info(logger, "Conectado al planificador!");
+	return planifier_socket;
+}

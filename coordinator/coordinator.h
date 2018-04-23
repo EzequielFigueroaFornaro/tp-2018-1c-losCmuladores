@@ -26,6 +26,11 @@
 int server_port;
 int server_max_connections;
 
+//planifier
+int planifier_socket;
+char *planifier_port;
+char *planifier_ip;
+
 //Global variables.
 t_log * logger;
 t_list * instances_thread_list;
@@ -47,5 +52,7 @@ typedef struct {
 	pthread_t instance_thread;
 	int socket_id;
 } __attribute__((packed)) t_instance;
+
+int connect_to_planifier();
 
 #endif /* COORDINATOR_H_ */
