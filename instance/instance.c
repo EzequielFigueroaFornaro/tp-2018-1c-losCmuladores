@@ -28,33 +28,8 @@ void load_configuration(char* config_file_path){
 	t_config* config = config_create(config_file_path);
 
 	coordinator_ip = config_get_string_value(config, ip);
-	coordinator_port = config_get_string_value(config, port_name);
+	coordinator_port = config_get_int_value(config, port_name);
 	log_info(logger, "OK.");
-}
-
-int connect_to_server(char * ip, char * port) {
-  struct addrinfo hints;
-  struct addrinfo *server_info;
-
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-
-  getaddrinfo(ip, port, &hints, &server_info);
-
-  int server_socket = socket(server_info -> ai_family, server_info -> ai_socktype, server_info -> ai_protocol);
-
-  int retorno = connect(server_socket, server_info -> ai_addr, server_info -> ai_addrlen);
-
-  freeaddrinfo(server_info);
-
-  if(retorno == -1){
-	  log_error(logger, "No se pudo conectar !");
-	  exit_gracefully(1);
-  }
-
-  log_info(logger, "Conectado!");
-  return server_socket;
 }
 
 void _exit_with_error(int socket,char* error_msg, void * buffer){
@@ -86,12 +61,21 @@ void receive_instance_configuration(int socket){
 	log_info(logger, "Configuration successfully received !");
 }
 
+void check_if_connection_was_ok(int server_socket){
+	 if(server_socket == -1){
+		  log_error(logger, "Could not connect with coordinator.");
+		  exit_gracefully(1);
+	  }
+
+	  log_info(logger, "Connected !");
+}
+
 int main(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing instance...");
 	load_configuration(argv[1]);
-	//TODO esto debería estar en nuestro commons
-	int socket_fd = connect_to_server(coordinator_ip, coordinator_port);
+	log_info(logger, "Connecting with coordinator.");
+	int socket_fd = connect_to(coordinator_ip, coordinator_port);
 	receive_instance_configuration(socket_fd);
 	exit(0);
 }

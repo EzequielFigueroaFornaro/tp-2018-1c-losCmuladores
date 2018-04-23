@@ -17,7 +17,7 @@
 #include <commons/config.h>
 #include "commons-sockets.h"
 
-char *coordinator_port;
+int coordinator_port;
 char *coordinator_ip;
 
 //Global variables.
