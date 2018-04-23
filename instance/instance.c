@@ -70,6 +70,34 @@ void check_if_connection_was_ok(int server_socket){
 	  log_info(logger, "Connected !");
 }
 
+void free_header(t_content_header* header){
+	free(header -> operation_id);
+	free(header -> length);
+	free(header);
+	return;
+}
+
+/*
+void wait_for_statement_and_return_result(int socket_fd){
+	t_content_header *sentence_header = (t_content_header*) malloc(sizeof(t_content_header));
+
+	int sentence_request_header = recv(socket_fd, sentence_header, sizeof(t_content_header), MSG_WAITALL);
+	if (sentence_request_header <= 0){
+		log_error(logger, "Could not receive instance configuration");
+		free_header(sentence_header);
+		return;
+	}
+
+	if(sentence_header -> operation_id != 2) {
+		log_error(logger, "Invalid operation id...expected %d and was %d", 2, sentence_header -> operation_id);
+		free_header(sentence_header);
+		return;
+	}
+
+	//TODO hacer receive del payload
+}
+*/
+
 int main(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing instance...");
@@ -77,5 +105,8 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Connecting with coordinator.");
 	int socket_fd = connect_to(coordinator_ip, coordinator_port);
 	receive_instance_configuration(socket_fd);
+	/*while(1){
+		wait_for_statement_and_return_result(socket_fd);
+	}*/
 	exit(0);
 }

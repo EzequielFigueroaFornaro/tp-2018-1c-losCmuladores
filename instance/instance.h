@@ -31,4 +31,9 @@ typedef struct {
 
 t_instance_configuration *instance_configuration;// = malloc(sizeof(t_instance_configuration));
 
+typedef struct {
+	int operation_id;
+	int length;
+} __attribute__((packed)) t_content_header;
+
 #endif /* INSTANCE_H_ */
