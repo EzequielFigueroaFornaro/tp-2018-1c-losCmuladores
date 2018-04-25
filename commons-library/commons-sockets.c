@@ -59,3 +59,24 @@ int connect_to(char* ip, int port) {
 	}
 	return server_socket;
 }
+
+int send_module_connected(int socket, module_type module_type) {
+	int message_size = sizeof(message_type) + sizeof(module_type);
+	void *message_buffer = malloc(message_size);
+
+	message_type message_type = MODULE_CONNECTED;
+
+	memcpy(message_buffer, &message_type, sizeof(message_type));
+	memcpy(message_buffer + sizeof(message_type), &module_type, sizeof(module_type));
+
+	int result = send(socket, message_buffer, message_size, 0);
+
+	free(message_buffer);
+
+	return result;
+}
+
+int send_connection_success(int socket) {
+	message_type message_type = CONNECTION_SUCCESS;
+	return send(socket, &message_type, sizeof(message_type), 0);
+}
