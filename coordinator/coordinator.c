@@ -39,9 +39,6 @@ void configure_logger() {
 
 void exit_gracefully(int code) {
 	log_destroy(logger);
-	free(instance_configuration -> entries_quantity);
-	free(instance_configuration -> entries_size);
-	free(instance_configuration -> operation_id);
 	free(instance_configuration);
 
 	list_destroy(instances_thread_list);
@@ -96,6 +93,22 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
+void instance_connection_handler(int socket) {
+	if (send_connection_success(socket) < 0) {
+		_exit_with_error(socket, "Error sending instance connection success", NULL);
+	} else {
+		send_instance_configuration(socket);
+
+		t_instance *instance = (t_instance*) malloc(sizeof(t_instance));
+
+		instance -> instance_thread = pthread_self();
+		instance -> socket_id = socket;
+		list_add(instances_thread_list, instance);
+
+		log_info(logger, "Instance connected");
+	}
+}
+
 void planifier_connection_handler(int socket) {
 	planifier_socket = socket;
 
@@ -118,14 +131,7 @@ void connection_handler(int socket) {
 		if (result_module < 0) {
 			_exit_with_error(socket, "Error receiving module type connected", NULL);
 		} else if (module_type == INSTANCE) {
-			send_instance_configuration(socket);
-
-			t_instance *instance = (t_instance*) malloc(sizeof(t_instance));
-
-			instance -> instance_thread = pthread_self();
-			instance -> socket_id = socket;
-			list_add(instances_thread_list, instance);
-			log_info(logger, "Instance connected");
+			instance_connection_handler(socket);
 		} else if (module_type == PLANIFIER) {
 			planifier_connection_handler(socket);
 		}
