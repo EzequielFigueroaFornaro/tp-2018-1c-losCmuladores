@@ -1,7 +1,7 @@
 #include "ise.h"
 
 int main(int argc, char* argv[]) {
-	load_configuration_2(argv[1]);
+	load_configuration(argv[1]);
 
 	handshake_planifier();
 
@@ -39,7 +39,7 @@ int handshake_planifier() {
 	return connect_result;
 }
 
-void load_configuration_2(char* config_file_path) {
+void load_configuration(char* config_file_path) {
 	configure_logger();
 	log_info(logger, "Loading configuration file...");
 	t_config* config = config_create(config_file_path);
