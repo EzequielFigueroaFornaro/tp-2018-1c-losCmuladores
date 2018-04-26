@@ -17,6 +17,8 @@
 #include <commons/config.h>
 #include "commons-sockets.h"
 
+int coordinator_socket;
+
 int coordinator_port;
 char *coordinator_ip;
 
@@ -35,5 +37,9 @@ typedef struct {
 	int operation_id;
 	int length;
 } __attribute__((packed)) t_content_header;
+
+void connect_to_coordinator();
+
+void _exit_with_error(int socket, char *error_msg, void *buffer);
 
 #endif /* INSTANCE_H_ */

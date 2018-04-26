@@ -16,13 +16,17 @@ int main(int argc, char* argv[]) {
 
 	int server_socket = start_server(server_port, server_max_connections);
 
+	connect_to_coordinator();
+
 	pthread_t listener_thread;
-	if (pthread_create(&listener_thread, NULL, (void*) listen_for_connections,
+	if (pthread_create(&listener_thread, NULL, (void*) listen_for_esi_connections,
 			(void*) server_socket) < 0) {
 		exit_with_error(server_socket, "Error in thread");
 	};
 
-	pthread_join(listener_thread, NULL);
+	pthread_t console_thread = start_console();
+
+	pthread_join(console_thread, NULL);
 
 	return EXIT_SUCCESS;
 }
@@ -39,38 +43,72 @@ void load_configuration(char *config_file_path) {
 	server_max_connections = config_get_int_value(config,
 			"MAX_ACCEPTED_CONNECTIONS");
 
+	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
+	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
+
 	config_destroy(config);
 
 	log_info(logger, "Planifier configuration file loaded");
 }
 
+void connect_to_coordinator() {
+	coordinator_socket = connect_to(coordinator_ip, coordinator_port);
+
+	if (coordinator_socket < 0) {
+		exit_with_error(coordinator_socket, "No se pudo conectar al coordinador");
+	} else if (send_module_connected(coordinator_socket, PLANIFIER) < 0) {
+		exit_with_error(coordinator_socket, "No se pudo enviar al confirmacion al coordinador");
+	} else {
+		message_type message_type;
+		int message_type_result = recv(coordinator_socket, &message_type,
+				sizeof(message_type), MSG_WAITALL);
+
+		if (message_type_result < 0 || message_type != CONNECTION_SUCCESS) {
+			exit_with_error(coordinator_socket, "Error al recibir confirmacion del coordinador");
+		} else {
+			log_info(logger, "Connexion con el coordinador establecida");
+		}
+	}
+}
+
 void send_coordinator_connection_completed(int coordinator_socket) {
-	int status = 1;
-	int result = send(coordinator_socket, &status, sizeof(int), 0);
-	if (result < 0) {
-		exit_with_error(coordinator_socket, "Error sending coordinator completed");
+	if (send_connection_success(coordinator_socket) < 0) {
+		exit_with_error(coordinator_socket,
+				"Error sending coordinator completed");
 	} else {
 		log_info(logger, "Coordinator connection completed");
 	}
 }
 
-void accept_connection_handler(int socket) {
+void esi_connection_handler(int socket) {
 	// falta logica para distinguir conexiones de coordinador con esi
 	coordinator_socket = socket;
 
-	int connection_type;
-	int result = recv(socket, &connection_type, sizeof(connection_type), MSG_WAITALL);
+	message_type message_type;
+	int result_message_type = recv(socket, &message_type, sizeof(message_type),
+			MSG_WAITALL);
 
-	if (result < 0 || connection_type != 101) {
-		exit_with_error(coordinator_socket, "Error with coordinator confirmation");
+	if (result_message_type < 0 || message_type != MODULE_CONNECTED) {
+		exit_with_error(coordinator_socket,
+				"Error with module connection confirmation");
 	} else {
-		send_coordinator_connection_completed(coordinator_socket);
+		module_type module_type;
+		int result_module_type = recv(socket, &module_type, sizeof(module_type),
+				MSG_WAITALL);
+		if (result_module_type < 0) {
+			exit_with_error(coordinator_socket, "Error receiving module type");
+		} else if (module_type == ESI) {
+			// TODO esi connections
+		} else {
+			exit_with_error(coordinator_socket,
+					"Error handling new connection. Invalid module type");
+		}
 	}
 
 }
 
-void listen_for_connections(int server_socket) {
-	log_info(logger, "Waiting for coordinator...");
+void listen_for_esi_connections(int server_socket) {
+	log_info(logger, "Waiting for esis...");
 	pthread_t instance_thread_id;
 
 	int client_sock;
@@ -81,13 +119,37 @@ void listen_for_connections(int server_socket) {
 	while ((client_sock = accept(server_socket, (struct sockaddr *) &addr,
 			&addrlen))) {
 		log_info(logger, "Connection request received.");
-		if (pthread_create(&instance_thread_id, NULL, (void*) accept_connection_handler, (void*) client_sock) < 0) {
+		if (pthread_create(&instance_thread_id, NULL,
+				(void*) esi_connection_handler, (void*) client_sock) < 0) {
 			log_error(logger, "Could not create thread.");
 		} else {
 			log_info(logger, "Connection accepted !");
 		}
 	}
 
+}
+
+void listen_for_commands() {
+	char *command;
+	int is_exit_command;
+	do {
+		command = readline("Command: ");
+		is_exit_command = string_equals_ignore_case(command, "EXIT");
+		if (is_exit_command) {
+			log_info(logger, "Exiting...");
+		} else {
+			log_info(logger, "Invalid command");
+		}
+		free(command);
+	} while (!is_exit_command);
+}
+
+pthread_t start_console() {
+	pthread_t console_thread;
+	if (pthread_create(&console_thread, NULL, (void*) listen_for_commands, NULL) < 0) {
+		exit_with_error(0, "Error starting console thread");
+	};
+	return console_thread;
 }
 
 void exit_gracefully(int return_nr) {

@@ -41,6 +41,10 @@ void _exit_with_error(int socket,char* error_msg, void * buffer){
 	exit_gracefully(1);
 }
 
+void exit_with_error(int socket, char *error_msg) {
+	_exit_with_error(socket, error_msg, NULL);
+}
+
 void receive_instance_configuration(int socket){
 	t_instance_configuration *instance_configuration = (t_instance_configuration*) malloc(sizeof(t_instance_configuration));
 	log_info(logger, "Receiving instance configuration from coordinator.");
@@ -102,11 +106,31 @@ int main(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing instance...");
 	load_configuration(argv[1]);
-	log_info(logger, "Connecting with coordinator.");
-	int socket_fd = connect_to(coordinator_ip, coordinator_port);
-	receive_instance_configuration(socket_fd);
-	/*while(1){
-		wait_for_statement_and_return_result(socket_fd);
-	}*/
+
+	connect_to_coordinator();
+
+	receive_instance_configuration(coordinator_socket);
 	exit(0);
+}
+
+void connect_to_coordinator() {
+	log_info(logger, "Connecting with coordinator.");
+
+	coordinator_socket = connect_to(coordinator_ip, coordinator_port);
+
+	if (coordinator_socket < 0) {
+		exit_with_error(coordinator_socket, "No se pudo conectar al coordinador");
+	} else if (send_module_connected(coordinator_socket, INSTANCE) < 0) {
+		exit_with_error(coordinator_socket, "No se pudo enviar al confirmacion al coordinador");
+	} else {
+		message_type message_type;
+		int message_type_result = recv(coordinator_socket, &message_type,
+				sizeof(message_type), MSG_WAITALL);
+
+		if (message_type_result < 0 || message_type != CONNECTION_SUCCESS) {
+			exit_with_error(coordinator_socket, "Error al recibir confirmacion del coordinador");
+		} else {
+			log_info(logger, "Connexion con el coordinador establecida");
+		}
+	}
 }
