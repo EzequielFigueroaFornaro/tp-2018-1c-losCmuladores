@@ -18,9 +18,8 @@ module_type ESI = 3;
 
 typedef int message_type;
 
-message_type MODULE_CONNECTED = 0;
-message_type CONNECTION_SUCCESS = 1;
-message_type CONNECTION_RECEIVED = 2;
+message_type MODULE_CONNECTED = 100;
+message_type CONNECTION_SUCCESS = 101;
 
 int start_server(int port, int max_connections);
 

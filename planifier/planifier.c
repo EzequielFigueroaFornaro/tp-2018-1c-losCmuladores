@@ -24,7 +24,9 @@ int main(int argc, char* argv[]) {
 		exit_with_error(server_socket, "Error in thread");
 	};
 
-	pthread_join(listener_thread, NULL);
+	pthread_t console_thread = start_console();
+
+	pthread_join(console_thread, NULL);
 
 	return EXIT_SUCCESS;
 }
@@ -127,6 +129,29 @@ void listen_for_esi_connections(int server_socket) {
 		}
 	}
 
+}
+
+void listen_for_commands() {
+	char *command;
+	int is_exit_command;
+	do {
+		command = readline("Command: ");
+		is_exit_command = string_equals_ignore_case(command, "EXIT");
+		if (is_exit_command) {
+			log_info(logger, "Exiting...");
+		} else {
+			log_info(logger, "Invalid command");
+		}
+		free(command);
+	} while (!is_exit_command);
+}
+
+pthread_t start_console() {
+	pthread_t console_thread;
+	if (pthread_create(&console_thread, NULL, (void*) listen_for_commands, NULL) < 0) {
+		exit_with_error(0, "Error starting console thread");
+	};
+	return console_thread;
 }
 
 void exit_gracefully(int return_nr) {
