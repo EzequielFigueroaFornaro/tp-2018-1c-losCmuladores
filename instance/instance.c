@@ -16,6 +16,7 @@ void configure_logger() {
 
 void exit_gracefully(int return_nr) {
 	log_destroy(logger);
+	dictionary_destroy(entries_table);
 	exit(return_nr);
 }
 
@@ -29,6 +30,9 @@ void load_configuration(char* config_file_path){
 
 	coordinator_ip = config_get_string_value(config, ip);
 	coordinator_port = config_get_int_value(config, port_name);
+
+	entries_table = dictionary_create();
+
 	log_info(logger, "OK.");
 }
 
@@ -81,8 +85,9 @@ void free_header(t_content_header* header){
 	return;
 }
 
-/*
+
 void wait_for_statement_and_return_result(int socket_fd){
+	log_info(logger, "Waiting for Sentence...");
 	t_content_header *sentence_header = (t_content_header*) malloc(sizeof(t_content_header));
 
 	int sentence_request_header = recv(socket_fd, sentence_header, sizeof(t_content_header), MSG_WAITALL);
@@ -98,9 +103,13 @@ void wait_for_statement_and_return_result(int socket_fd){
 		return;
 	}
 
+
+
+
+
 	//TODO hacer receive del payload
 }
-*/
+
 
 int main(int argc, char* argv[]) {
 	configure_logger();
@@ -110,6 +119,7 @@ int main(int argc, char* argv[]) {
 	connect_to_coordinator();
 
 	receive_instance_configuration(coordinator_socket);
+
 	exit(0);
 }
 
