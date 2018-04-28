@@ -31,6 +31,4 @@ int send_connection_success(int socket);
 
 int send_module_connected(int socket, module_type module_type);
 
-int send_connection_received(int socket);
-
 char* get_client_address(int socket);

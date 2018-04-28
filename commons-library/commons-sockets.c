@@ -81,11 +81,6 @@ int send_connection_success(int socket) {
 	return send(socket, &message_type, sizeof(message_type), 0);
 }
 
-int send_connection_received(int socket) {
-	message_type message_type = CONNECTION_RECEIVED;
-	return send(socket, &message_type, sizeof(message_type), 0);
-}
-
 char* get_client_address(int socket) {
 	struct sockaddr_in client_address;
 	socklen_t socket_lenght = sizeof(client_address);
