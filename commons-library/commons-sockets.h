@@ -7,6 +7,7 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/string.h>
+#include <arpa/inet.h>
 
 typedef int module_type;
 
@@ -29,3 +30,5 @@ int connect_to(char* ip, int port);
 int send_connection_success(int socket);
 
 int send_module_connected(int socket, module_type module_type);
+
+char* get_client_address(int socket);

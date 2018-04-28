@@ -81,30 +81,32 @@ void send_coordinator_connection_completed(int coordinator_socket) {
 }
 
 void esi_connection_handler(int socket) {
-	// falta logica para distinguir conexiones de coordinador con esi
-	coordinator_socket = socket;
-
 	message_type message_type;
-	int result_message_type = recv(socket, &message_type, sizeof(message_type),
-			MSG_WAITALL);
+	int result_message_type = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
 
 	if (result_message_type < 0 || message_type != MODULE_CONNECTED) {
-		exit_with_error(coordinator_socket,
+		exit_with_error(socket,
 				"Error with module connection confirmation");
-	} else {
-		module_type module_type;
-		int result_module_type = recv(socket, &module_type, sizeof(module_type),
-				MSG_WAITALL);
-		if (result_module_type < 0) {
-			exit_with_error(coordinator_socket, "Error receiving module type");
-		} else if (module_type == ESI) {
-			// TODO esi connections
-		} else {
-			exit_with_error(coordinator_socket,
-					"Error handling new connection. Invalid module type");
-		}
 	}
 
+	module_type module_type;
+	int result_module_type = recv(socket, &module_type, sizeof(module_type),
+			MSG_WAITALL);
+	if (result_module_type < 0) {
+		exit_with_error(socket, "Error receiving module type");
+	}
+
+	if (module_type == ESI) {
+		if (send_connection_success(socket) < 0) {
+			exit_with_error(socket,
+					string_from_format(
+							"Error sending \"connection success\" message to %s",
+							get_client_address(socket)));
+		}
+		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
+	} else {
+		log_info(logger, "Ignoring connected client because it was not an ESI");
+	}
 }
 
 void listen_for_esi_connections(int server_socket) {

@@ -80,3 +80,15 @@ int send_connection_success(int socket) {
 	message_type message_type = CONNECTION_SUCCESS;
 	return send(socket, &message_type, sizeof(message_type), 0);
 }
+
+char* get_client_address(int socket) {
+	struct sockaddr_in client_address;
+	socklen_t socket_lenght = sizeof(client_address);
+	int err = getpeername(socket, (struct sockaddr *) &client_address, &socket_lenght);
+	if (err == 0) {
+		char ip[INET_ADDRSTRLEN];
+	    inet_ntop(AF_INET, &client_address.sin_addr, ip, sizeof ip);
+		return string_from_format("%s:%d", ip, ntohs(client_address.sin_port));
+	}
+	return "unknown";
+}

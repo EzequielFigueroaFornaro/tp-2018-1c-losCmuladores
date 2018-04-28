@@ -10,10 +10,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
-#include <netdb.h> // Para getaddrinfo
-#include <unistd.h> // Para close
-#include <readline/readline.h> // Para usar readline
+#include <sys/socket.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <readline/readline.h>
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
@@ -26,20 +26,24 @@ int server_max_connections;
 
 //coordinator
 int coordinator_socket;
-char *coordinator_port;
-char *coordinator_ip;
 
+int coordinator_port;
+char* coordinator_ip;
+
+//planifier
+int planifier_port;
+char* planifier_ip;
 
 //Global variables.
 t_log * logger;
-t_list * instances_thread_list;
 
-typedef struct {
-	int operation_id;
-	long entries_size;
-	long entries_quantity;
-}__attribute((packed)) t_instance_configuration;
+int handshake_planifier();
+int handshake_coordinator();
 
-t_instance_configuration *instance_configuration;
+void exit_gracefully(int code);
+
+void load_configuration(char* config_file_path);
+
+void configure_logger();
 
 #endif /* SRC_ISE_H_ */
