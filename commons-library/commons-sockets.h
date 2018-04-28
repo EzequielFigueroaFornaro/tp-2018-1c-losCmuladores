@@ -8,6 +8,8 @@
 #include <commons/collections/list.h>
 #include <commons/string.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+#include <errno.h>
 
 typedef int module_type;
 
@@ -21,9 +23,7 @@ typedef int message_type;
 message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
 
-int start_server(int port, int max_connections);
-
-int accept_connection(int server_socket);
+int start_server(int port, int max_connections, void *(*_connection_handler)(void *), bool async, t_log *logger);
 
 int connect_to(char* ip, int port);
 

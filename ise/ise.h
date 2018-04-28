@@ -1,5 +1,5 @@
 /*
- * ise.h
+ * esi.h
  *
  *  Created on: Apr 23, 2018
  *      Author: losCmuladores
@@ -27,10 +27,11 @@ int server_max_connections;
 //coordinator
 int coordinator_socket;
 
+int planifier_socket;
+
 int coordinator_port;
 char* coordinator_ip;
 
-//planifier
 int planifier_port;
 char* planifier_ip;
 
@@ -38,6 +39,7 @@ char* planifier_ip;
 t_log * logger;
 
 int handshake_planifier();
+
 int handshake_coordinator();
 
 void exit_gracefully(int code);
