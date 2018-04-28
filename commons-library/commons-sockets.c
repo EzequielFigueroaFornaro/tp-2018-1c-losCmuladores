@@ -1,7 +1,17 @@
 #include "commons-sockets.h"
-#include "commons/string.h"
 
-int start_server(int port, int max_connections){
+typedef struct {
+	int server_socket;
+	void *(*connection_handler)(void *);
+	t_log * logger;
+} t_accept_params;
+
+void accept_connections(t_accept_params *accept_params);
+
+/* Starts a server in specified port and accepts incoming connections using threads.
+ * Function _connection_handler must only receive a socket as argument
+ */
+int start_server(int port, int max_connections, void *(*_connection_handler)(void *), bool async, t_log *logger) {
 	struct sockaddr_in server_address;
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = INADDR_ANY;
@@ -13,27 +23,53 @@ int start_server(int port, int max_connections){
 	setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
 
 	if (bind(server_socket, (void*) &server_address, sizeof(server_address)) != 0){
-		perror("Error binding. Server not started.");
-		return 1;
+		log_error(logger, "Error binding");
+		close(server_socket);
+		return -1;
 	}
 
 	listen(server_socket, max_connections);
 
-	return server_socket;
+	t_accept_params* accept_params = malloc(sizeof(t_accept_params));
+	accept_params->server_socket = server_socket;
+	accept_params->connection_handler = _connection_handler;
+	accept_params->logger = logger;
+	pthread_t listener_thread;
+	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) {
+		log_error(logger, "Could not create thread");
+		return -1;
+	};
+	if (!async) {
+		pthread_join(listener_thread, NULL);
+	}
+	return 0;
 }
 
-//TODO levantar threads por c/conexion aceptada.
-int accept_connection(int server_socket){
-	struct sockaddr_in cli_addr;
-		socklen_t address_size;
+void accept_connections(t_accept_params *accept_params) {
+	log_info(accept_params->logger, "Waiting for connections...");
+	pthread_t thread;
+	int client_sock;
 
-		address_size = sizeof(cli_addr);
-		int client_socket = accept(server_socket, (void*) &cli_addr, &address_size);
+	//TODO revisar si realmente necesito esto acá. Lo uso en la función que envía la configuración.
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(addr);
 
-		if (client_socket == -1){
-			return -1;
+	while ((client_sock = accept(accept_params->server_socket,
+			(struct sockaddr *) &addr, &addrlen))) {
+		if (client_sock < 0) {
+			log_error(accept_params->logger, "Could not accept connection: %s",
+					strerror(errno));
 		}
-		return client_socket;
+		log_info(accept_params->logger, "Connection request received.");
+		if (pthread_create(&thread, NULL, (void*) accept_params->connection_handler, (void*) client_sock) < 0) {
+			log_error(accept_params->logger, "Could not create thread.");
+			close(client_sock);
+		} else {
+			log_info(accept_params->logger, "Connection accepted !");
+		}
+	}
+	pthread_join(thread, NULL);
+	free(accept_params);
 }
 
 int connect_to(char* ip, int port) {

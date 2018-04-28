@@ -13,13 +13,13 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	handshake_coordinator();
-//	handshake_planifier();
+	handshake_planifier();
 
 	return EXIT_SUCCESS;
 }
 
 int handshake_coordinator() {
-	log_info(logger, "Start handshake process with coordinator...");
+	log_info(logger, "Starting handshake process with coordinator...");
 	int connect_result = connect_to(coordinator_ip, coordinator_port);
 	if (connect_result < 0) {
 		log_error(logger, "Could not connect to coordinator on %s:%d",
@@ -38,9 +38,8 @@ int handshake_coordinator() {
 	message_type message_type;
 	int message_type_result = recv(socket, &message_type, sizeof(message_type),	MSG_WAITALL);
 	if (message_type_result <= 0 || message_type != CONNECTION_SUCCESS) {
-		log_info(logger, "OCHO");
 		log_error(logger,
-				"Expected CONNECTION_SUCCESS (%d) from coordinator in (%s:%d), actual: %d",
+				"Expected CONNECTION_SUCCESS (%d) from coordinator on %s:%d, actual: %d",
 				CONNECTION_SUCCESS, coordinator_ip, coordinator_port, message_type);
 		close(socket);
 		exit_gracefully(EXIT_FAILURE);
@@ -50,7 +49,7 @@ int handshake_coordinator() {
 }
 
 int handshake_planifier() {
-	log_info(logger, "Start handshake process with planifier...");
+	log_info(logger, "Starting handshake process with planifier...");
 	int connect_result = connect_to(planifier_ip, planifier_port);
 	if (connect_result < 0) {
 		log_error(logger, "Could not connect to planifier on %s:%d",
@@ -59,7 +58,7 @@ int handshake_planifier() {
 	}
 
 	int socket = connect_result;
-	if (send_module_connected(socket, PLANIFIER) < 0) {
+	if (send_module_connected(socket, ISE) < 0) {
 		log_error(logger, "Could not send message to planifier on %s:%d", planifier_ip, planifier_port);
 		close(socket);
 		exit_gracefully(EXIT_FAILURE);
@@ -70,7 +69,7 @@ int handshake_planifier() {
 
 	if (message_type_result <= 0 || message_type != CONNECTION_SUCCESS) {
 		log_error(logger,
-				"Expected CONNECTION_SUCCESS (%d) from planifier in (%s:%d), actual: %d",
+				"Expected CONNECTION_SUCCESS (%d) from planifier on %s:%d, actual: %d",
 				CONNECTION_SUCCESS, planifier_ip, planifier_port, message_type);
 		close(socket);
 		exit_gracefully(EXIT_FAILURE);
@@ -88,7 +87,7 @@ void configure_logger() {
 	logger = log_create("ise.log", "ise", 1, LOG_LEVEL_INFO);
 }
 
-void load_configuration(char* config_file_path){
+void load_configuration(char* config_file_path) {
 	configure_logger();
 	log_info(logger, "Loading configuration file...");
 	t_config* config = config_create(config_file_path);
