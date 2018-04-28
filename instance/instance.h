@@ -41,6 +41,9 @@ t_instance_configuration *instance_configuration;
 typedef struct {
 	int operation_id;
 	int length;
+	int sentence_code;
+	int value_length;
+	char key[40];
 } __attribute__((packed)) t_content_header;
 
 //La tabla de entradas guarda esta estructura.

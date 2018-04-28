@@ -51,6 +51,13 @@ typedef struct {
 	int socket_id;
 } __attribute__((packed)) t_instance;
 
+typedef struct {
+	int operation_id;
+	int sentence_code;
+	int value_length;
+	char key[40];
+} __attribute__((packed)) t_sentence_header;
+
 void _exit_with_error(int socket,char* error_msg, void * buffer);
 
 #endif /* COORDINATOR_H_ */

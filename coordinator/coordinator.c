@@ -21,9 +21,33 @@ void receive_statement_request();
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 int calculate_instance_number_to_send();
 
+void free_sentence_header(t_sentence_header *header){
+	//TODO free
+	return;
+}
+
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
-int send_statement_to_instance();
+//TODO TEST!!!
+int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence_header *sentence_header){
+	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
+	log_info(logger, "Sending sentence to instance in %s");
+
+	if (send(instance_fd, sentence_header, sizeof(sentence_header), 0) <= 0){
+		log_error(logger, "Could not send sentence to instance.");
+		free_sentence_header(sentence_header);
+	}
+
+	int result;
+	if (recv(instance_fd, result, sizeof(int), MSG_WAITALL) <= 0){
+		//loggear con IP de la instancia, y toda la info posible...
+		log_error(logger, "Could not receive sentence result from %s");
+		return -100;
+	}
+	free_sentence_header(sentence_header);
+
+	return result;
+}
 
 //4)
 //TODO definir el struct del resultado.

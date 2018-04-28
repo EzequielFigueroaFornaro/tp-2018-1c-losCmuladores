@@ -85,8 +85,14 @@ void free_header(t_content_header* header){
 	return;
 }
 
+//TODO
+int process_statement(int operation, char* key, void* value){
+	log_info(logger, "Processing statement...");
+	log_info(logger, "FALTA IMPLEMENTAR...");
+	return 0;
+}
 
-void wait_for_statement_and_return_result(int socket_fd){
+void wait_for_statement_and_send_result(int socket_fd){
 	log_info(logger, "Waiting for Sentence...");
 	t_content_header *sentence_header = (t_content_header*) malloc(sizeof(t_content_header));
 
@@ -97,17 +103,30 @@ void wait_for_statement_and_return_result(int socket_fd){
 		return;
 	}
 
+	//El Length del sentence_header es el lenght del value esperado.
 	if(sentence_header -> operation_id != 2) {
 		log_error(logger, "Invalid operation id...expected %d and was %d", 2, sentence_header -> operation_id);
 		free_header(sentence_header);
 		return;
 	}
 
+	char* value_buffer = malloc(sizeof(sentence_header -> value_length + 1)); //TODO testear...
 
+	int sentence_request = recv(socket_fd, value_buffer , sizeof(value_buffer), MSG_WAITALL);
+	if(sentence_request <= 0){
+		log_error(logger, "Could not receive sentence.");
+		free_header(sentence_header);
+		return;
+	}
 
+	int process_result = process_statement(sentence_header -> sentence_code, sentence_header -> key, value_buffer);
 
-
-	//TODO hacer receive del payload
+	if( send(socket_fd, process_result, sizeof(int), 0) <= 0 ){
+		log_error(logger, "Could not send sentence result to coordinator");
+		free(value_buffer);
+		return; //TODO ver qué hacer si falla el envío del resultado...
+	}
+	return;
 }
 
 
@@ -141,6 +160,9 @@ void connect_to_coordinator() {
 			exit_with_error(coordinator_socket, "Error al recibir confirmacion del coordinador");
 		} else {
 			log_info(logger, "Connexion con el coordinador establecida");
+			while(true){
+				wait_for_statement_and_send_result(coordinator_socket);
+			}
 		}
 	}
 }
