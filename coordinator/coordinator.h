@@ -53,10 +53,9 @@ typedef struct {
 
 typedef struct {
 	int operation_id;
-	int sentence_code;
-	int value_length;
-	char key[40];
-} __attribute__((packed)) t_sentence_header;
+	char* key;
+	char* value;
+} t_sentence;
 
 void _exit_with_error(int socket,char* error_msg, void * buffer);
 

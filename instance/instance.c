@@ -78,13 +78,6 @@ void check_if_connection_was_ok(int server_socket){
 	  log_info(logger, "Connected !");
 }
 
-void free_header(t_content_header* header){
-	free(header -> operation_id);
-	free(header -> length);
-	free(header);
-	return;
-}
-
 //TODO
 int process_statement(int operation, char* key, void* value){
 	log_info(logger, "Processing statement...");
@@ -94,38 +87,38 @@ int process_statement(int operation, char* key, void* value){
 
 void wait_for_statement_and_send_result(int socket_fd){
 	log_info(logger, "Waiting for Sentence...");
-	t_content_header *sentence_header = (t_content_header*) malloc(sizeof(t_content_header));
 
-	int sentence_request_header = recv(socket_fd, sentence_header, sizeof(t_content_header), MSG_WAITALL);
-	if (sentence_request_header <= 0){
-		log_error(logger, "Could not receive instance configuration");
-		free_header(sentence_header);
+	//int* operation_id = malloc(sizeof(int));
+	int operation_id;
+
+	int recv_result = recv(socket_fd, &operation_id, sizeof(int), 0);
+
+	if (recv_result <= 0){
+		log_error(logger, "Could not receive statement operation id request.");
+		//return;
+	}
+
+	int ok_operation_condition = operation_id == GET_SENTENCE ||
+									operation_id == SET_SENTENCE ||
+									operation_id == STORE_SENTENCE;
+
+	if (!ok_operation_condition) {
+		log_error(logger, "Invalid operation id: %d", operation_id);
+		return;
+	}
+	//Ahora recibo un t_sentence en partes.
+	int key_length;
+	if( recv(socket_fd, &key_length, sizeof(int), 0) <= 0 ){
+		log_error(logger, "Could not receive key length");
 		return;
 	}
 
-	//El Length del sentence_header es el lenght del value esperado.
-	if(sentence_header -> operation_id != 2) {
-		log_error(logger, "Invalid operation id...expected %d and was %d", 2, sentence_header -> operation_id);
-		free_header(sentence_header);
-		return;
+	char* key_buffer = malloc(key_length); //TODO hacer free
+	if( recv(socket_fd, key_buffer, key_length, 0) <= 0 ){
+			log_error(logger, "Could not receive sentence key.");
+			return;
 	}
 
-	char* value_buffer = malloc(sizeof(sentence_header -> value_length + 1)); //TODO testear...
-
-	int sentence_request = recv(socket_fd, value_buffer , sizeof(value_buffer), MSG_WAITALL);
-	if(sentence_request <= 0){
-		log_error(logger, "Could not receive sentence.");
-		free_header(sentence_header);
-		return;
-	}
-
-	int process_result = process_statement(sentence_header -> sentence_code, sentence_header -> key, value_buffer);
-
-	if( send(socket_fd, process_result, sizeof(int), 0) <= 0 ){
-		log_error(logger, "Could not send sentence result to coordinator");
-		free(value_buffer);
-		return; //TODO ver qué hacer si falla el envío del resultado...
-	}
 	return;
 }
 
@@ -138,6 +131,10 @@ int main(int argc, char* argv[]) {
 	connect_to_coordinator();
 
 	receive_instance_configuration(coordinator_socket);
+
+	//while(true){
+		wait_for_statement_and_send_result(coordinator_socket);
+	//}
 
 	exit(0);
 }
@@ -160,9 +157,7 @@ void connect_to_coordinator() {
 			exit_with_error(coordinator_socket, "Error al recibir confirmacion del coordinador");
 		} else {
 			log_info(logger, "Connexion con el coordinador establecida");
-			while(true){
-				wait_for_statement_and_send_result(coordinator_socket);
-			}
+
 		}
 	}
 }

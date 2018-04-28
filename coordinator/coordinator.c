@@ -21,32 +21,34 @@ void receive_statement_request();
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 int calculate_instance_number_to_send();
 
-void free_sentence_header(t_sentence_header *header){
-	//TODO free
-	return;
-}
-
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
 //TODO TEST!!!
-int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence_header *sentence_header){
+int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
-	log_info(logger, "Sending sentence to instance in %s");
+	log_info(logger, "Sending sentence to instance...");
+	//int* operationId = &(sentence->operation_id);
 
-	if (send(instance_fd, sentence_header, sizeof(sentence_header), 0) <= 0){
-		log_error(logger, "Could not send sentence to instance.");
-		free_sentence_header(sentence_header);
+	int key_length = strlen(sentence -> key) + 1;
+	int value_length = strlen(sentence -> value) + 1;
+
+	//operation_id + key_length + key + value_length + value
+	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int) + value_length;
+
+	void * buffer = malloc(message_size);
+	memcpy(buffer, &(sentence -> operation_id), sizeof(int));
+	memcpy(buffer + sizeof(int), &key_length, sizeof(int));
+	memcpy(buffer + sizeof(int) + sizeof(int), (sentence-> key), key_length);
+
+	//memcpy(buffer, &(sentence -> operation_id) + &key_length + (sentence-> key), sizeof(message_size))
+	int send_result = send(instance_fd, buffer, sizeof(int) * 2 + key_length, 0);
+
+	if (send_result <= 0) {
+		log_error(logger, "Could not send sentence operation id to instance.");
+		//free_sentence_header(sentence);
 	}
 
-	int result;
-	if (recv(instance_fd, result, sizeof(int), MSG_WAITALL) <= 0){
-		//loggear con IP de la instancia, y toda la info posible...
-		log_error(logger, "Could not receive sentence result from %s");
-		return -100;
-	}
-	free_sentence_header(sentence_header);
-
-	return result;
+	return 0;
 }
 
 //4)
@@ -114,6 +116,21 @@ int send_instance_configuration(int client_sock){
 		return 1;
 	}
 	log_info(logger, "Configuration successfully sent.");
+
+	//*************************
+	//****TODO BORRAR !! ESTO ES DE PRUEBA;
+	int operation_id = 601;
+	char* key = "barcelona:jugadores";
+	char* value = "messi";
+	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
+	t_sentence *sentence = malloc(size);
+	log_info(logger, "Msg size: %d", size);
+	sentence -> operation_id = operation_id;
+	sentence -> key = key;
+	sentence -> value = value;
+	send_statement_to_instance_and_wait_for_result(client_sock, sentence);
+	//***********************
+
 	return 0;
 }
 
