@@ -119,6 +119,20 @@ void planifier_connection_handler(int socket) {
 	}
 }
 
+void ise_connection_handler(int socket) {
+	if (send_connection_success(socket) < 0) {
+		_exit_with_error(socket, "Error sending ISE connection success", NULL);
+	} else {
+		t_ise *ise = (t_ise*) malloc(sizeof(t_ise));
+
+		ise -> ise_thread = pthread_self();
+		ise -> socket_id = socket;
+		list_add(ise_thread_list, ise);
+
+		log_info(logger, "ISE connected");
+	}
+}
+
 void connection_handler(int socket) {
 	message_type message_type;
 	int result_connected_message = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
@@ -134,6 +148,8 @@ void connection_handler(int socket) {
 			instance_connection_handler(socket);
 		} else if (module_type == PLANIFIER) {
 			planifier_connection_handler(socket);
+		} else if (module_type == ISE) {
+			ise_connection_handler(socket);
 		}
 	}
 }
@@ -207,5 +223,6 @@ int main(int argc, char* argv[]) {
 
 	//close(server_socket);
 	pthread_join(listener_thread, NULL);
+
 	return EXIT_SUCCESS;
 }

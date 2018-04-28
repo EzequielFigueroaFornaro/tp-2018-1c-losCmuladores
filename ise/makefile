@@ -4,9 +4,8 @@
 print-%  : 
 	@echo $* = $($*)
 
-
-TARGET = coordinator # Definimos la tarea que va a ejecutar make por defecto Y el nombre del binario final
-LIBS = -lcommons -pthread -lcommons-library	 # Incluimos las bibliotecas que necesitamos, las commos y la biblio para el MD5
+TARGET = ise # Definimos la tarea que va a ejecutar make por defecto Y el nombre del binario final
+LIBS = -lcommons -pthread -lcommons-library # Incluimos las bibliotecas que necesitamos, las commos y la biblio para el MD5
 CC = gcc # Vamos a usar gcc como compilador, porque nos encanta!
 CFLAGS = -g -Wall # Compilamos con los flags -g (con simbolos de debug) y -Wall (que nos muestre todos los warnings)
 LIBPATH = -L"$(PWD)/../commons-library"

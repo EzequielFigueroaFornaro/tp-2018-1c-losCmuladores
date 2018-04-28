@@ -1,12 +1,12 @@
 /*
- * coordinator.h
+ * ise.h
  *
- *  Created on: 15 abr. 2018
- *      Author: utnso
+ *  Created on: Apr 23, 2018
+ *      Author: losCmuladores
  */
 
-#ifndef COORDINATOR_H_
-#define COORDINATOR_H_
+#ifndef SRC_ISE_H_
+#define SRC_ISE_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,23 +21,18 @@
 #include "commons-sockets.h"
 #include <signal.h>
 
-
-//#define PORT 8080
 int server_port;
 int server_max_connections;
 
-//planifier
-int planifier_socket;
+//coordinator
+int coordinator_socket;
+char *coordinator_port;
+char *coordinator_ip;
+
 
 //Global variables.
 t_log * logger;
 t_list * instances_thread_list;
-t_list * ise_thread_list;
-
-typedef struct  {
-  int operation_id;
-  //TODO lo que sea necesario.
-} __attribute__((packed)) t_new_instance_header;
 
 typedef struct {
 	int operation_id;
@@ -47,16 +42,4 @@ typedef struct {
 
 t_instance_configuration *instance_configuration;
 
-typedef struct {
-	pthread_t instance_thread;
-	int socket_id;
-} __attribute__((packed)) t_instance;
-
-typedef struct {
-	pthread_t ise_thread;
-	int socket_id;
-} __attribute__((packed)) t_ise;
-
-void _exit_with_error(int socket,char* error_msg, void * buffer);
-
-#endif /* COORDINATOR_H_ */
+#endif /* SRC_ISE_H_ */

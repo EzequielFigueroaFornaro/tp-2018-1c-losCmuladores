@@ -13,7 +13,7 @@ typedef int module_type;
 module_type COORDINATOR = 0;
 module_type PLANIFIER = 1;
 module_type INSTANCE = 2;
-module_type ESI = 3;
+module_type ISE = 3;
 
 typedef int message_type;
 
