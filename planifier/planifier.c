@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 
 	int server_socket = start_server(server_port, server_max_connections);
 
-//	connect_to_coordinator();
+	connect_to_coordinator();
 
 	pthread_t listener_thread;
 	if (pthread_create(&listener_thread, NULL, (void*) listen_for_esi_connections,
@@ -84,7 +84,7 @@ void esi_connection_handler(int socket) {
 	message_type message_type;
 	int result_message_type = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
 
-	if (result_message_type < 0 /*|| message_type != MODULE_CONNECTED*/) {
+	if (result_message_type < 0 || message_type != MODULE_CONNECTED) {
 		exit_with_error(socket,
 				"Error with module connection confirmation");
 	}
