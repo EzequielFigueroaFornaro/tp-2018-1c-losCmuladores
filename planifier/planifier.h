@@ -17,6 +17,7 @@
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #include "commons-sockets.h"
 
 int server_port;
@@ -36,10 +37,10 @@ void load_configuration(char *config_file_path);
 
 void connect_to_coordinator();
 
-void listen_for_esi_connections(int server_socket);
-
 pthread_t start_console();
 
 void exit_with_error(int socket, char* error_msg);
+
+void esi_connection_handler(int socket);
 
 #endif /* PLANIFIER_H_ */

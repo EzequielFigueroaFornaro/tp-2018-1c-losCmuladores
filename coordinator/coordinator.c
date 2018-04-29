@@ -9,7 +9,6 @@
  */
 
 #include "coordinator.h"
-
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //Recibe solicitud del ESI.
 //1)
@@ -60,19 +59,12 @@ void exit_gracefully(int code) {
 	exit(code);
 }
 
-void check_server_startup(int server_socket, int port) {
-	if (server_socket == 1) {
-		_exit_with_error(server_socket, "Error binding. Server not started.", NULL);
+void check_server_startup(int server_socket) {
+	if (server_socket == -1) {
+		log_error(logger, "Server not started");
+		exit_gracefully(1);
 	}
-	log_info(logger, "Server Started. Listening on port %d", port);
-}
-
-void check_accept(int accept_result) {
-	if (accept_result == -1) {
-		log_error(logger, "Could not accept connection.");
-		exit_gracefully(1); // TODO Se supone que no debería matar el proceso
-	}
-	log_info(logger, "Connection accepted !");
+	log_info(logger, "Server Started. Listening on port %d", server_port);
 }
 
 void load_configuration(char* config_file_path){
@@ -86,18 +78,22 @@ void load_configuration(char* config_file_path){
 
 	instance_configuration = malloc(sizeof(t_instance_configuration));
 	instance_configuration -> operation_id = 1;
-	instance_configuration -> entries_quantity = 100;
-	instance_configuration -> entries_size = 12;
-	//TODO asignar la cfg de instancias a "instance_configuration" declarado en .h .
+	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
+	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
+	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
+	if(string_equals_ignore_case(distribution_str, "EL")){
+		distribution = EL;
+	} else if(string_equals_ignore_case(distribution_str, "LSU")) {
+		distribution = LSU;
+	} else if (string_equals_ignore_case(distribution_str, "KE")){
+		distribution = KE;
+	} else _exit_with_error(NULL, "Distribution algorithm not found.", NULL);
+
 	log_info(logger, "OK.");
 }
 
 int send_instance_configuration(int client_sock){
-	struct sockaddr_in addr;
-	socklen_t addr_size = sizeof(struct sockaddr_in);
-	getpeername(client_sock, (struct sockaddr *)&addr, &addr_size);
-
-	log_info(logger, "Sending instance configuration to host %s:%d", inet_ntoa(addr.sin_addr), (int) ntohs(addr.sin_port));
+	log_info(logger, "Sending instance configuration to host %s", get_client_address(client_sock));
 	int status = send(client_sock, instance_configuration, sizeof(t_instance_configuration), 0);
 	if(status <= 0){
 		log_error(logger, "Could not send instance configuration.%d", status);
@@ -113,7 +109,6 @@ int send_instance_configuration(int client_sock){
 	char* value = "messi";
 	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
 	t_sentence *sentence = malloc(size);
-	log_info(logger, "Msg size: %d", size);
 	sentence -> operation_id = operation_id;
 	sentence -> key = key;
 	sentence -> value = value;
@@ -124,6 +119,7 @@ int send_instance_configuration(int client_sock){
 }
 
 void instance_connection_handler(int socket) {
+	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
 	if (send_connection_success(socket) < 0) {
 		_exit_with_error(socket, "Error sending instance connection success", NULL);
 	} else {
@@ -149,6 +145,20 @@ void planifier_connection_handler(int socket) {
 	}
 }
 
+void ise_connection_handler(int socket) {
+	if (send_connection_success(socket) < 0) {
+		_exit_with_error(socket, "Error sending ESI connection success", NULL);
+	} else {
+		t_ise *ise = (t_ise*) malloc(sizeof(t_ise));
+
+		ise -> ise_thread = pthread_self();
+		ise -> socket_id = socket;
+		list_add(ise_thread_list, ise);
+
+		log_info(logger, "ESI connected");
+	}
+}
+
 void connection_handler(int socket) {
 	message_type message_type;
 	int result_connected_message = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
@@ -164,32 +174,10 @@ void connection_handler(int socket) {
 			instance_connection_handler(socket);
 		} else if (module_type == PLANIFIER) {
 			planifier_connection_handler(socket);
+		} else if (module_type == ISE) {
+			ise_connection_handler(socket);
 		}
 	}
-}
-
-void listen_for_connections(int server_socket) {
-	log_info(logger, "Waiting for connections...");
-	pthread_t instance_thread_id;
-
-	int client_sock;
-
-	//TODO revisar si realmente necesito esto acá. Lo uso en la función que envía la configuración.
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-
-    while( (client_sock = accept(server_socket, (struct sockaddr *)&addr, &addrlen)) ) {
-            log_info(logger, "Connection request received.");
-            if( pthread_create( &instance_thread_id , NULL , (void*)connection_handler, (void*) client_sock) < 0) {
-            	log_error(logger, "Could not create thread.");
-            } else {
-            	log_info(logger, "Connection accepted !");
-            }
-            //TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
-    }
-
-    //TODO ver si corresponde hacer checkeos.
-
 }
 
 void sig_handler(int signo)
@@ -204,7 +192,7 @@ void sig_handler(int signo)
 	}
 }
 
-void _exit_with_error(int socket,char* error_msg, void * buffer){
+void _exit_with_error(int socket, char* error_msg, void * buffer){
 	if (buffer != NULL) {
 		free(buffer);
 	}
@@ -224,18 +212,14 @@ void signal_handler(int sig){
 
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
+	ise_thread_list = list_create();
 	configure_logger();
     signal(SIGINT,signal_handler);
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
-	int server_socket = start_server(server_port, server_max_connections);
-	check_server_startup(server_socket, server_port);
-	pthread_t listener_thread;
-	if(pthread_create(&listener_thread, NULL, (void*)listen_for_connections, (void*) server_socket) < 0){
-		_exit_with_error(server_socket, "Error in thread", NULL);
-	};
 
-	//close(server_socket);
-	pthread_join(listener_thread, NULL);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	check_server_startup(server_socket);
+
 	return EXIT_SUCCESS;
 }

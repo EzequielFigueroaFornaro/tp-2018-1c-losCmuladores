@@ -14,18 +14,14 @@ int main(int argc, char* argv[]) {
 	configure_logger();
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections);
-
 	connect_to_coordinator();
 
-	pthread_t listener_thread;
-	if (pthread_create(&listener_thread, NULL, (void*) listen_for_esi_connections,
-			(void*) server_socket) < 0) {
-		exit_with_error(server_socket, "Error in thread");
-	};
+	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
+	if (server_started < 0) {
+		log_error(logger, "Server not started");
+	}
 
 	pthread_t console_thread = start_console();
-
 	pthread_join(console_thread, NULL);
 
 	return EXIT_SUCCESS;
@@ -81,52 +77,40 @@ void send_coordinator_connection_completed(int coordinator_socket) {
 }
 
 void esi_connection_handler(int socket) {
-	// falta logica para distinguir conexiones de coordinador con esi
-	coordinator_socket = socket;
-
 	message_type message_type;
-	int result_message_type = recv(socket, &message_type, sizeof(message_type),
+	int result_message_type = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
+
+	if (result_message_type <= 0) {
+		log_error(logger, "Error trying to receive message. Closing connection");
+		close(socket);
+		return;
+	}
+
+	if (message_type != MODULE_CONNECTED) {
+		log_warning(logger, "Connection was received but the message type does not imply connection. Ignoring");
+		close(socket);
+		return;
+	}
+
+	module_type module_type;
+	int result_module_type = recv(socket, &module_type, sizeof(module_type),
 			MSG_WAITALL);
+	if (result_module_type <= 0) {
+		log_error(logger, "Error trying to receive module type. Closing connection");
+		close(socket);
+		return;
+	}
 
-	if (result_message_type < 0 || message_type != MODULE_CONNECTED) {
-		exit_with_error(coordinator_socket,
-				"Error with module connection confirmation");
+	if (module_type == ISE) {
+		if (send_connection_success(socket) < 0) {
+			log_error(logger, "Error sending \"connection success\" message to %s",	get_client_address(socket));
+			close(socket);
+			return;
+		}
+		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
 	} else {
-		module_type module_type;
-		int result_module_type = recv(socket, &module_type, sizeof(module_type),
-				MSG_WAITALL);
-		if (result_module_type < 0) {
-			exit_with_error(coordinator_socket, "Error receiving module type");
-		} else if (module_type == ESI) {
-			// TODO esi connections
-		} else {
-			exit_with_error(coordinator_socket,
-					"Error handling new connection. Invalid module type");
-		}
+		log_info(logger, "Ignoring connected client because it was not an ESI");
 	}
-
-}
-
-void listen_for_esi_connections(int server_socket) {
-	log_info(logger, "Waiting for esis...");
-	pthread_t instance_thread_id;
-
-	int client_sock;
-
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-
-	while ((client_sock = accept(server_socket, (struct sockaddr *) &addr,
-			&addrlen))) {
-		log_info(logger, "Connection request received.");
-		if (pthread_create(&instance_thread_id, NULL,
-				(void*) esi_connection_handler, (void*) client_sock) < 0) {
-			log_error(logger, "Could not create thread.");
-		} else {
-			log_info(logger, "Connection accepted !");
-		}
-	}
-
 }
 
 void listen_for_commands() {
