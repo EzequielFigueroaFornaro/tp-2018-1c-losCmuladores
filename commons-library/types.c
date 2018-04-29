@@ -37,8 +37,3 @@ void destroy_buffer(t_buffer* buffer){
 	free(buffer -> buffer_content);
 	free(buffer);
 }
-
-t_sentence_header* alloc_sentence_header(){
-	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
-	return sentence_header;
-}

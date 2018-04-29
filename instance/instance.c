@@ -79,7 +79,7 @@ void check_if_connection_was_ok(int server_socket){
 }
 
 //TODO
-int process_statement(int operation, char* key, void* value){
+int process_sentence(t_sentence* sentence){
 	log_info(logger, "Processing statement...");
 	log_info(logger, "FALTA IMPLEMENTAR...");
 	return 0;
@@ -87,9 +87,9 @@ int process_statement(int operation, char* key, void* value){
 
 
 //TODO hacer deserializador.
-void wait_for_statement_and_send_result(int socket_fd) {
+t_sentence* wait_for_statement(int socket_fd) {
 	log_info(logger, "Waiting for Sentence...");
-	t_sentence_header* sentence_header = alloc_sentence_header();
+	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
 
 	if (recv(socket_fd, sentence_header, sizeof(t_sentence_header), 0) <= 0){
 		log_error(logger, "Could not receive statement header.");
@@ -105,7 +105,7 @@ void wait_for_statement_and_send_result(int socket_fd) {
 	if (!ok_operation_condition) {
 		log_error(logger, "Invalid operation id: %d", operation_id);
 		free(sentence_header);
-		return;
+		return NULL;
 	}
 
 	char* key_buffer = malloc(sentence_header -> key_length);
@@ -114,7 +114,7 @@ void wait_for_statement_and_send_result(int socket_fd) {
 		log_error(logger, "Could not receive sentence key.");
 		free(key_buffer);
 		free(sentence_header);
-		return;
+		return NULL;
 	}
 
 	char* value_buffer = malloc(sentence_header -> value_length);
@@ -124,7 +124,7 @@ void wait_for_statement_and_send_result(int socket_fd) {
 		free(sentence_header);
 		free(key_buffer);
 		free(value_buffer);
-		return;
+		return NULL;
 	}
 
 	t_sentence* sentence = malloc(sizeof(t_sentence));
@@ -136,7 +136,7 @@ void wait_for_statement_and_send_result(int socket_fd) {
 
 	log_info(logger, "Sentence successfully received.");
 
-	return;
+	return sentence;
 
 }
 
@@ -150,9 +150,11 @@ int main(int argc, char* argv[]) {
 
 	receive_instance_configuration(coordinator_socket);
 
-	//while(true){
-		wait_for_statement_and_send_result(coordinator_socket);
-	//}
+	while(true){
+		t_sentence* sentence = wait_for_statement(coordinator_socket);
+		process_sentence(sentence); //TODO obtener resultado.
+		//TODO avisar al coordinador.
+	}
 
 	exit(0);
 }
