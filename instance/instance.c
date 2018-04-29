@@ -85,14 +85,15 @@ int process_statement(int operation, char* key, void* value){
 	return 0;
 }
 
-//TODO hacer los free correspondientes.
+
 //TODO hacer deserializador.
 void wait_for_statement_and_send_result(int socket_fd) {
 	log_info(logger, "Waiting for Sentence...");
-	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
+	t_sentence_header* sentence_header = alloc_sentence_header();
 
 	if (recv(socket_fd, sentence_header, sizeof(t_sentence_header), 0) <= 0){
 		log_error(logger, "Could not receive statement header.");
+		free(sentence_header);
 	}
 
 	int operation_id = sentence_header -> operation_id;
@@ -103,26 +104,35 @@ void wait_for_statement_and_send_result(int socket_fd) {
 
 	if (!ok_operation_condition) {
 		log_error(logger, "Invalid operation id: %d", operation_id);
+		free(sentence_header);
 		return;
 	}
 
 	char* key_buffer = malloc(sentence_header -> key_length);
-	char* value_buffer = malloc(sentence_header -> value_length);
 
 	if (recv(socket_fd, key_buffer, sentence_header -> key_length, 0) <= 0){
 		log_error(logger, "Could not receive sentence key.");
+		free(key_buffer);
+		free(sentence_header);
 		return;
 	}
 
+	char* value_buffer = malloc(sentence_header -> value_length);
+
 	if (recv(socket_fd, value_buffer, sentence_header -> value_length, 0) <= 0){
 		log_error(logger, "Could not receive sentence value.");
+		free(sentence_header);
+		free(key_buffer);
+		free(value_buffer);
 		return;
 	}
 
 	t_sentence* sentence = malloc(sizeof(t_sentence));
-	sentence -> operation_id = sentence_header -> operation_id;
+	sentence -> operation_id = operation_id;
 	sentence -> key = key_buffer;
 	sentence -> value = value_buffer;
+
+	free(sentence_header);
 
 	log_info(logger, "Sentence successfully received.");
 
