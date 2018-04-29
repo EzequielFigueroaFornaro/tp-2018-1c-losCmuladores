@@ -48,10 +48,4 @@ typedef struct {
 
 t_dictionary* entries_table;
 
-enum operations {
-	GET_SENTENCE = 600,
-	SET_SENTENCE = 601,
-	STORE_SENTENCE = 602
-} operation ;
-
 #endif /* INSTANCE_H_ */

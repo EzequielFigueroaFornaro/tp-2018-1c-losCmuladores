@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
 #include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close

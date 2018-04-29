@@ -28,29 +28,13 @@ int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance...");
 
-	int key_length = strlen(sentence -> key) + 1;
-	int value_length = strlen(sentence -> value) + 1;
+	t_buffer* buffer = serialize_sentence(sentence);
 
-	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(t_sentence_header));
-	sentence_header -> operation_id = sentence -> operation_id;
-	sentence_header -> key_length = key_length;
-	sentence_header -> value_length = value_length;
-
-	int message_size = sizeof(t_sentence_header) + key_length + value_length;
-	void* buffer = malloc(message_size);
-	int offset = 0;
-	memcpy(buffer, sentence_header, sizeof(t_sentence_header));
-	offset += sizeof(t_sentence_header);
-	memcpy(buffer + offset, (sentence -> key), key_length);
-	offset += key_length;
-	memcpy(buffer + offset, (sentence -> value), value_length);
-	offset += value_length;
-
-	int send_result = send(instance_fd, buffer, message_size, 0);
+	int send_result = send(instance_fd, buffer -> buffer_content, buffer -> size, 0);
+	destroy_buffer(buffer);
 
 	if (send_result <= 0) {
 		log_error(logger, "Could not send sentence operation id to instance.");
-		//free_sentence_header(sentence);
 	}
 
 	return 0;

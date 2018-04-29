@@ -86,6 +86,7 @@ int process_statement(int operation, char* key, void* value){
 }
 
 //TODO hacer los free correspondientes.
+//TODO hacer deserializador.
 void wait_for_statement_and_send_result(int socket_fd) {
 	log_info(logger, "Waiting for Sentence...");
 	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
@@ -122,6 +123,8 @@ void wait_for_statement_and_send_result(int socket_fd) {
 	sentence -> operation_id = sentence_header -> operation_id;
 	sentence -> key = key_buffer;
 	sentence -> value = value_buffer;
+
+	log_info(logger, "Sentence successfully received.");
 
 	return;
 
