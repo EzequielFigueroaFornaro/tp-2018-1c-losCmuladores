@@ -101,20 +101,6 @@ int send_instance_configuration(int client_sock){
 		return 1;
 	}
 	log_info(logger, "Configuration successfully sent.");
-
-	//*************************
-	//****TODO BORRAR !! ESTO ES DE PRUEBA;
-	int operation_id = 601;
-	char* key = "barcelona:jugadores";
-	char* value = "messi";
-	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
-	t_sentence *sentence = malloc(size);
-	sentence -> operation_id = operation_id;
-	sentence -> key = key;
-	sentence -> value = value;
-	send_statement_to_instance_and_wait_for_result(client_sock, sentence);
-	//***********************
-
 	return 0;
 }
 
@@ -132,6 +118,22 @@ void instance_connection_handler(int socket) {
 		list_add(instances_thread_list, instance);
 
 		log_info(logger, "Instance connected");
+
+
+		//*************************
+		//****ESTO ES DE PRUEBA;
+		int operation_id = 601;
+		char* key = "barcelona:jugadores";
+		char* value = "messi";
+		int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
+		t_sentence *sentence = malloc(size);
+		sentence -> operation_id = operation_id;
+		sentence -> key = key;
+		sentence -> value = value;
+
+		send_statement_to_instance_and_wait_for_result(socket, sentence);
+		//***********************
+
 	}
 }
 
