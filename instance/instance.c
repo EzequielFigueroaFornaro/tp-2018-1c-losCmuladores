@@ -85,41 +85,46 @@ int process_statement(int operation, char* key, void* value){
 	return 0;
 }
 
-void wait_for_statement_and_send_result(int socket_fd){
+//TODO hacer los free correspondientes.
+void wait_for_statement_and_send_result(int socket_fd) {
 	log_info(logger, "Waiting for Sentence...");
+	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
 
-	//int* operation_id = malloc(sizeof(int));
-	int operation_id;
-
-	int recv_result = recv(socket_fd, &operation_id, sizeof(int), 0);
-
-	if (recv_result <= 0){
-		log_error(logger, "Could not receive statement operation id request.");
-		//return;
+	if (recv(socket_fd, sentence_header, sizeof(t_sentence_header), 0) <= 0){
+		log_error(logger, "Could not receive statement header.");
 	}
 
+	int operation_id = sentence_header -> operation_id;
+
 	int ok_operation_condition = operation_id == GET_SENTENCE ||
-									operation_id == SET_SENTENCE ||
-									operation_id == STORE_SENTENCE;
+								 operation_id == SET_SENTENCE ||
+								 operation_id == STORE_SENTENCE;
 
 	if (!ok_operation_condition) {
 		log_error(logger, "Invalid operation id: %d", operation_id);
 		return;
 	}
-	//Ahora recibo un t_sentence en partes.
-	int key_length;
-	if( recv(socket_fd, &key_length, sizeof(int), 0) <= 0 ){
-		log_error(logger, "Could not receive key length");
+
+	char* key_buffer = malloc(sentence_header -> key_length);
+	char* value_buffer = malloc(sentence_header -> value_length);
+
+	if (recv(socket_fd, key_buffer, sentence_header -> key_length, 0) <= 0){
+		log_error(logger, "Could not receive sentence key.");
 		return;
 	}
 
-	char* key_buffer = malloc(key_length); //TODO hacer free
-	if( recv(socket_fd, key_buffer, key_length, 0) <= 0 ){
-			log_error(logger, "Could not receive sentence key.");
-			return;
+	if (recv(socket_fd, value_buffer, sentence_header -> value_length, 0) <= 0){
+		log_error(logger, "Could not receive sentence value.");
+		return;
 	}
 
+	t_sentence* sentence = malloc(sizeof(t_sentence));
+	sentence -> operation_id = sentence_header -> operation_id;
+	sentence -> key = key_buffer;
+	sentence -> value = value_buffer;
+
 	return;
+
 }
 
 

@@ -16,6 +16,7 @@
 #include <readline/readline.h> // Para usar readline
 #include <commons/config.h>
 #include "commons-sockets.h"
+#include "types.h"
 #include "commons/collections/dictionary.h"
 
 void connect_to_coordinator();
@@ -37,19 +38,6 @@ typedef struct {
 } __attribute__((packed)) t_instance_configuration;
 
 t_instance_configuration *instance_configuration;
-
-/*typedef struct {
-	int operation_id;
-	int length;
-} __attribute__((packed)) t_content_header;
-*/
-
-//MODELO INTERNO!!!!!!!!!!!!!!!!
-typedef struct {
-	int operation_id;
-	char* key;
-	char* value;
-} t_sentence;
 
 //La tabla de entradas guarda esta estructura.
 typedef struct {

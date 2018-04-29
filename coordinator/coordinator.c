@@ -23,25 +23,30 @@ int calculate_instance_number_to_send();
 
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
-//TODO TEST!!!
+//TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance...");
-	//int* operationId = &(sentence->operation_id);
 
 	int key_length = strlen(sentence -> key) + 1;
 	int value_length = strlen(sentence -> value) + 1;
 
-	//operation_id + key_length + key + value_length + value
-	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int) + value_length;
+	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(t_sentence_header));
+	sentence_header -> operation_id = sentence -> operation_id;
+	sentence_header -> key_length = key_length;
+	sentence_header -> value_length = value_length;
 
-	void * buffer = malloc(message_size);
-	memcpy(buffer, &(sentence -> operation_id), sizeof(int));
-	memcpy(buffer + sizeof(int), &key_length, sizeof(int));
-	memcpy(buffer + sizeof(int) + sizeof(int), (sentence-> key), key_length);
+	int message_size = sizeof(t_sentence_header) + key_length + value_length;
+	void* buffer = malloc(message_size);
+	int offset = 0;
+	memcpy(buffer, sentence_header, sizeof(t_sentence_header));
+	offset += sizeof(t_sentence_header);
+	memcpy(buffer + offset, (sentence -> key), key_length);
+	offset += key_length;
+	memcpy(buffer + offset, (sentence -> value), value_length);
+	offset += value_length;
 
-	//memcpy(buffer, &(sentence -> operation_id) + &key_length + (sentence-> key), sizeof(message_size))
-	int send_result = send(instance_fd, buffer, sizeof(int) * 2 + key_length, 0);
+	int send_result = send(instance_fd, buffer, message_size, 0);
 
 	if (send_result <= 0) {
 		log_error(logger, "Could not send sentence operation id to instance.");

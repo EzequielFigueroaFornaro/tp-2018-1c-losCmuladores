@@ -19,6 +19,7 @@
 #include <commons/collections/list.h>
 #include <pthread.h>
 #include "commons-sockets.h"
+#include "types.h"
 #include <signal.h>
 
 
@@ -50,12 +51,6 @@ typedef struct {
 	pthread_t instance_thread;
 	int socket_id;
 } __attribute__((packed)) t_instance;
-
-typedef struct {
-	int operation_id;
-	char* key;
-	char* value;
-} t_sentence;
 
 void _exit_with_error(int socket,char* error_msg, void * buffer);
 
