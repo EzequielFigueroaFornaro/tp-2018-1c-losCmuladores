@@ -87,7 +87,7 @@ void load_configuration(char* config_file_path){
 		distribution = LSU;
 	} else if (string_equals_ignore_case(distribution_str, "KE")){
 		distribution = KE;
-	} else _exit_with_error(NULL, "Distribution algorithm not found.", NULL);
+	} else _exit_with_error(0, "Distribution algorithm not found.", NULL);
 
 	log_info(logger, "OK.");
 }

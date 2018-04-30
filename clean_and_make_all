@@ -1,0 +1,26 @@
+#!/bin/sh
+run_dir="$(dirname "$0")"
+cd "$run_dir"
+
+cd coordinator
+echo "--------------COORDINATOR-------------"
+make clean
+make
+
+cd ..
+cd planifier
+echo "---------------PANIFIER---------------"
+make clean
+make
+
+cd ..
+cd instance
+echo "---------------INSTANCE---------------"
+make clean
+make
+
+cd ..
+cd ise
+echo "-----------------ISE------------------"
+make clean
+make
