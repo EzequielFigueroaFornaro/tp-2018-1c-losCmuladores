@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-//	handshake_coordinator();
-//	handshake_planifier();
+	handshake_coordinator();
+	handshake_planifier();
 
 	t_ise_script * script = load_script(argv[2]);
 	wait_to_execute();
