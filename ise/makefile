@@ -2,7 +2,7 @@ print-%  :
 	@echo $* = $($*)
 	
 TARGET = ise 
-LIBS = -lcommons -pthread -lcommons-library	 
+LIBS = -lcommons -pthread -lcommons-library -lparsi
 CFLAGS = -g -Wall
 LIBPATH = -L"$(PWD)/../commons-library"
 INCLUDES = -I"$(PWD)/../commons-library"

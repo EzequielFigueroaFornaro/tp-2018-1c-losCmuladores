@@ -7,14 +7,19 @@
 
 #include "ise.h"
 
+int send_operation(t_esi_operacion sentence);
+
 int main(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	handshake_coordinator();
-	handshake_planifier();
+//	handshake_coordinator();
+//	handshake_planifier();
 
+	t_ise_script * script = load_script(argv[2]);
+	wait_to_execute();
+	execute_script(script);
 	return EXIT_SUCCESS;
 }
 
@@ -78,9 +83,64 @@ int handshake_planifier() {
 	return connect_result;
 }
 
+t_ise_script * load_script(char * script_file_name) {
+	FILE * script_file = fopen(script_file_name, "r");
+
+	if (script_file == NULL) {
+		log_error(logger, "File %s not found", script_file_name);
+		exit_gracefully(1);
+	}
+
+	t_ise_script * script = malloc(sizeof (t_ise_script));
+	script->instructions = queue_create();
+	while (!(feof(script_file))) {
+		size_t line_size = 0;
+		char * line;
+		bool valid_line = getline(&line, &line_size, script_file) != -1;
+		if (valid_line) {
+			queue_push(script->instructions, line);
+		}
+	}
+	fclose(script_file);
+	return script;
+}
+
+void wait_to_execute() {
+}
+
+void execute_script(t_ise_script * script) {
+	char * instruction;
+	while ((instruction = queue_pop(script->instructions)) != NULL) {
+		string_trim(&instruction);
+		t_esi_operacion sentence = parse(instruction);
+		int result = send_operation(sentence);
+		if (result != 0) {
+			log_error(logger, "Error trying to send sentence '%s' to coordinator", instruction);
+			destroy_script(script);
+			exit_gracefully(1);
+		}
+		log_info(logger, "Sentence '%s' sent successfully", instruction);
+		notify_execution_success();
+	}
+}
+
+int send_operation(t_esi_operacion sentence) {
+	return 0;
+}
+
+void notify_execution_success() {
+}
+
 void exit_gracefully(int code) {
 	log_destroy(logger);
 	exit(code);
+}
+
+void print_script(t_ise_script * script) {
+	for (int i = 0; i < queue_size(script->instructions); i++) {
+		char* instruction = list_get(script->instructions->elements, i);
+		printf("%s", instruction);
+	}
 }
 
 void configure_logger() {
@@ -99,4 +159,9 @@ void load_configuration(char* config_file_path) {
 	coordinator_ip = config_get_string_value(config, "COORDINATOR_IP");
 
 	log_info(logger, "OK Loading.");
+}
+
+void destroy_script(t_ise_script * script) {
+	queue_destroy(script->instructions);
+	free(script);
 }
