@@ -36,9 +36,14 @@ t_log * logger;
 t_list * instances_thread_list;
 t_list * ise_thread_list;
 
+//Distribution
 typedef enum { LSU, EL, KE } distributions;
 
 distributions distribution;
+
+pthread_mutex_t instances_mtx = PTHREAD_MUTEX_INITIALIZER;
+t_instance last_selected;
+//
 
 typedef struct  {
   int operation_id;
@@ -56,6 +61,7 @@ t_instance_configuration *instance_configuration;
 typedef struct {
 	pthread_t instance_thread;
 	int socket_id;
+	bool is_available;
 } __attribute__((packed)) t_instance;
 
 typedef struct {

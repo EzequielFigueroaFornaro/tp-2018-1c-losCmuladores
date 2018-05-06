@@ -14,11 +14,28 @@
 //1)
 void receive_statement_request();
 
+void* iterate_list_for_eq(t_instance* t_instance) {
+
+}
+
+int select_instance_to_send_by_equitative_load(){
+	pthread_mutex_lock(&instances_mtx);
+	list_iterate(instances_thread_list, iterate_list_for_eq());
+	pthread_mutex_unlock(&instances_mtx);
+
+}
 
 //Calcula a cuál mandar la instrucción.
 //2)
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
-int calculate_instance_number_to_send();
+int select_instance_number_to_send_by_distribution_strategy(){
+	switch(distribution) {
+		case EL: return select_instance_to_send_by_equitative_load();
+		case LSU: return -1;//TODO
+		case KE: return -1; //TODO
+		default: return -1; //TODO
+	}
+}
 
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
@@ -55,7 +72,10 @@ void exit_gracefully(int code) {
 	log_destroy(logger);
 	free(instance_configuration);
 
+	pthread_mutex_lock(&instances_mtx);
 	list_destroy(instances_thread_list);
+	pthread_mutex_unlock(&instances_mtx);
+	pthread_mutex_destroy(&instances_mtx);
 	exit(code);
 }
 
