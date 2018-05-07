@@ -35,7 +35,7 @@ int start_server(int port, int max_connections, void *(*_connection_handler)(voi
 	accept_params->connection_handler = _connection_handler;
 	accept_params->logger = logger;
 	pthread_t listener_thread;
-	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) {
+	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) { //TODO acá pasa algo segun valgrind
 		log_error(logger, "Could not create thread");
 		return -1;
 	};
@@ -61,7 +61,7 @@ void accept_connections(t_accept_params *accept_params) {
 					strerror(errno));
 		}
 		log_info(accept_params->logger, "Connection request received.");
-		if (pthread_create(&thread, NULL, (void*) accept_params->connection_handler, (void*) client_sock) < 0) {
+		if (pthread_create(&thread, NULL, (void*) accept_params->connection_handler, (void*) client_sock) < 0) { //TODO valgrind
 			log_error(accept_params->logger, "Could not create thread.");
 			close(client_sock);
 		} else {
@@ -124,7 +124,8 @@ char* get_client_address(int socket) {
 	if (err == 0) {
 		char ip[INET_ADDRSTRLEN];
 	    inet_ntop(AF_INET, &client_address.sin_addr, ip, sizeof ip);
-		return string_from_format("%s:%d", ip, ntohs(client_address.sin_port));
+
+		return string_from_format("%s:%d", ip, ntohs(client_address.sin_port)); //TODO segun valgrind acá pasa algo.
 	}
 	return "unknown";
 }

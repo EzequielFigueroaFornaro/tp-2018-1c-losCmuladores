@@ -42,8 +42,6 @@ typedef enum { LSU, EL, KE } distributions;
 distributions distribution;
 
 pthread_mutex_t instances_mtx = PTHREAD_MUTEX_INITIALIZER;
-t_instance last_selected;
-//
 
 typedef struct  {
   int operation_id;
@@ -63,6 +61,8 @@ typedef struct {
 	int socket_id;
 	bool is_available;
 } __attribute__((packed)) t_instance;
+
+t_instance *last_instance_selected;
 
 typedef struct {
 	pthread_t ise_thread;

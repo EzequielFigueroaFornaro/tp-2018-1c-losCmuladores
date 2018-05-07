@@ -14,26 +14,55 @@
 //1)
 void receive_statement_request();
 
-void* iterate_list_for_eq(t_instance* t_instance) {
+void iterate_list_for_eq(t_instance* t_instance) {
 
 }
 
-int select_instance_to_send_by_equitative_load(){
+//TODO Seguramente los mutex no vayan acá, sino en donde se orqueste la selección de la instancia,
+t_instance* select_instance_to_send_by_equitative_load(){
+	bool _is_available(t_instance* instance){
+		return instance -> is_available;
+	}
+
+	t_instance* selected;
+
 	pthread_mutex_lock(&instances_mtx);
-	list_iterate(instances_thread_list, iterate_list_for_eq());
+
+	t_list* available_instances_list = list_filter(instances_thread_list, _is_available);
+	t_link_element *element = available_instances_list -> head;
+	t_link_element *aux = NULL;
+
+	if(last_instance_selected == NULL){
+		selected = (t_instance*)instances_thread_list -> head -> data;
+	} else {
+		while (element != NULL) {
+			aux = element -> next;
+			if(element -> data == last_instance_selected){
+				selected = aux != NULL ? aux -> data : instances_thread_list -> head -> data;
+				break;
+			}
+			element = aux;
+		}
+	}
+	//TODO ver que liberar, y donde dejar las cosas...
+	//free(last_instance_selected);
+	//memcpy(last_instance_selected, selected);
 	pthread_mutex_unlock(&instances_mtx);
 
+	list_destroy(available_instances_list);
+
+	return selected;
 }
 
 //Calcula a cuál mandar la instrucción.
 //2)
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
-int select_instance_number_to_send_by_distribution_strategy(){
+t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_key){
 	switch(distribution) {
 		case EL: return select_instance_to_send_by_equitative_load();
-		case LSU: return -1;//TODO
-		case KE: return -1; //TODO
-		default: return -1; //TODO
+		case LSU: return NULL;//TODO
+		case KE: return NULL; //TODO
+		default: return NULL; //TODO
 	}
 }
 
@@ -91,7 +120,7 @@ void load_configuration(char* config_file_path){
 	char* port_name = "SERVER_PORT";
 
 	log_info(logger, "Loading configuration file...");
-	t_config* config = config_create(config_file_path);
+	t_config* config = config_create(config_file_path); //TODO valgrind
 
 	server_port = config_get_int_value(config, port_name);
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
@@ -121,6 +150,7 @@ int send_instance_configuration(int client_sock){
 		return 1;
 	}
 	log_info(logger, "Configuration successfully sent.");
+
 	return 0;
 }
 
@@ -135,25 +165,11 @@ void instance_connection_handler(int socket) {
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
+		instance -> is_available = true;
+
 		list_add(instances_thread_list, instance);
 
 		log_info(logger, "Instance connected");
-
-
-		//*************************
-		//****ESTO ES DE PRUEBA;
-		int operation_id = 601;
-		char* key = "barcelona:jugadores";
-		char* value = "messi";
-		int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
-		t_sentence *sentence = malloc(size);
-		sentence -> operation_id = operation_id;
-		sentence -> key = key;
-		sentence -> value = value;
-
-		send_statement_to_instance_and_wait_for_result(socket, sentence);
-		//***********************
-
 	}
 }
 
@@ -202,18 +218,6 @@ void connection_handler(int socket) {
 	}
 }
 
-void sig_handler(int signo)
-{
-	if (signo == SIGSTOP){
-		printf("received SIGSTOP\n");
-		exit(-1);
-		}
-	if (signo == SIGKILL){
-			printf("received sigkill\n");
-			exit(0);
-	}
-}
-
 void _exit_with_error(int socket, char* error_msg, void * buffer){
 	if (buffer != NULL) {
 		free(buffer);
@@ -232,6 +236,28 @@ void signal_handler(int sig){
 }
 
 
+/*void send_instruction_for_test(char* forced_key, char* forced_value){
+	//*************************
+	//****ESTO ES DE PRUEBA;
+	int operation_id = 601;
+	char* key = forced_key;
+	char* value = forced_value;
+	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
+	t_sentence *sentence = malloc(size);
+	sentence -> operation_id = operation_id;
+	sentence -> key = key;
+	sentence -> value = value;
+
+	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
+	//TODO guardarlo en la tabla
+	last_instance_selected = selected_instance;
+	int last_socket_id = last_instance_selected -> socket_id;
+	send_statement_to_instance_and_wait_for_result(last_socket_id, sentence);
+
+			//***********************
+
+}*/
+
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	ise_thread_list = list_create();
@@ -241,7 +267,18 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
-	check_server_startup(server_socket);
+	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
-	return EXIT_SUCCESS;
+	//**TODO TEST***/
+	while(instances_thread_list -> elements_count < 3);
+	sleep(5);
+
+	/*send_instruction_for_test("barcelona:jugadores", "messi");
+	send_instruction_for_test("barcelona:jugadores", "neymar");
+	send_instruction_for_test("barcelona:jugadores", "busquets");
+	send_instruction_for_test("barcelona:jugadores", "pique");
+	send_instruction_for_test("barcelona:jugadores", "iniesta");
+
+*/
+	exit_gracefully(EXIT_SUCCESS);
 }
