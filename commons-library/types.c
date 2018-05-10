@@ -24,6 +24,8 @@ t_buffer serialize_sentence(t_sentence* sentence){
 	buffer_struct.buffer_content = buffer;
 	buffer_struct.size = message_size;
 
+	free(sentence_header);
+
 	return buffer_struct;
 }
 
