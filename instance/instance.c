@@ -89,55 +89,33 @@ int process_sentence(t_sentence* sentence){
 //TODO hacer deserializador.
 t_sentence* wait_for_statement(int socket_fd) {
 	log_info(logger, "Waiting for Sentence...");
-	t_sentence_header* sentence_header = (t_sentence_header*) malloc(sizeof(sentence_header));
 
-	if (recv(socket_fd, sentence_header, sizeof(t_sentence_header), 0) <= 0){
-		log_error(logger, "Could not receive statement header.");
-		free(sentence_header);
+	int operation_id;
+	char* key_buffer;
+	char* value_buffer;
+
+	if (recv_sentence_operation(socket_fd, &operation_id) > 0) {
+		if (recv_string(socket_fd, &key_buffer) > 0) {
+			if (recv_string(socket_fd, &value_buffer) > 0) {
+				log_info(logger, "Sentence successfully received.");
+
+				t_sentence* sentence = malloc(sizeof(t_sentence));
+				sentence -> operation_id = operation_id;
+				sentence -> key = key_buffer;
+				sentence -> value = value_buffer;
+				return sentence;
+			} else {
+				free(key_buffer);
+				log_error(logger, "Could not receive sentence value.");
+			}
+		} else {
+			log_error(logger, "Could not receive sentence key.");
+		}
+	} else {
+		log_error(logger, "Could not receive sentence operation id.");
 	}
 
-	int operation_id = sentence_header -> operation_id;
-
-	int ok_operation_condition = operation_id == GET_SENTENCE ||
-								 operation_id == SET_SENTENCE ||
-								 operation_id == STORE_SENTENCE;
-
-	if (!ok_operation_condition) {
-		log_error(logger, "Invalid operation id: %d", operation_id);
-		free(sentence_header);
-		return NULL;
-	}
-
-	char* key_buffer = malloc(sentence_header -> key_length);
-
-	if (recv(socket_fd, key_buffer, sentence_header -> key_length, 0) <= 0){
-		log_error(logger, "Could not receive sentence key.");
-		free(key_buffer);
-		free(sentence_header);
-		return NULL;
-	}
-
-	char* value_buffer = malloc(sentence_header -> value_length);
-
-	if (recv(socket_fd, value_buffer, sentence_header -> value_length, 0) <= 0){
-		log_error(logger, "Could not receive sentence value.");
-		free(sentence_header);
-		free(key_buffer);
-		free(value_buffer);
-		return NULL;
-	}
-
-	t_sentence* sentence = malloc(sizeof(t_sentence));
-	sentence -> operation_id = operation_id;
-	sentence -> key = key_buffer;
-	sentence -> value = value_buffer;
-
-	free(sentence_header);
-
-	log_info(logger, "Sentence successfully received.");
-
-	return sentence;
-
+	return NULL;
 }
 
 
