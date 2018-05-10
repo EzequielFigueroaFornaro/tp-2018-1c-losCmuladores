@@ -35,6 +35,7 @@ int planifier_socket;
 t_log * logger;
 t_list * instances_thread_list;
 t_list * ise_thread_list;
+t_config* config;
 
 //Distribution
 typedef enum { LSU, EL, KE } distributions;

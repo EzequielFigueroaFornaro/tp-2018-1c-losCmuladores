@@ -18,6 +18,11 @@ void iterate_list_for_eq(t_instance* t_instance) {
 
 }
 
+bool is_same_instance(t_instance *one, t_instance *another){
+	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
+	return result;
+}
+
 //TODO Seguramente los mutex no vayan acá, sino en donde se orqueste la selección de la instancia,
 t_instance* select_instance_to_send_by_equitative_load(){
 	bool _is_available(t_instance* instance){
@@ -35,18 +40,15 @@ t_instance* select_instance_to_send_by_equitative_load(){
 	if(last_instance_selected == NULL){
 		selected = (t_instance*)instances_thread_list -> head -> data;
 	} else {
-		while (element != NULL) {
-			aux = element -> next;
-			if(element -> data == last_instance_selected){
-				selected = aux != NULL ? aux -> data : instances_thread_list -> head -> data;
-				break;
-			}
-			element = aux;
+		while (element != NULL && !is_same_instance(element -> data, last_instance_selected)) {
+				element = element -> next;
 		}
+		selected = element -> next != NULL ? element -> next -> data : instances_thread_list -> head -> data;
 	}
 	//TODO ver que liberar, y donde dejar las cosas...
-	//free(last_instance_selected);
-	//memcpy(last_instance_selected, selected);
+	free(last_instance_selected);
+	last_instance_selected = malloc(sizeof(t_instance));
+	memcpy(last_instance_selected, selected, sizeof(t_instance));
 	pthread_mutex_unlock(&instances_mtx);
 
 	list_destroy(available_instances_list);
@@ -98,6 +100,7 @@ void configure_logger() {
 }
 
 void exit_gracefully(int code) {
+	config_destroy(config);
 	log_destroy(logger);
 	free(instance_configuration);
 
@@ -120,7 +123,7 @@ void load_configuration(char* config_file_path){
 	char* port_name = "SERVER_PORT";
 
 	log_info(logger, "Loading configuration file...");
-	t_config* config = config_create(config_file_path); //TODO valgrind
+	config = config_create(config_file_path);
 
 	server_port = config_get_int_value(config, port_name);
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
@@ -130,6 +133,7 @@ void load_configuration(char* config_file_path){
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
+
 	if(string_equals_ignore_case(distribution_str, "EL")){
 		distribution = EL;
 	} else if(string_equals_ignore_case(distribution_str, "LSU")) {
@@ -161,7 +165,7 @@ void instance_connection_handler(int socket) {
 	} else {
 		send_instance_configuration(socket);
 
-		t_instance *instance = (t_instance*) malloc(sizeof(t_instance));
+		t_instance *instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
@@ -250,7 +254,7 @@ void send_instruction_for_test(char* forced_key, char* forced_value){
 
 	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
 	//TODO guardarlo en la tabla
-	last_instance_selected = selected_instance;
+	//last_instance_selected = selected_instance;
 	int last_socket_id = last_instance_selected -> socket_id;
 	send_statement_to_instance_and_wait_for_result(last_socket_id, sentence);
 
@@ -278,6 +282,6 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "pique");
 	send_instruction_for_test("barcelona:jugadores", "iniesta");
 
-
+	sleep(6000);
 	exit_gracefully(EXIT_SUCCESS);
 }
