@@ -236,7 +236,7 @@ void signal_handler(int sig){
 }
 
 
-/*void send_instruction_for_test(char* forced_key, char* forced_value){
+void send_instruction_for_test(char* forced_key, char* forced_value){
 	//*************************
 	//****ESTO ES DE PRUEBA;
 	int operation_id = 601;
@@ -256,7 +256,7 @@ void signal_handler(int sig){
 
 			//***********************
 
-}*/
+}
 
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
@@ -266,19 +266,18 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**TODO TEST***/
 	while(instances_thread_list -> elements_count < 3);
-	sleep(5);
 
-	/*send_instruction_for_test("barcelona:jugadores", "messi");
+	send_instruction_for_test("barcelona:jugadores", "messi");
 	send_instruction_for_test("barcelona:jugadores", "neymar");
 	send_instruction_for_test("barcelona:jugadores", "busquets");
 	send_instruction_for_test("barcelona:jugadores", "pique");
 	send_instruction_for_test("barcelona:jugadores", "iniesta");
 
-*/
+
 	exit_gracefully(EXIT_SUCCESS);
 }
