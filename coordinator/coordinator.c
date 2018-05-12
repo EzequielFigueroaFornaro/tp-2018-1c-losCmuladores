@@ -14,10 +14,6 @@
 //1)
 void receive_statement_request();
 
-void iterate_list_for_eq(t_instance* t_instance) {
-
-}
-
 bool is_same_instance(t_instance *one, t_instance *another){
 	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
 	return result;
@@ -71,20 +67,53 @@ t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
 //TODO Hacer los free correspondientes!!!
-int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *sentence){
+int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance...");
 
 	t_buffer buffer = serialize_sentence(sentence);
 
-	int send_result = send(instance_fd, buffer.buffer_content, buffer.size, 0);
+	int send_result = send(instance -> socket_id, buffer.buffer_content, buffer.size, 0);
 	destroy_buffer(buffer);
 
 	if (send_result <= 0) {
 		log_error(logger, "Could not send sentence operation id to instance.");
 	}
 
+	//Put wkey -> instance.
+	pthread_mutex_lock(&keys_mtx);
+	dictionary_put(keys_location, sentence -> key, instance);
+	pthread_mutex_unlock(&keys_mtx);
+
 	return 0;
+}
+
+//TODO TEST.
+void save_operation_log(t_sentence* sentence, t_ise* ise){
+	char* string_to_save = string_new();
+
+	string_append(&string_to_save, "ESI");
+	string_append_with_format(&string_to_save, "%s     ", ise -> id);
+	string_append_with_format(&string_to_save, "%s ", sentence -> operation_id); // TODO obtener operacion en base al ID.
+	string_append_with_format(&string_to_save, "%s ", sentence -> key);
+	if(sentence -> value != NULL){
+		string_append(&string_to_save, sentence -> value);
+	}
+
+	log_info(logger, "Saving operations log with: %s", string_to_save);
+
+	pthread_mutex_lock(&operations_log_file_mtx);
+	operations_log_file = txt_open_for_append(OPERATIONS_LOG_PATH);
+	if (operations_log_file == NULL) {
+		log_error(logger, "Error saving operation.");
+		return;
+	}
+
+	txt_write_in_file(operations_log_file, string_to_save);
+	txt_close_file(operations_log_file);
+	pthread_mutex_unlock(&operations_log_file_mtx);
+
+	log_info(logger, "Operations log successfully saved");
 }
 
 //4)
@@ -108,6 +137,7 @@ void exit_gracefully(int code) {
 	list_destroy(instances_thread_list);
 	pthread_mutex_unlock(&instances_mtx);
 	pthread_mutex_destroy(&instances_mtx);
+	pthread_mutex_destroy(&keys_mtx);
 	exit(code);
 }
 
@@ -141,6 +171,8 @@ void load_configuration(char* config_file_path){
 	} else if (string_equals_ignore_case(distribution_str, "KE")){
 		distribution = KE;
 	} else _exit_with_error(0, "Distribution algorithm not found.", NULL);
+
+	keys_location = dictionary_create();
 
 	log_info(logger, "OK.");
 }
