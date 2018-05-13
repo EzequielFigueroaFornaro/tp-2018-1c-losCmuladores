@@ -63,6 +63,8 @@ typedef struct {
 	int socket_id;
 } __attribute__((packed)) t_ise;
 
+t_server* server;
+
 void _exit_with_error(int socket,char* error_msg, void * buffer);
 
 #endif /* COORDINATOR_H_ */

@@ -12,6 +12,7 @@ typedef struct {
 } t_accept_params;
 
 void accept_connections(t_accept_params *accept_params);
+t_accept_params* build_accept_params(int server_socket, void *(*connection_handler)(void *), t_log *logger);
 
 /* Starts a server in specified port and accepts incoming connections using threads.
  * Function _connection_handler must only receive a socket as argument
@@ -35,11 +36,8 @@ int start_server(int port, int max_connections, void *(*_connection_handler)(voi
 
 	listen(server_socket, max_connections);
 
-	t_accept_params* accept_params = malloc(sizeof(t_accept_params));
-	accept_params->server_socket = server_socket;
-	accept_params->connection_handler = _connection_handler;
-	accept_params->logger = logger;
 	pthread_t listener_thread;
+	t_accept_params* accept_params = build_accept_params(server_socket, _connection_handler, logger);
 	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) {
 		log_error(logger, "Could not create thread");
 		return -1;
@@ -77,6 +75,14 @@ void accept_connections(t_accept_params *accept_params) {
 	free(accept_params);
 }
 
+t_accept_params* build_accept_params(int server_socket, void *(*connection_handler)(void *), t_log *logger) {
+	t_accept_params* accept_params = malloc(sizeof(t_accept_params));
+	accept_params->server_socket = server_socket;
+	accept_params->connection_handler = connection_handler;
+	accept_params->logger = logger;
+	return accept_params;
+}
+
 int connect_to(char* ip, int port) {
 	struct addrinfo hints;
 	struct addrinfo *server_info;
@@ -89,6 +95,7 @@ int connect_to(char* ip, int port) {
 
 	int server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	if (server_socket < 0) {
+		freeaddrinfo(server_info);
 		perror("Error creating socket");
 		return -1;
 	}
@@ -157,4 +164,6 @@ int recv_sentence_operation(int socket, int *operation) {
 	}
 }
 
-
+char* get_module_name_by_type(module_type type) {
+	return module_names[type];
+}

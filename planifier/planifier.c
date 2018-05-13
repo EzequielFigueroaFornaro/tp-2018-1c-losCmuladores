@@ -16,14 +16,14 @@ int main(int argc, char* argv[]) {
 
 	connect_to_coordinator();
 
-	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
-	if (server_started < 0) {
+	server = start_server(server_port, server_max_connections, (void *) esi_connection_handler, logger);
+	if (server->socket < 0) {
 		log_error(logger, "Server not started");
 	}
+	pthread_detach(server->thread);
 
 	pthread_t console_thread = start_console();
 	pthread_join(console_thread, NULL);
-
 	return EXIT_SUCCESS;
 }
 
@@ -144,5 +144,6 @@ void exit_gracefully(int return_nr) {
 void exit_with_error(int socket, char* error_msg) {
 	log_error(logger, error_msg);
 	close(socket);
+	free(server);
 	exit_gracefully(1);
 }

@@ -19,6 +19,8 @@ module_type PLANIFIER = 1;
 module_type INSTANCE = 2;
 module_type ISE = 3;
 
+char* module_names[] = {"coordinator", "planifier", "instance", "ise"};
+
 typedef int message_type;
 
 message_type MODULE_CONNECTED = 100;
@@ -37,3 +39,5 @@ char* get_client_address(int socket);
 int recv_string(int socket, char** string);
 
 int recv_sentence_operation(int socket, int *operation);
+
+char* get_module_name_by_type(module_type type);

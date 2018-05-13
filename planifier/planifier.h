@@ -30,6 +30,7 @@ int coordinator_socket;
 
 //Global variables.
 t_log * logger;
+t_server* server;
 
 void configure_logger();
 
