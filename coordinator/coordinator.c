@@ -56,15 +56,15 @@ void exit_gracefully(int code) {
 	free(instance_configuration);
 
 	list_destroy(instances_thread_list);
-	free(server);
 	exit(code);
 }
 
 void check_server_startup(int server_socket) {
 	if (server_socket == -1) {
-		log_error(logger, "Sever not started.");
+		log_error(logger, "Server not started");
 		exit_gracefully(1);
 	}
+	log_info(logger, "Server Started. Listening on port %d", server_port);
 }
 
 void load_configuration(char* config_file_path){
@@ -220,9 +220,8 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	server = start_server(server_port, server_max_connections, (void *)connection_handler, logger);
-	check_server_startup(server->socket);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	check_server_startup(server_socket);
 
-	pthread_join(server->thread, NULL);
-	exit_gracefully(0);
+	return EXIT_SUCCESS;
 }

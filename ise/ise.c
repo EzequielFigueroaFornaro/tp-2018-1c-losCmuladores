@@ -8,7 +8,6 @@
 #include "ise.h"
 
 void load_script(char* file_name);
-void set_execution_signal();
 void exit_with_error();
 
 int main(int argc, char* argv[]) {
@@ -25,26 +24,11 @@ int main(int argc, char* argv[]) {
 }
 
 void init_execution_signals_receiver() {
-	pthread_t thread;
-	if (pthread_create(&thread, NULL, (void*) set_execution_signal, NULL) < 0) {
-		log_error(logger,
-				"Could not create thread for receiving execution signals. Aborting");
-		exit_with_error();
-	}
-	pthread_detach(thread);
-}
-
-void set_execution_signal() {
-	while (/* TODO [LU] recv) */true) {
-		if (true) { // TODO [LU] validar que sea ese el mensaje
-			bool execution_signal = true;
-			should_execute = execution_signal;
-		}
-	}
+	// TODO [LU]
 }
 
 void notify_sentence_error(t_ise_sentence sentence) {
-
+	// TODO [LU]
 }
 
 void abort_on_sentence_error(t_ise_sentence sentence, t_ise_script* script) {
@@ -54,7 +38,7 @@ void abort_on_sentence_error(t_ise_sentence sentence, t_ise_script* script) {
 
 void execute_script() {
 	t_ise_sentence sentence;
-	while ((sentence = next_sentence()).has_next) {
+	while (!(sentence = next_sentence()).empty) {
 		wait_to_execute();
 
 		t_sentence_process_result result;
@@ -64,6 +48,7 @@ void execute_script() {
 			result = INVALID_SENTENCE;
 		}
 		notify_sentence_processed_to_planifier(result);
+
 		if (result != OK) {
 			abort_on_sentence_error(sentence, script);
 		}
@@ -71,11 +56,11 @@ void execute_script() {
 }
 
 void wait_to_execute() {
-	while (!should_execute);
+	// TODO [LU]
 }
 
 void notify_sentence_processed_to_planifier(t_sentence_process_result result) {
-
+	// TODO [LU]
 }
 
 t_sentence_process_result send_operation_to_coordinator(
