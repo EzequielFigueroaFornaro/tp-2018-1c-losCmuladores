@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <errno.h>
+#include "types.h"
 
 typedef int module_type;
 
@@ -32,3 +33,7 @@ int send_connection_success(int socket);
 int send_module_connected(int socket, module_type module_type);
 
 char* get_client_address(int socket);
+
+int recv_string(int socket, char** string);
+
+int recv_sentence_operation(int socket, int *operation);

@@ -1,5 +1,10 @@
 #include "commons-sockets.h"
 
+#include <asm-generic/socket.h>
+#include <netinet/in.h>
+#include <stdbool.h>
+#include <string.h>
+
 typedef struct {
 	int server_socket;
 	void *(*connection_handler)(void *);
@@ -38,7 +43,7 @@ int start_server(int port, int max_connections, void *(*_connection_handler)(voi
 	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) {
 		log_error(logger, "Could not create thread");
 		return -1;
-	};
+	}
 	if (!async) {
 		pthread_join(listener_thread, NULL);
 	}
@@ -128,3 +133,28 @@ char* get_client_address(int socket) {
 	}
 	return "unknown";
 }
+
+int recv_string(int socket, char** string) {
+	int length;
+	int length_result = recv(socket, &length, sizeof(length), MSG_WAITALL);
+	if (length_result > 0) {
+		*string = malloc(length);
+		int result = recv(socket, *string, length, MSG_WAITALL);
+		if (result < 0) {
+			free(*string);
+		}
+		return result;
+	} else {
+		return length_result;
+	}
+}
+
+int recv_sentence_operation(int socket, int *operation) {
+	if (recv(socket, operation, sizeof(int), 0) <= 0 || !is_valid_operation(*operation)) {
+		return -1;
+	} else {
+		return 1;
+	}
+}
+
+

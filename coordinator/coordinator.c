@@ -27,9 +27,9 @@ int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance...");
 
-	t_buffer* buffer = serialize_sentence(sentence);
+	t_buffer buffer = serialize_sentence(sentence);
 
-	int send_result = send(instance_fd, buffer -> buffer_content, buffer -> size, 0);
+	int send_result = send(instance_fd, buffer.buffer_content, buffer.size, 0);
 	destroy_buffer(buffer);
 
 	if (send_result <= 0) {
