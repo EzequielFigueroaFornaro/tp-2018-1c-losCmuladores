@@ -19,12 +19,15 @@ module_type PLANIFIER = 1;
 module_type INSTANCE = 2;
 module_type ISE = 3;
 
-char* module_names[] = {"coordinator", "planifier", "instance", "ise"};
-
 typedef int message_type;
 
 message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
+
+message_type SENTENCE_EXECUTED_OK = 300;
+message_type SENTENCE_EXECUTED_ERROR = 301;
+message_type ISE_EXECUTE = 302;
+message_type ISE_STOP = 303;
 
 int start_server(int port, int max_connections, void *(*_connection_handler)(void *), bool async, t_log *logger);
 
@@ -40,4 +43,4 @@ int recv_string(int socket, char** string);
 
 int recv_sentence_operation(int socket, int *operation);
 
-char* get_module_name_by_type(module_type type);
+message_type recv_message(int socket);

@@ -108,14 +108,14 @@ int connect_to(char* ip, int port) {
 	return server_socket;
 }
 
-int send_module_connected(int socket, module_type module_type) {
-	int message_size = sizeof(message_type) + sizeof(module_type);
+int send_module_connected(int socket, module_type self) {
+	int message_size = sizeof(message_type) + sizeof(self);
 	void *message_buffer = malloc(message_size);
 
 	message_type message_type = MODULE_CONNECTED;
 
 	memcpy(message_buffer, &message_type, sizeof(message_type));
-	memcpy(message_buffer + sizeof(message_type), &module_type, sizeof(module_type));
+	memcpy(message_buffer + sizeof(message_type), &self, sizeof(self));
 
 	int result = send(socket, message_buffer, message_size, 0);
 
@@ -164,6 +164,11 @@ int recv_sentence_operation(int socket, int *operation) {
 	}
 }
 
-char* get_module_name_by_type(module_type type) {
-	return module_names[type];
+message_type recv_message(int socket) {
+	message_type message_type;
+	int message_type_result = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
+	if (message_type_result <= 0) {
+		return -1;
+	}
+	return message_type;
 }
