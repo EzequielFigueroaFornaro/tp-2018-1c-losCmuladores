@@ -14,24 +14,34 @@
 #include <pthread.h>
 #include <commons/log.h>
 #include "tools/script_handler.h"
-#include "tools/connections.h"
+#include "tools/logging.h"
+#include "commons-sockets.h"
 
 typedef int t_sentence_process_result;
 t_sentence_process_result OK = 0;
 t_sentence_process_result INVALID_SENTENCE = 1;
 t_sentence_process_result KEY_NOT_FOUND = 2;
 
-bool should_execute = false;
+char* my_id;
+message_type execution_signal;
 
-void init_execution_signals_receiver();
+int coordinator_socket;
+int planifier_socket;
+
+int coordinator_port;
+char* coordinator_ip;
+
+int planifier_port;
+char* planifier_ip;
+
+void connect_to_planifier();
+void connect_to_coordinator();
 void wait_to_execute();
 void execute_script();
-t_sentence_process_result send_operation_to_coordinator(t_esi_operacion sentence);
+t_sentence_process_result send_operation(t_esi_operacion operation);
 
-void notify_sentence_processed_to_planifier(t_sentence_process_result result);
-void notify_sentence_error(t_ise_sentence sentence);
-
-void abort_on_sentence_error(t_ise_sentence sentence, t_ise_script* script);
+message_type notify();
+void notify_error();
 
 void load_configuration(char* config_file_path);
 void exit_gracefully(int code);
