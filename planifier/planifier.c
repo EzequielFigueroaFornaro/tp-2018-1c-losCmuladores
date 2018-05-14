@@ -21,6 +21,30 @@ int main(int argc, char* argv[]) {
 		log_error(logger, "Server not started");
 	}
 
+	/* a - tenemosq que hace un lisener que escuche los nuevos esis
+	 *
+	 * b - tenemos que manear una lista de recusrsos tomados por distintos esis
+	 *
+	 * c - tenmos que hacer que el algoritmo barie por configuracion
+	 *
+	 * d - manejar las colas de estados de los esis, bloqueados , listos , ejecutando
+	 *
+	 *
+	 *
+	 * a - cada vez que llegue un esi, hay que replanificar, hay que manejar una flag para no tomar instrucciones cunado se esta replanificando o vizebersa
+	 *
+	 * b - tenmosq ue ver quien nos informa de que un recurso fue liberado
+	 *
+	 * c -
+	 *
+	 * b -
+	 *
+	 * * cuando el esi nos manda la respuesta del cordinador, tenemos posibles respuestas : un codigo que signifique segui corrientes, y otro que sea una pausa porque error
+	 *
+	 *
+	 *
+	 * */
+
 	pthread_t console_thread = start_console();
 	pthread_join(console_thread, NULL);
 
