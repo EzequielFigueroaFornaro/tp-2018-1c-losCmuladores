@@ -77,7 +77,7 @@ t_instance *last_instance_selected;
 typedef struct {
 	pthread_t ise_thread;
 	int socket_id;
-	int id; //????
+	int id;
 } __attribute__((packed)) t_ise;
 
 void _exit_with_error(int socket,char* error_msg, void * buffer);

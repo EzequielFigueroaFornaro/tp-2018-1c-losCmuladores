@@ -41,7 +41,7 @@ t_instance* select_instance_to_send_by_equitative_load(){
 		}
 		selected = element -> next != NULL ? element -> next -> data : instances_thread_list -> head -> data;
 	}
-	//TODO ver que liberar, y donde dejar las cosas...
+
 	free(last_instance_selected);
 	last_instance_selected = malloc(sizeof(t_instance));
 	memcpy(last_instance_selected, selected, sizeof(t_instance));
@@ -88,14 +88,25 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	return 0;
 }
 
-//TODO TEST.
+char* get_operation_as_string(int operation_id){
+	switch(operation_id) {
+		case GET_SENTENCE: return "GET";
+		case SET_SENTENCE: return "SET";
+		case STORE_SENTENCE: return "STORE";
+		default: return NULL;
+	}
+}
+
 void save_operation_log(t_sentence* sentence, t_ise* ise){
 	char* string_to_save = string_new();
 
+	char* operation = get_operation_as_string(sentence -> operation_id);
+
 	string_append(&string_to_save, "ESI");
-	string_append_with_format(&string_to_save, "%s     ", ise -> id);
-	string_append_with_format(&string_to_save, "%s ", sentence -> operation_id); // TODO obtener operacion en base al ID.
-	string_append_with_format(&string_to_save, "%s ", sentence -> key);
+	string_append_with_format(&string_to_save, "%d | ", ise -> id);
+	string_append_with_format(&string_to_save, "%s | ", operation); //obtener operacion en base al ID.
+	string_append_with_format(&string_to_save, "%s", sentence -> key);
+	string_append(&string_to_save, "\n");
 	if(sentence -> value != NULL){
 		string_append(&string_to_save, sentence -> value);
 	}
@@ -113,6 +124,7 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 	txt_close_file(operations_log_file);
 	pthread_mutex_unlock(&operations_log_file_mtx);
 
+	free(string_to_save);
 	log_info(logger, "Operations log successfully saved");
 }
 
@@ -272,7 +284,7 @@ void signal_handler(int sig){
 }
 
 
-void send_instruction_for_test(char* forced_key, char* forced_value){
+void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
 	//*************************
 	//****ESTO ES DE PRUEBA;
 	int operation_id = 601;
@@ -287,8 +299,9 @@ void send_instruction_for_test(char* forced_key, char* forced_value){
 	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
 	//TODO guardarlo en la tabla
 	//last_instance_selected = selected_instance;
-	int last_socket_id = last_instance_selected -> socket_id;
-	send_statement_to_instance_and_wait_for_result(last_socket_id, sentence);
+	int last_socket_id = last_instance_selected -> socket_id; //TODO revisar.
+	send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+	save_operation_log(sentence, ise);
 
 			//***********************
 
@@ -308,11 +321,20 @@ int main(int argc, char* argv[]) {
 	//**TODO TEST***/
 	while(instances_thread_list -> elements_count < 3);
 
-	send_instruction_for_test("barcelona:jugadores", "messi");
-	send_instruction_for_test("barcelona:jugadores", "neymar");
-	send_instruction_for_test("barcelona:jugadores", "busquets");
-	send_instruction_for_test("barcelona:jugadores", "pique");
-	send_instruction_for_test("barcelona:jugadores", "iniesta");
+	t_ise* ise1 = malloc(sizeof(t_ise));
+	ise1 -> id = 1;
+
+	t_ise* ise2 = malloc(sizeof(t_ise));
+	ise2 -> id = 2;
+
+	t_ise* ise3 = malloc(sizeof(t_ise));
+	ise3 -> id = 3;
+
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1);
+	send_instruction_for_test("barcelona:jugadores", "neymar", ise2);
+	send_instruction_for_test("barcelona:jugadores", "busquets", ise3);
+	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
+	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
 
 	sleep(6000);
 	exit_gracefully(EXIT_SUCCESS);
