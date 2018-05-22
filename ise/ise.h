@@ -16,6 +16,7 @@
 #include "tools/logging.h"
 #include "tools/config.h"
 #include "commons-sockets.h"
+#include "types.h"
 
 typedef int t_sentence_process_result;
 t_sentence_process_result OK = 0;

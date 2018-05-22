@@ -24,10 +24,11 @@ typedef int message_type;
 message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
 
-message_type SENTENCE_EXECUTED_OK = 300;
-message_type SENTENCE_EXECUTED_ERROR = 301;
-message_type ISE_EXECUTE = 302;
-message_type ISE_STOP = 303;
+message_type SENTENCE_EXECUTED_OK = 320;
+message_type SENTENCE_EXECUTED_ERROR = 321;
+message_type ISE_EXECUTE = 322;
+message_type ISE_STOP = 323;
+message_type SENTENCE_RESULT = 300;
 
 int start_server(int port, int max_connections, void *(*_connection_handler)(void *), bool async, t_log *logger);
 

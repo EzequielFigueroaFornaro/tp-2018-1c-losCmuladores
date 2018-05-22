@@ -10,7 +10,7 @@
 void load_script(char* file_name);
 void exit_with_error();
 void handshake(module_type module, void* handshake_message, int handshake_message_size);
-
+t_sentence* map_to_sentence(t_esi_operacion operation);
 
 int main(int argc, char* argv[]) {
 	init_logger();
@@ -29,23 +29,22 @@ void connect_to_planifier() {
 	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(long);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	offset = concat_value(offset, &MODULE_CONNECTED, sizeof(message_type));
-	offset = concat_value(offset, &ISE, sizeof(module_type));
+	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
+	concat_value(&offset, &ISE, sizeof(module_type));
 	long script_size = queue_size(script->lines);
-	concat_value(offset, &script_size, sizeof(script_size));
+	concat_value2(&offset, &script_size, sizeof(script_size));
 
 	handshake(PLANIFIER, buffer, message_size);
 	recv_string(get_socket(PLANIFIER), &my_id); // TODO [Lu] validar
 }
 
 void connect_to_coordinator() {
-	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(long) + strlen(my_id);
+	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(size_t) + strlen(my_id);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	offset = concat_value(offset, &MODULE_CONNECTED, sizeof(message_type));
-	offset = concat_value(offset, &ISE, sizeof(module_type));
-	concat_string(offset, &my_id, strlen(my_id));
-
+	concat_value2(&offset, &MODULE_CONNECTED, sizeof(message_type));
+	concat_value2(&offset, &ISE, sizeof(module_type));
+	concat_string2(&offset, &my_id, strlen(my_id));
 	handshake(COORDINATOR, buffer, message_size);
 }
 
@@ -60,7 +59,7 @@ void handshake(module_type module, void* handshake_message, int handshake_messag
 	int send_result = send(socket, handshake_message, handshake_message_size, 0);
 	free(handshake_message);
 	if (send_result < 0) {
-		log_error(logger, "Could send handshake");
+		log_error(logger, "Could not send handshake");
 		exit_with_error();
 	}
 
@@ -95,6 +94,7 @@ void execute_script() {
 	}
 }
 
+// TODO [Lu] esto tiene que estar corriendo de fondo
 void wait_to_execute() {
 	message_type execution_signal = recv_message(planifier_socket);
 	while (execution_signal != ISE_EXECUTE);
@@ -109,8 +109,51 @@ message_type notify() {
 }
 
 t_sentence_process_result send_operation(t_esi_operacion operation) {
-	// TODO [Lu]
-	return OK;
+	t_sentence* sentence = map_to_sentence(operation);
+	destruir_operacion(operation);
+	t_buffer sentence_buffer = serialize_sentence(sentence);
+
+	int socket = get_socket(COORDINATOR);
+	int send_result = send(socket, sentence_buffer.buffer_content, sentence_buffer.size, 0);
+	free(sentence_buffer.buffer_content);
+	if (send_result < 0) {
+		log_error(logger, "Could not send operation.");
+		exit_with_error();
+	}
+	if (recv_message(socket) != SENTENCE_RESULT) {
+		log_error(logger, "Unexpected message received when waiting for sentence execution result");
+		exit_with_error();
+	}
+	t_sentence_process_result result;
+	int message_type_result = recv(socket, &result, sizeof(t_sentence_process_result), MSG_WAITALL);
+	if (message_type_result <= 0) {
+		log_error(logger, "Error while trying to receive sentence execution result");
+		exit_with_error();
+	}
+	return result;
+}
+
+t_sentence* map_to_sentence(t_esi_operacion operation) {
+	t_sentence* sentence = malloc(sizeof(t_sentence));
+	switch(operation.keyword) {
+	case GET:
+		sentence->operation_id = GET_SENTENCE;
+		sentence->key = operation.argumentos.GET.clave;
+		break;
+	case SET:
+		sentence->operation_id = SET_SENTENCE;
+		sentence->key = operation.argumentos.SET.clave;
+		sentence->value = operation.argumentos.SET.valor;
+		break;
+	case STORE:
+		sentence->operation_id = STORE_SENTENCE;
+		sentence->key = operation.argumentos.STORE.clave;
+		break;
+	default:
+		log_error(logger,"Unexpected error: sentence keyword not recognized");
+		exit_with_error();
+	}
+	return sentence;
 }
 
 void load_script(char* file_name) {
