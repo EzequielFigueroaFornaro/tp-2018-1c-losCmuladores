@@ -52,24 +52,17 @@ int main(int argc, char* argv[]) {
 }
 
 
-typedef struct {
-	esi_node* first;
-	esi_node* last;
-}__attribute((packed)) esi_list;
-
-typedef struct {
-	esi_node* next;
-	esi* esi;
-}__attribute((packed)) esi_node;
-
-typedef struct {
-	int id;
-}__attribute((packed)) esi;
 
 
-esi_list add_esi(esi_list* list ,esi esi){
-	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
-	return result;
+
+esi_list add_esi(esi_list* list ,esi new_esi){
+	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
+	esi_node node = malloc(sizeof(esi_node));
+	node -> esi_value = new_esi;
+	node -> next = (list -> last);
+
+	list -> last = &esi_node;
+	return esi_list;
 }
 
 esi get_more_priority_esi(esi_list* list){
