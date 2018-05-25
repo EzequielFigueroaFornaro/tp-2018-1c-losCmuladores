@@ -52,9 +52,14 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-esi_list add_esi(esi_list* list ,esi esi){
-	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
-	return result;
+esi_list add_esi(esi_list* list ,esi new_esi){
+	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
+	esi_node node = malloc(sizeof(esi_node));
+	node -> esi_value = new_esi;
+	node -> next = (list -> last);
+
+	list -> last = &esi_node;
+	return esi_list;
 }
 
 esi get_more_priority_esi(esi_list* list){

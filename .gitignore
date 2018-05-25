@@ -63,6 +63,7 @@ dkms.conf
 *.cproject
 *.project
 .metadata/
+cmake-build-debug/
 
 **/Debug
 

@@ -31,6 +31,7 @@ int coordinator_socket;
 //Global variables.
 t_log * logger;
 
+
 typedef struct {
 	esi_node* first;
 	esi_node* last;
@@ -38,7 +39,7 @@ typedef struct {
 
 typedef struct {
 	esi_node* next;
-	esi* esi;
+	esi* esi_value;
 }__attribute((packed)) esi_node;
 
 typedef struct {
