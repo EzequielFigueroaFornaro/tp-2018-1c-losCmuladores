@@ -21,6 +21,8 @@ int main(int argc, char* argv[]) {
 		log_error(logger, "Server not started");
 	}
 
+	pthread_t console_thread = start_console();
+
 	/* a - tenemosq que hace un lisener que escuche los nuevos esis
 	 *
 	 * b - tenemos que manear una lista de recusrsos tomados por distintos esis
@@ -45,12 +47,12 @@ int main(int argc, char* argv[]) {
 	 *
 	 * */
 
-	pthread_t console_thread = start_console();
 	pthread_join(console_thread, NULL);
 
 	return EXIT_SUCCESS;
 }
 
+<<<<<<< HEAD
 
 
 
@@ -97,6 +99,9 @@ void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 
 
 esi_list put_on_ready_list(esi_list* list ,esi new_esi){
+=======
+esi_list add_esi(esi_list* list ,esi new_esi){
+>>>>>>> 9c010c44973880e43417958bcd2a2eeeb95e20a7
 	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
 	esi_node node = malloc(sizeof(esi_node));
 	node -> esi_value = new_esi;
@@ -107,77 +112,12 @@ esi_list put_on_ready_list(esi_list* list ,esi new_esi){
 }
 
 esi get_more_priority_esi(esi_list* list){
-	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
-	return result;
+	esi_node first_esi_node = list->first;
+	list->first = first_esi_node.next;
+	esi esi = first_esi_node -> esi;
+	free(first_esi_node);
+	return esi;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void configure_logger() {
 	logger = log_create("planifier.log", "planifier", true, LOG_LEVEL_INFO);

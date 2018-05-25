@@ -46,7 +46,10 @@ typedef struct {
 	int id;
 }__attribute((packed)) esi;
 
-
+esi_list ready_esi_list;
+esi_list running_esi_list;
+esi_list blocked_esi_list;
+esi_list finished_esi_list;
 
 void configure_logger();
 
