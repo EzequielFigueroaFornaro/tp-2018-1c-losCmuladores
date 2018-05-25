@@ -21,6 +21,8 @@ int main(int argc, char* argv[]) {
 		log_error(logger, "Server not started");
 	}
 
+	pthread_t console_thread = start_console();
+
 	/* a - tenemosq que hace un lisener que escuche los nuevos esis
 	 *
 	 * b - tenemos que manear una lista de recusrsos tomados por distintos esis
@@ -45,27 +47,10 @@ int main(int argc, char* argv[]) {
 	 *
 	 * */
 
-	pthread_t console_thread = start_console();
 	pthread_join(console_thread, NULL);
 
 	return EXIT_SUCCESS;
 }
-
-
-typedef struct {
-	esi_node* first;
-	esi_node* last;
-}__attribute((packed)) esi_list;
-
-typedef struct {
-	esi_node* next;
-	esi* esi;
-}__attribute((packed)) esi_node;
-
-typedef struct {
-	int id;
-}__attribute((packed)) esi;
-
 
 esi_list add_esi(esi_list* list ,esi esi){
 	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
@@ -73,77 +58,12 @@ esi_list add_esi(esi_list* list ,esi esi){
 }
 
 esi get_more_priority_esi(esi_list* list){
-	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
-	return result;
+	esi_node first_esi_node = list->first;
+	list->first = first_esi_node.next;
+	esi esi = first_esi_node -> esi;
+	free(first_esi_node);
+	return esi;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void configure_logger() {
 	logger = log_create("planifier.log", "planifier", true, LOG_LEVEL_INFO);
