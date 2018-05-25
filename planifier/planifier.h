@@ -31,6 +31,20 @@ int coordinator_socket;
 //Global variables.
 t_log * logger;
 
+typedef struct {
+	esi_node* first;
+	esi_node* last;
+}__attribute((packed)) esi_list;
+
+typedef struct {
+	esi_node* next;
+	esi* esi;
+}__attribute((packed)) esi_node;
+
+typedef struct {
+	int id;
+}__attribute((packed)) esi;
+
 void configure_logger();
 
 void load_configuration(char *config_file_path);

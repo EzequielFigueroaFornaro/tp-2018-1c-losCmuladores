@@ -1,4 +1,4 @@
-# Prerequisites
+﻿# Prerequisites
 *.d
 
 # Object files
@@ -62,6 +62,8 @@ dkms.conf
 *.settings
 *.cproject
 *.project
+.metadata/
+
 **/Debug
 
 #GIT
