@@ -55,7 +55,48 @@ int main(int argc, char* argv[]) {
 
 
 
-esi_list add_esi(esi_list* list ,esi new_esi){
+// funciones a modificar o hacer
+pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
+int id = 0;
+int esi_id_generate(){
+	pthread_mutex_lock(&id_mtx);
+	int new_id = id ++;
+	pthread_mutex_unlock(&id_mtx);
+	return new_id;
+}
+
+
+void new_esi(){}
+
+
+
+void bloquear_recurso(){} // agregar a la lista de recursos tomas uno nuevo
+
+
+
+void liberar_recurso(){} // llamar a desbloquear esi
+
+
+
+void ejecutar_esi(){} //mandar mensaje de que se ejecute y poner en lista de ejecutados
+
+
+
+void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
+
+
+
+void desbloquea_esi(){} // sacar de la lista de bloqueados y poner en rdy
+
+
+
+void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
+
+//
+
+
+
+esi_list put_on_ready_list(esi_list* list ,esi new_esi){
 	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
 	esi_node node = malloc(sizeof(esi_node));
 	node -> esi_value = new_esi;
