@@ -14,29 +14,118 @@
 //1)
 void receive_statement_request();
 
+bool is_same_instance(t_instance *one, t_instance *another){
+	bool result = one -> instance_thread == another -> instance_thread && one -> socket_id == another -> socket_id;
+	return result;
+}
+
+//TODO Seguramente los mutex no vayan acá, sino en donde se orqueste la selección de la instancia,
+t_instance* select_instance_to_send_by_equitative_load(){
+	bool _is_available(t_instance* instance){
+		return instance -> is_available;
+	}
+
+	t_instance* selected;
+
+	pthread_mutex_lock(&instances_mtx);
+
+	t_list* available_instances_list = list_filter(instances_thread_list, _is_available);
+	t_link_element *element = available_instances_list -> head;
+	t_link_element *aux = NULL;
+
+	if(last_instance_selected == NULL){
+		selected = (t_instance*)instances_thread_list -> head -> data;
+	} else {
+		while (element != NULL && !is_same_instance(element -> data, last_instance_selected)) {
+				element = element -> next;
+		}
+		selected = element -> next != NULL ? element -> next -> data : instances_thread_list -> head -> data;
+	}
+
+	free(last_instance_selected);
+	last_instance_selected = malloc(sizeof(t_instance));
+	memcpy(last_instance_selected, selected, sizeof(t_instance));
+	pthread_mutex_unlock(&instances_mtx);
+
+	list_destroy(available_instances_list);
+
+	return selected;
+}
 
 //Calcula a cuál mandar la instrucción.
 //2)
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
-int calculate_instance_number_to_send();
+t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_key){
+	switch(distribution) {
+		case EL: return select_instance_to_send_by_equitative_load();
+		case LSU: return NULL;//TODO
+		case KE: return NULL; //TODO
+		default: return NULL; //TODO
+	}
+}
 
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 //3)
 //TODO Hacer los free correspondientes!!!
-int send_statement_to_instance_and_wait_for_result(int instance_fd, t_sentence *sentence){
+int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance...");
 
 	t_buffer buffer = serialize_sentence(sentence);
 
-	int send_result = send(instance_fd, buffer.buffer_content, buffer.size, 0);
+	int send_result = send(instance -> socket_id, buffer.buffer_content, buffer.size, 0);
 	destroy_buffer(buffer);
 
 	if (send_result <= 0) {
 		log_error(logger, "Could not send sentence operation id to instance.");
 	}
 
+	//Put wkey -> instance.
+	pthread_mutex_lock(&keys_mtx);
+	dictionary_put(keys_location, sentence -> key, instance);
+	pthread_mutex_unlock(&keys_mtx);
+
 	return 0;
+}
+
+char* get_operation_as_string(int operation_id){
+	switch(operation_id) {
+		case GET_SENTENCE: return "GET";
+		case SET_SENTENCE: return "SET";
+		case STORE_SENTENCE: return "STORE";
+		default: return NULL;
+	}
+}
+
+void save_operation_log(t_sentence* sentence, t_ise* ise){
+	char* string_to_save = string_new();
+
+	char* operation = get_operation_as_string(sentence -> operation_id);
+
+	string_append(&string_to_save, "ESI");
+	string_append_with_format(&string_to_save, "%d | ", ise -> id);
+	string_append_with_format(&string_to_save, "%s | ", operation); //obtener operacion en base al ID.
+	string_append_with_format(&string_to_save, "%s", sentence -> key);
+	string_append(&string_to_save, "\n");
+	if(sentence -> value != NULL){
+		string_append(&string_to_save, sentence -> value);
+	}
+
+	log_info(logger, "Saving operations log with: %s", string_to_save);
+
+	pthread_mutex_lock(&operations_log_file_mtx);
+	operations_log_file = txt_open_for_append(OPERATIONS_LOG_PATH);
+	if (operations_log_file == NULL) {
+		log_error(logger, "Error saving operation.");
+		return;
+	}
+
+	txt_write_in_file(operations_log_file, string_to_save);
+	txt_close_file(operations_log_file);
+	pthread_mutex_unlock(&operations_log_file_mtx);
+
+	free(string_to_save);
+	log_info(logger, "Operations log successfully saved");
 }
 
 //4)
@@ -52,10 +141,15 @@ void configure_logger() {
 }
 
 void exit_gracefully(int code) {
+	config_destroy(config);
 	log_destroy(logger);
 	free(instance_configuration);
 
+	pthread_mutex_lock(&instances_mtx);
 	list_destroy(instances_thread_list);
+	pthread_mutex_unlock(&instances_mtx);
+	pthread_mutex_destroy(&instances_mtx);
+	pthread_mutex_destroy(&keys_mtx);
 	exit(code);
 }
 
@@ -71,7 +165,7 @@ void load_configuration(char* config_file_path){
 	char* port_name = "SERVER_PORT";
 
 	log_info(logger, "Loading configuration file...");
-	t_config* config = config_create(config_file_path);
+	config = config_create(config_file_path);
 
 	server_port = config_get_int_value(config, port_name);
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
@@ -81,6 +175,7 @@ void load_configuration(char* config_file_path){
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
+
 	if(string_equals_ignore_case(distribution_str, "EL")){
 		distribution = EL;
 	} else if(string_equals_ignore_case(distribution_str, "LSU")) {
@@ -88,6 +183,8 @@ void load_configuration(char* config_file_path){
 	} else if (string_equals_ignore_case(distribution_str, "KE")){
 		distribution = KE;
 	} else _exit_with_error(0, "Distribution algorithm not found.", NULL);
+
+	keys_location = dictionary_create();
 
 	log_info(logger, "OK.");
 }
@@ -101,6 +198,7 @@ int send_instance_configuration(int client_sock){
 		return 1;
 	}
 	log_info(logger, "Configuration successfully sent.");
+
 	return 0;
 }
 
@@ -111,29 +209,15 @@ void instance_connection_handler(int socket) {
 	} else {
 		send_instance_configuration(socket);
 
-		t_instance *instance = (t_instance*) malloc(sizeof(t_instance));
+		t_instance *instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
+		instance -> is_available = true;
+
 		list_add(instances_thread_list, instance);
 
 		log_info(logger, "Instance connected");
-
-
-		//*************************
-		//****ESTO ES DE PRUEBA;
-		int operation_id = 601;
-		char* key = "barcelona:jugadores";
-		char* value = "messi";
-		int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
-		t_sentence *sentence = malloc(size);
-		sentence -> operation_id = operation_id;
-		sentence -> key = key;
-		sentence -> value = value;
-
-		send_statement_to_instance_and_wait_for_result(socket, sentence);
-		//***********************
-
 	}
 }
 
@@ -182,18 +266,6 @@ void connection_handler(int socket) {
 	}
 }
 
-void sig_handler(int signo)
-{
-	if (signo == SIGSTOP){
-		printf("received SIGSTOP\n");
-		exit(-1);
-		}
-	if (signo == SIGKILL){
-			printf("received sigkill\n");
-			exit(0);
-	}
-}
-
 void _exit_with_error(int socket, char* error_msg, void * buffer){
 	if (buffer != NULL) {
 		free(buffer);
@@ -212,6 +284,29 @@ void signal_handler(int sig){
 }
 
 
+void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
+	//*************************
+	//****ESTO ES DE PRUEBA;
+	int operation_id = 601;
+	char* key = forced_key;
+	char* value = forced_value;
+	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
+	t_sentence *sentence = malloc(size);
+	sentence -> operation_id = operation_id;
+	sentence -> key = key;
+	sentence -> value = value;
+
+	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
+	//TODO guardarlo en la tabla
+	//last_instance_selected = selected_instance;
+	int last_socket_id = last_instance_selected -> socket_id; //TODO revisar.
+	send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+	save_operation_log(sentence, ise);
+
+			//***********************
+
+}
+
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	ise_thread_list = list_create();
@@ -221,7 +316,26 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
-	check_server_startup(server_socket);
+	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
-	return EXIT_SUCCESS;
+	//**TODO TEST***/
+	/*while(instances_thread_list -> elements_count < 3);
+
+	t_ise* ise1 = malloc(sizeof(t_ise));
+	ise1 -> id = 1;
+
+	t_ise* ise2 = malloc(sizeof(t_ise));
+	ise2 -> id = 2;
+
+	t_ise* ise3 = malloc(sizeof(t_ise));
+	ise3 -> id = 3;
+
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1);
+	send_instruction_for_test("barcelona:jugadores", "neymar", ise2);
+	send_instruction_for_test("barcelona:jugadores", "busquets", ise3);
+	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
+	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
+
+	sleep(6000);*/
+	exit_gracefully(EXIT_SUCCESS);
 }
