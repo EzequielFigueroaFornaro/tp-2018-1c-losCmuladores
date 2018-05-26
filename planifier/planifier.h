@@ -35,14 +35,12 @@ typedef struct {
 	int id;
 }__attribute((packed)) esi;
 
-t_list ready_esi_list = list_create();
-t_list running_esi_list = list_create();
-t_list blocked_esi_list = list_create();
-t_list finished_esi_list = list_create();
-t_dictionary recursos_bloqueados = *dictionary_create();
+t_list * ready_esi_list;
+t_list * running_esi_list;
+t_list * blocked_esi_list;
+t_list * finished_esi_list;
+t_dictionary * recursos_bloqueados;
 
-pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
-t_dictionary recursos_bloqueados = *dictionary_create();
 pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t running_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;

@@ -11,6 +11,13 @@
 #include "planifier.h"
 
 int main(int argc, char* argv[]) {
+
+	ready_esi_list = list_create();
+	running_esi_list = list_create();
+	blocked_esi_list = list_create();
+	finished_esi_list = list_create();
+	recursos_bloqueados = dictionary_create();
+
 	configure_logger();
 	load_configuration(argv[1]);
 
@@ -65,17 +72,16 @@ int esi_id_generate(){
 
 void new_esi(){}
 
-
 bool bloquear_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recursos_bloqueados,recurso)){
-		dictionary_put(recursos_bloqueados,recurso,*list_create());
+		dictionary_put(recursos_bloqueados,recurso,list_create());
 		pthread_mutex_unlock(&map_boqueados);
 		return true;
 	}
-	t_list listas_de_esis = dictionary_get(recursos_bloqueados,recurso);
+	t_list * listas_de_esis = dictionary_get(recursos_bloqueados,recurso);
 	//TODO aca vamos a buscar el esi que se esta ejecutando y los vamos aagragar la la lista
-	list_add(listas_de_esis,esi);
+	//list_add(listas_de_esis,esi);
 	pthread_mutex_unlock(&id_mtx);
 	return false;
 }
@@ -83,15 +89,17 @@ bool bloquear_recurso(char* recurso){
 
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
-	t_list listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
+	t_list * listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
 	pthread_mutex_unlock(&map_boqueados);
-	desbloquea_esis(listas_de_esis)
+//	desbloquea_esis(listas_de_esis);
 }
 
 void ejecutar_esi(){
-	esi esi = get_more_priority_esi(ready_esi_list);
-	put_on_list(running_esi_list, esi, running_esi_sem_list);
-	mandar_a_correr(esi);
+	esi* esi = malloc(sizeof(esi));
+	get_more_priority_esi(ready_esi_list, esi);
+	put_on_list(running_esi_list, esi, &running_esi_sem_list);
+//	mandar_a_correr(esi);
+	free(esi);
 } //mandar mensaje de que se ejecute y poner en lista de ejecutados
 
 
@@ -99,28 +107,36 @@ void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
 
 
 
-void desbloquea_esis(t_list esis_liberadas){
+void desbloquea_esis(t_list* esis_id_liberadas){
+//	bool es_un_esi_libre(esi* esi) {
+//		int size = list_size(esis_id_liberadas*);
+//		for (int i = 0; i < size; ++i) {
+//			if (list_get_element(list,i)==(esi->id)) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
+//
+//	t_list esi_liberadas = list_filter_and_remove(blocked_esi_list,(void*) es_un_esi_libre);
+//	list_add_all(ready_esi_list, esi_liberadas);
 
 } // sacar de la lista de bloqueados y poner en rdy
 
 
-
 void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 
-//
 
-t_list put_on_list(t_list* list ,esi esi,pthread_mutex_t sem_list){
-	pthread_mutex_lock(sem_list);
+void put_on_list(t_list* list ,esi* esi, pthread_mutex_t sem_list){
+	pthread_mutex_lock(&sem_list);
 	list_add(list, esi);
-	pthread_mutex_unlock(sem_list);
-	return list;
+	pthread_mutex_unlock(&sem_list);
 }
 
-esi get_more_priority_esi(t_list* list){
-	pthread_mutex_trylock(ready_esi_list);
-	esi esi = list_remove(list, 0);
-	pthread_mutex_unlock(ready_esi_list);
-	return esi;
+void get_more_priority_esi(t_list * list, esi* esi){
+	pthread_mutex_trylock(&ready_esi_sem_list);
+	esi = list_remove(list, 0);
+	pthread_mutex_unlock(&ready_esi_sem_list);
 }
 
 void configure_logger() {
