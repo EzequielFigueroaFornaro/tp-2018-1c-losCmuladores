@@ -67,11 +67,32 @@ void new_esi(){}
 
 
 
-void bloquear_recurso(){} // agregar a la lista de recursos tomas uno nuevo
+t_dictionary recursos_bloqueados = *dictionary_create();
+pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 
 
+bool bloquear_recurso(char* recurso){
+	pthread_mutex_lock(&map_boqueados);
+	if(!dictionary_has_key(recursos_bloqueados,recurso)){
+		dictionary_put(recursos_bloqueados,recurso,*list_create());
+		pthread_mutex_unlock(&id_mtx);
+		return true;
+	}
+	t_list listas_de_esis = dictionary_get(recursos_bloqueados,recurso);
+	//TODO aca vamos a buscar el esi que se esta ejecutando y los vamos aagragar la la lista
+	list_add(listas_de_esis,esi);
+	pthread_mutex_unlock(&id_mtx);
+	return false;
+}
 
-void liberar_recurso(){} // llamar a desbloquear esi
+
+void liberar_recurso(char* recurso){
+	pthread_mutex_lock(&map_boqueados);
+	t_list listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
+	pthread_mutex_unlock(&id_mtx);
+	desbloquea_esis(listas_de_esis)
+}
+
 
 
 
@@ -83,7 +104,9 @@ void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
 
 
 
-void desbloquea_esi(){} // sacar de la lista de bloqueados y poner en rdy
+void desbloquea_esis(t_list esis_liberadas){
+
+} // sacar de la lista de bloqueados y poner en rdy
 
 
 

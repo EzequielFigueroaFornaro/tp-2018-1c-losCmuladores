@@ -49,6 +49,9 @@ t_list ready_esi_list = list_create();
 t_list running_esi_list = list_create();
 t_list blocked_esi_list = list_create();
 t_list finished_esi_list = list_create();
+t_dictionary recursos_bloqueados = *dictionary_create();
+
+pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 
 void configure_logger();
 
