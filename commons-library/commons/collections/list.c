@@ -141,6 +141,21 @@ void* list_remove_by_condition(t_list *self, bool(*condition)(void*)) {
 	return NULL;
 }
 
+//TODO test de esto
+void* list_filter_and_remove(t_list *list, bool(*condition)(void*)) {
+	int size = list_size(list);
+	t_list* sublist = list_create();
+	for (int i = 0; i < size; ++i) {
+		if (condition(list_get_element(list,i)->data)) {
+			list_add(sublist, list_get_element(list,i)->data));
+			list_remove(list, i);
+			size --;
+			i--;
+		}
+	}
+	return sublist;
+}
+
 void list_remove_and_destroy_element(t_list *self, int index, void(*element_destroyer)(void*)) {
 	void* data = list_remove(self, index);
 	element_destroyer(data);

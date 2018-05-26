@@ -67,8 +67,7 @@ void new_esi(){}
 
 
 
-t_dictionary recursos_bloqueados = *dictionary_create();
-pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
+
 
 
 bool bloquear_recurso(char* recurso){
@@ -104,7 +103,19 @@ void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
 
 
 
-void desbloquea_esis(t_list esis_liberadas){
+void desbloquea_esis(t_list esis_id_liberadas){
+	bool es_un_esi_libre(esi* esi) {
+		int size = list_size(esis_id_liberadas);
+		for (int i = 0; i < size; ++i) {
+			if (list_get_element(list,i)==(esi->id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	t_list esi_liberadas = list_filter_and_remove(blocked_esi_list,(void*) es_un_esi_libre);
+	list_add_all(ready_esi_list, esi_liberadas);
 
 } // sacar de la lista de bloqueados y poner en rdy
 
