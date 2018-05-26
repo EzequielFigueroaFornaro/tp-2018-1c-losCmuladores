@@ -103,7 +103,12 @@ void ejecutar_esi(){
 } //mandar mensaje de que se ejecute y poner en lista de ejecutados
 
 
-void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
+void bloquea_esi(){
+	esi* esi = malloc(sizeof(esi));
+	remove_from_list(running_esi_list, 0, running_esi_sem_list, esi);
+	put_on_list(blocked_esi_list, esi, blocked_esi_sem_list);
+	//mandar_a_bloquear(esi)
+} // sacar de lista poner en lista de bloqueados
 
 
 
@@ -130,6 +135,12 @@ void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 void put_on_list(t_list* list ,esi* esi, pthread_mutex_t sem_list){
 	pthread_mutex_lock(&sem_list);
 	list_add(list, esi);
+	pthread_mutex_unlock(&sem_list);
+}
+
+void remove_from_list(t_list* list, int index, pthread_mutex_t sem_list, esi* esi){
+	pthread_mutex_lock(&sem_list);
+	esi = list_remove(list, index);
 	pthread_mutex_unlock(&sem_list);
 }
 
