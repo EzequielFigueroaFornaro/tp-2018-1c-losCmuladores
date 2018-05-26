@@ -18,6 +18,7 @@
 #include "commons-sockets.h"
 #include "types.h"
 #include "commons/collections/dictionary.h"
+#include <signal.h>
 
 void connect_to_coordinator();
 

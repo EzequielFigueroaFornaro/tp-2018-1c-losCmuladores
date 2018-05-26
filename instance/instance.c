@@ -17,6 +17,7 @@ void configure_logger() {
 void exit_gracefully(int return_nr) {
 	log_destroy(logger);
 	dictionary_destroy(entries_table);
+	close(coordinator_socket);
 	exit(return_nr);
 }
 
@@ -118,9 +119,26 @@ t_sentence* wait_for_statement(int socket_fd) {
 	return NULL;
 }
 
+void signal_handler(int sig){
+    if (sig == SIGINT) {
+    	log_info(logger,"Caught signal for Ctrl+C\n");
+    	exit_gracefully(0);
+    }
+}
+
+void send_result(int result){
+
+	int send_result = send(coordinator_socket, &result, sizeof(int), 0);
+
+	if(send_result <= 0){
+		log_error(logger, "Could not send result to coordinator.");
+	}
+}
+
 
 int main(int argc, char* argv[]) {
 	configure_logger();
+    signal(SIGINT,signal_handler);
 	log_info(logger, "Initializing instance...");
 	load_configuration(argv[1]);
 
@@ -131,6 +149,7 @@ int main(int argc, char* argv[]) {
 	while(true){
 		t_sentence* sentence = wait_for_statement(coordinator_socket);
 		process_sentence(sentence); //TODO obtener resultado.
+		send_result(200);
 		//TODO avisar al coordinador.
 	}
 
