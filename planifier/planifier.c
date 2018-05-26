@@ -52,11 +52,6 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-<<<<<<< HEAD
-
-
-
-
 // funciones a modificar o hacer
 pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
 int id = 0;
@@ -98,25 +93,19 @@ void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 
 
 
-esi_list put_on_ready_list(esi_list* list ,esi new_esi){
-=======
-esi_list add_esi(esi_list* list ,esi new_esi){
->>>>>>> 9c010c44973880e43417958bcd2a2eeeb95e20a7
+t_list put_on_ready_list(t_list* list ,esi new_esi){
 	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
-	esi_node node = malloc(sizeof(esi_node));
-	node -> esi_value = new_esi;
-	node -> next = (list -> last);
-
-	list -> last = &esi_node;
-	return esi_list;
+	list_add(list, new_esi);
+	return list;
 }
 
-esi get_more_priority_esi(esi_list* list){
-	esi_node first_esi_node = list->first;
-	list->first = first_esi_node.next;
-	esi esi = first_esi_node -> esi;
-	free(first_esi_node);
-	return esi;
+esi get_more_priority_esi(t_list* list){
+//	list_find()
+//	esi_node first_esi_node = list->first;
+//	list->first = first_esi_node.next;
+//	esi esi = first_esi_node -> esi_value;
+//	free(first_esi_node);
+//	return esi;
 }
 
 void configure_logger() {
