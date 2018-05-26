@@ -53,10 +53,10 @@ int main(int argc, char* argv[]) {
 }
 
 // funciones a modificar o hacer
-pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
+
 int id = 0;
 int esi_id_generate(){
-	pthread_mutex_lock(&id_mtx);
+	pthread_mutex_trylock(&id_mtx);
 	int new_id = id ++;
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
@@ -66,16 +66,11 @@ int esi_id_generate(){
 void new_esi(){}
 
 
-
-t_dictionary recursos_bloqueados = *dictionary_create();
-pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
-
-
 bool bloquear_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recursos_bloqueados,recurso)){
 		dictionary_put(recursos_bloqueados,recurso,*list_create());
-		pthread_mutex_unlock(&id_mtx);
+		pthread_mutex_unlock(&map_boqueados);
 		return true;
 	}
 	t_list listas_de_esis = dictionary_get(recursos_bloqueados,recurso);
@@ -89,15 +84,15 @@ bool bloquear_recurso(char* recurso){
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	t_list listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
-	pthread_mutex_unlock(&id_mtx);
+	pthread_mutex_unlock(&map_boqueados);
 	desbloquea_esis(listas_de_esis)
 }
 
-
-
-
-void ejecutar_esi(){} //mandar mensaje de que se ejecute y poner en lista de ejecutados
-
+void ejecutar_esi(){
+	esi esi = get_more_priority_esi(ready_esi_list);
+	put_on_list(running_esi_list, esi, running_esi_sem_list);
+	mandar_a_correr(esi);
+} //mandar mensaje de que se ejecute y poner en lista de ejecutados
 
 
 void bloquea_esi(){} // sacar de lista poner en lista de bloqueados
@@ -114,21 +109,18 @@ void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 
 //
 
-
-
-t_list put_on_ready_list(t_list* list ,esi new_esi){
-	//TODO fijarse aca que puedo estar mutando el last y nex despues de asignarlo y no se que puede pasar
-	list_add(list, new_esi);
+t_list put_on_list(t_list* list ,esi esi,pthread_mutex_t sem_list){
+	pthread_mutex_lock(sem_list);
+	list_add(list, esi);
+	pthread_mutex_unlock(sem_list);
 	return list;
 }
 
 esi get_more_priority_esi(t_list* list){
-//	list_find()
-//	esi_node first_esi_node = list->first;
-//	list->first = first_esi_node.next;
-//	esi esi = first_esi_node -> esi_value;
-//	free(first_esi_node);
-//	return esi;
+	pthread_mutex_trylock(ready_esi_list);
+	esi esi = list_remove(list, 0);
+	pthread_mutex_unlock(ready_esi_list);
+	return esi;
 }
 
 void configure_logger() {

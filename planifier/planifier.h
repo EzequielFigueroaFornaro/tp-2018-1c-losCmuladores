@@ -32,18 +32,8 @@ int coordinator_socket;
 t_log * logger;
 
 typedef struct {
-	esi_node* next;
-	esi* esi_value;
-}__attribute((packed)) esi_node;
-
-typedef struct {
 	int id;
 }__attribute((packed)) esi;
-
-typedef struct {
-	esi_node* first;
-	esi_node* last;
-}__attribute((packed)) key_list;
 
 t_list ready_esi_list = list_create();
 t_list running_esi_list = list_create();
@@ -52,6 +42,13 @@ t_list finished_esi_list = list_create();
 t_dictionary recursos_bloqueados = *dictionary_create();
 
 pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
+t_dictionary recursos_bloqueados = *dictionary_create();
+pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t running_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t blocked_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t finished_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 void configure_logger();
 
