@@ -137,20 +137,28 @@ void send_result(int result){
 	}
 }
 
-int send_instance_name(){
+void send_instance_name(){
 	log_info(logger, "Sending Instance name to coordinator.");
-	int message_size = strlen(instance_name);
+	int message_size = strlen(instance_name) +1;
 
-/*	void* buffer = concat_string(, )
+	void* buffer;
+	void* offset = buffer;
 
-	int result = send(coordinator_socket, &instance_name, message_size, 0);
+	concat_string(&offset, instance_name, message_size);
 
-	int response;
+	int result = send(coordinator_socket, buffer, sizeof(buffer) + message_size, 0);
 
-	int confirmation = recv(coordinator_socket, &response, sizeof(int), 0);
-*/
+	int confirmation_response;
+
+	int name_response = recv(coordinator_socket, &confirmation_response, sizeof(int), 0);
+	if(name_response <= 0){
+		_exit_with_error(coordinator_socket, "Could not receive instance name confirmation from coordinator.", buffer);
+	}
+
+	if(confirmation_response != 1) {
+		_exit_with_error(coordinator_socket, "Instance name error. Maybe other instance with same name is already running.", buffer);
+	}
 	log_info(logger, "Instance name OK.");
-
 }
 
 
@@ -162,7 +170,7 @@ int main(int argc, char* argv[]) {
 
 	connect_to_coordinator();
 
-	send_instance_name();
+	//send_instance_name();
 
 	receive_instance_configuration(coordinator_socket);
 

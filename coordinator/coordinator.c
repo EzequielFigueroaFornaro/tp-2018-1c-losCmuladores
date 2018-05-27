@@ -230,7 +230,7 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
-void check_if_exists_or_create_new_instance(char* instance_name){
+void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 	bool _is_same_instance_name(t_instance* instance){
 		return instance -> name == instance_name;
 	}
@@ -254,7 +254,7 @@ void check_if_exists_or_create_new_instance(char* instance_name){
 }
 
 void instance_connection_handler(int socket) {
-	char* instance_name;
+	char* instance_name = "lalala";
 
 	bool _is_existent_instance_connected(t_instance* instance){
 		return instance -> name == instance_name && instance -> is_available == true;
@@ -275,7 +275,8 @@ void instance_connection_handler(int socket) {
 			_exit_with_error(socket, "Another instance with same name is connected.", NULL);
 		}
 
-		int send_confirmation_result = send(socket, 1, sizeof(int), 0);
+		int r = 1;
+		int send_confirmation_result = send(socket, &r, sizeof(int), 0);
 */
 		int result = send_instance_configuration(socket);
 
@@ -284,7 +285,7 @@ void instance_connection_handler(int socket) {
 			return;
 		}
 
-		check_if_exists_or_create_new_instance(instance_name);
+		check_if_exists_or_create_new_instance(instance_name, socket);
 
 		log_info(logger, "Instance connected");
 	}
@@ -397,7 +398,7 @@ int main(int argc, char* argv[]) {
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**TODO TEST***/
-	while(instances_thread_list -> elements_count < 3);
+	while(instances_thread_list -> elements_count < 1);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
