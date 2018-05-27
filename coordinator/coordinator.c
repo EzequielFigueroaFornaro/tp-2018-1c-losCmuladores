@@ -230,14 +230,18 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
-void instance_connection_handler(int socket) {
-	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
-	if (send_connection_success(socket) < 0) {
-		_exit_with_error(socket, "Error sending instance connection success", NULL);
-	} else {
-		send_instance_configuration(socket);
+void check_if_exists_or_create_new_instance(char* instance_name){
+	bool _is_same_instance_name(t_instance* instance){
+		return instance -> name == instance_name;
+	}
 
-		t_instance *instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
+	t_instance* instance;
+	instance = list_find(instances_thread_list, _is_same_instance_name);
+
+	if(instance != NULL){
+		instance -> is_available = true;
+	} else {
+		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
@@ -245,6 +249,42 @@ void instance_connection_handler(int socket) {
 		instance -> ip_port = get_client_address(socket);
 
 		list_add(instances_thread_list, instance);
+	}
+
+}
+
+void instance_connection_handler(int socket) {
+	char* instance_name;
+
+	bool _is_existent_instance_connected(t_instance* instance){
+		return instance -> name == instance_name && instance -> is_available == true;
+	}
+
+	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
+	if (send_connection_success(socket) < 0) {
+		_exit_with_error(socket, "Error sending instance connection success", NULL);
+	} else {
+
+		/*int instance_name_result = recv_string(socket, &instance_name);
+
+		if(instance_name_result <= 0){
+			_exit_with_error(socket, "Could not receive instance name", NULL);
+		}
+
+		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
+			_exit_with_error(socket, "Another instance with same name is connected.", NULL);
+		}
+
+		int send_confirmation_result = send(socket, 1, sizeof(int), 0);
+*/
+		int result = send_instance_configuration(socket);
+
+		if(result != 0){
+			log_error(logger, "Error while connecting instance.");
+			return;
+		}
+
+		check_if_exists_or_create_new_instance(instance_name);
 
 		log_info(logger, "Instance connected");
 	}
