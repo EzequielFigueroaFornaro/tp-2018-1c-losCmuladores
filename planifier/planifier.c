@@ -18,17 +18,21 @@ int main(int argc, char* argv[]) {
 	finished_esi_list = list_create();
 	recursos_bloqueados = dictionary_create();
 
+	set_orchestrator(algorithm,ready_esi_list,running_esi_sem_list,blocked_esi_sem_list,finished_esi_list)
+
 	configure_logger();
 	load_configuration(argv[1]);
 
 	connect_to_coordinator();
 
+	set_orchestrator(algorithm,ready_esi_list,running_esi_sem_list,blocked_esi_sem_list,finished_esi_list)
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
 	}
 
 	pthread_t console_thread = start_console();
+
 
 	/* a - tenemosq que hace un lisener que escuche los nuevos esis
 	 *
@@ -55,7 +59,6 @@ int main(int argc, char* argv[]) {
 	 * */
 
 	pthread_join(console_thread, NULL);
-
 	return EXIT_SUCCESS;
 }
 
@@ -85,14 +88,14 @@ bool bloquear_recurso(char* recurso){
 	pthread_mutex_unlock(&id_mtx);
 	return false;
 }
-
-
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	t_list * listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
 	pthread_mutex_unlock(&map_boqueados);
 //	desbloquea_esis(listas_de_esis);
 }
+
+
 
 void ejecutar_esi(){
 	esi* esi = malloc(sizeof(esi));
@@ -101,14 +104,13 @@ void ejecutar_esi(){
 //	mandar_a_correr(esi);
 	free(esi);
 } //mandar mensaje de que se ejecute y poner en lista de ejecutados
-
-
 void bloquea_esi(){
 	esi* esi = malloc(sizeof(esi));
 	remove_from_list(running_esi_list, 0, running_esi_sem_list, esi);
 	put_on_list(blocked_esi_list, esi, blocked_esi_sem_list);
 	//mandar_a_bloquear(esi)
 } // sacar de lista poner en lista de bloqueados
+
 
 //TODO test de esto
 void* list_filter_and_remove(t_list *list, bool(*condition)(void*)) {
@@ -162,6 +164,8 @@ void get_more_priority_esi(t_list * list, esi* esi){
 	remove_from_list(list, 0, ready_esi_sem_list, esi);
 }
 
+
+//-------------------
 void configure_logger() {
 	logger = log_create("planifier.log", "planifier", true, LOG_LEVEL_INFO);
 }
@@ -169,6 +173,8 @@ void configure_logger() {
 void load_configuration(char *config_file_path) {
 	log_info(logger, "Loading planifier configuration file...");
 	t_config* config = config_create(config_file_path);
+
+	algorithm = config_get_int_value(config, "ALGORITHM");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,

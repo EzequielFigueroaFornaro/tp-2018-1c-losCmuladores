@@ -19,9 +19,15 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include "commons-sockets.h"
+#include "commons-sockets.h"
+#include "planifier.h"
+#include <algorithm/orchestator.h>
+
 
 int server_port;
 int server_max_connections;
+char* algorithm;
+
 
 int coordinator_port;
 char *coordinator_ip;
@@ -35,10 +41,10 @@ typedef struct {
 	int id;
 }__attribute((packed)) esi;
 
-t_list * ready_esi_list;
-t_list * running_esi_list;
-t_list * blocked_esi_list;
-t_list * finished_esi_list;
+//t_list * ready_esi_list;
+//t_list * running_esi_list;
+//t_list * blocked_esi_list;
+//t_list * finished_esi_list;
 t_dictionary * recursos_bloqueados;
 
 pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
