@@ -38,10 +38,10 @@ t_buffer serialize_sentence(t_sentence* sentence);
 //Destruye el buffer correspondiente.
 void destroy_buffer(t_buffer buffer);
 
-/* Copia el valor y devuelve la posicion de memoria para copiar otro valor */
-void* concat_value(void* mem_address, void* value, int size_of_value);
+/* Copia el valor y actualiza la posicion de memoria para copiar otro valor */
+void concat_value(void** mem_address, void* value, int size_of_value);
 
-/* Copia el tamaño del string junto al contenido y devuelve la posicion de memoria para copiar otro valor */
-void* concat_string(void* mem_address, void* string, int string_length);
+/* Copia el tamaño del string junto al contenido y actualiza la posicion de memoria para copiar otro valor */
+void concat_string(void** mem_address, void* string, int string_length);
 
 #endif /* TYPES_H_ */
