@@ -23,8 +23,7 @@ t_sentence_process_result OK = 0;
 t_sentence_process_result INVALID_SENTENCE = 1;
 t_sentence_process_result KEY_NOT_FOUND = 2;
 
-char* my_id;
-message_type execution_signal;
+char* my_id = "ESI42";
 
 int coordinator_socket;
 int planifier_socket;
@@ -33,9 +32,9 @@ void connect_to_planifier();
 void connect_to_coordinator();
 void wait_to_execute();
 void execute_script();
-t_sentence_process_result send_operation(t_esi_operacion operation);
+t_sentence_process_result send_sentence_to_coordinator(t_esi_operacion operation);
 
-message_type notify();
+void notify_planifier();
 void notify_error();
 
 void exit_gracefully(int code);

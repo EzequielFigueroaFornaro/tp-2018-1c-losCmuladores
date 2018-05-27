@@ -35,7 +35,7 @@ t_ise_sentence next_sentence() {
 }
 
 void destroy_script(t_ise_script * script) {
-	queue_destroy(script->lines);
+//	queue_destroy(script->lines);
 	free(script);
 }
 

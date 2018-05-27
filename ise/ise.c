@@ -15,13 +15,13 @@ t_sentence* map_to_sentence(t_esi_operacion operation);
 int main(int argc, char* argv[]) {
 	init_logger();
 	load_config(argv[1], COORDINATOR, PLANIFIER);
-	load_script(argv[2]);
+//	load_script(argv[2]);
 
-	connect_to_planifier();
+//	connect_to_planifier();
 	connect_to_coordinator();
 
-	execute_script();
-
+//	execute_script();
+	while(true);
 	exit_gracefully(EXIT_SUCCESS);
 }
 
@@ -32,20 +32,23 @@ void connect_to_planifier() {
 	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
 	concat_value(&offset, &ISE, sizeof(module_type));
 	long script_size = queue_size(script->lines);
-	concat_value2(&offset, &script_size, sizeof(script_size));
+	concat_value(&offset, &script_size, sizeof(script_size));
 
 	handshake(PLANIFIER, buffer, message_size);
 	recv_string(get_socket(PLANIFIER), &my_id); // TODO [Lu] validar
 }
 
 void connect_to_coordinator() {
-	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(size_t) + strlen(my_id);
+	int id_len = strlen(my_id) + 1;
+	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(int) + id_len;
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	concat_value2(&offset, &MODULE_CONNECTED, sizeof(message_type));
-	concat_value2(&offset, &ISE, sizeof(module_type));
-	concat_string2(&offset, &my_id, strlen(my_id));
+	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
+	concat_value(&offset, &ISE, sizeof(module_type));
+	concat_string(&offset, my_id, id_len);
+
 	handshake(COORDINATOR, buffer, message_size);
+	log_info(logger, "Sending %d bytes", message_size);
 }
 
 void handshake(module_type module, void* handshake_message, int handshake_message_size) {
@@ -81,7 +84,7 @@ void execute_script() {
 
 		t_sentence_process_result result;
 		if (sentence.operation.valido) {
-			result = send_operation(sentence.operation);
+			result = send_sentence_to_coordinator(sentence.operation);
 		} else {
 			result = INVALID_SENTENCE;
 		}
@@ -90,25 +93,22 @@ void execute_script() {
 			notify_error(); // TODO [Lu] Revisar si esto va
 			exit_with_error();
 		}
-		execution_signal = notify();
+		notify_planifier();
 	}
 }
 
-// TODO [Lu] esto tiene que estar corriendo de fondo
 void wait_to_execute() {
-	message_type execution_signal = recv_message(planifier_socket);
-	while (execution_signal != ISE_EXECUTE);
+	while(recv_message(planifier_socket) != ISE_EXECUTE);
 }
 
-message_type notify() {
+void notify_planifier() {
 	message_type message_type = SENTENCE_EXECUTED_OK;
 	if (send(planifier_socket, &message_type, sizeof(message_type), 0) < 0) {
 		log_error(logger, "Could not notify planifier of sentence execution");
 	}
-	return recv_message(planifier_socket);
 }
 
-t_sentence_process_result send_operation(t_esi_operacion operation) {
+t_sentence_process_result send_sentence_to_coordinator(t_esi_operacion operation) {
 	t_sentence* sentence = map_to_sentence(operation);
 	destruir_operacion(operation);
 	t_buffer sentence_buffer = serialize_sentence(sentence);

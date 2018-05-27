@@ -144,9 +144,11 @@ char* get_client_address(int socket) {
 int recv_string(int socket, char** string) {
 	int length;
 	int length_result = recv(socket, &length, sizeof(length), MSG_WAITALL);
+	printf("Received: %d", length_result);
 	if (length_result > 0) {
 		*string = malloc(length);
 		int result = recv(socket, *string, length, MSG_WAITALL);
+		printf("Received: %d", result);
 		if (result < 0) {
 			free(*string);
 		}
@@ -157,11 +159,14 @@ int recv_string(int socket, char** string) {
 }
 
 int recv_sentence_operation(int socket, int *operation) {
-	if (recv(socket, operation, sizeof(int), 0) <= 0 || !is_valid_operation(*operation)) {
+	int result = recv(socket, operation, sizeof(int), 0);
+	if (result < 0) {
 		return -1;
-	} else {
-		return 1;
 	}
+	if (result == 0) {
+		return -2;
+	}
+	return 1;
 }
 
 message_type recv_message(int socket) {

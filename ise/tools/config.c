@@ -20,7 +20,7 @@ void load_config(char* config_file_path, int coordinator, int planifier) {
 	dictionary_put(modules_config, string_itoa(coordinator), coordinator_config);
 	dictionary_put(modules_config, string_itoa(planifier), planifier_config);
 
-	config_destroy(config);
+//	config_destroy(config);
 	log_info(logger, "OK Loading.");
 }
 
