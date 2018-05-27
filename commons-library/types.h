@@ -33,7 +33,7 @@ enum operations {
 bool is_valid_operation(int operation);
 
 //Devuelve un buffer y su size a partir de una sentencia.
-t_buffer serialize_sentence(t_sentence* sentence);
+t_buffer serialize_sentence(t_sentence* sentence); // TODO [Lu] no deberia devolver un puntero a t_buffer?
 
 //Destruye el buffer correspondiente.
 void destroy_buffer(t_buffer buffer);
