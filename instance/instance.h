@@ -19,6 +19,7 @@
 #include "types.h"
 #include "commons/collections/dictionary.h"
 #include <signal.h>
+#include <string.h>
 
 void connect_to_coordinator();
 
@@ -29,6 +30,7 @@ t_log * logger;
 int coordinator_socket;
 int coordinator_port;
 char *coordinator_ip;
+char* instance_name;
 
 
 //Structs

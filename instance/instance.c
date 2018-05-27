@@ -25,12 +25,14 @@ void exit_gracefully(int return_nr) {
 void load_configuration(char* config_file_path){
 	char* port_name = "COORDINATOR_PORT";
 	char* ip = "COORDINATOR_IP";
+	char* name = "NAME";
 
 	log_info(logger, "Loading configuration file...");
 	t_config* config = config_create(config_file_path);
 
 	coordinator_ip = config_get_string_value(config, ip);
 	coordinator_port = config_get_int_value(config, port_name);
+	instance_name = config_get_string_value(config, name);
 
 	entries_table = dictionary_create();
 
@@ -135,6 +137,22 @@ void send_result(int result){
 	}
 }
 
+int send_instance_name(){
+	log_info(logger, "Sending Instance name to coordinator.");
+	int message_size = strlen(instance_name);
+
+/*	void* buffer = concat_string(, )
+
+	int result = send(coordinator_socket, &instance_name, message_size, 0);
+
+	int response;
+
+	int confirmation = recv(coordinator_socket, &response, sizeof(int), 0);
+*/
+	log_info(logger, "Instance name OK.");
+
+}
+
 
 int main(int argc, char* argv[]) {
 	configure_logger();
@@ -143,6 +161,8 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	connect_to_coordinator();
+
+	send_instance_name();
 
 	receive_instance_configuration(coordinator_socket);
 
