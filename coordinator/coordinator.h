@@ -24,6 +24,7 @@
 #include "commons/txt.h"
 #include <signal.h>
 #include <errno.h>
+#include <pthread.h>
 
 char* OPERATIONS_LOG_PATH = "operations.log";
 //#define PORT 8080

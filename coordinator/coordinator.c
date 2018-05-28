@@ -232,11 +232,11 @@ int send_instance_configuration(int client_sock){
 
 void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 	bool _is_same_instance_name(t_instance* instance){
-		return instance -> name == instance_name;
+		return strcmp(instance -> name, instance_name) == 0;
 	}
 
 	t_instance* instance;
-	instance = list_find(instances_thread_list, _is_same_instance_name);
+	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
 
 	if(instance != NULL){
 		instance -> is_available = true;
@@ -258,7 +258,7 @@ void instance_connection_handler(int socket) {
 	char* instance_name;
 
 	bool _is_existent_instance_connected(t_instance* instance){
-		return instance -> name == instance_name && instance -> is_available == true;
+		return strcmp(instance -> name, instance_name) == 0 && instance -> is_available == true;
 	}
 
 	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
@@ -269,11 +269,17 @@ void instance_connection_handler(int socket) {
 		int instance_name_result = recv_string(socket, &instance_name);
 
 		if(instance_name_result <= 0){
-			_exit_with_error(socket, "Could not receive instance name", NULL);
+			close(socket);
+			log_error(logger, "Could not receive instance name");
+			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+			//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
 
 		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
-			_exit_with_error(socket, "Another instance with same name is connected.", NULL);
+			close(socket);
+			log_error(logger, "Another instance with same name is connected.");
+			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+						//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
 
 		int r = 1;
@@ -396,7 +402,7 @@ int main(int argc, char* argv[]) {
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**TODO TEST***/
-	while(instances_thread_list -> elements_count < 1);
+	while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
