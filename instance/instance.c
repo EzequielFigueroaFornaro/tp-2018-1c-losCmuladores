@@ -139,14 +139,16 @@ void send_result(int result){
 
 void send_instance_name(){
 	log_info(logger, "Sending Instance name to coordinator.");
-	int message_size = strlen(instance_name) +1;
+	int instance_name_length = strlen(instance_name) + 1;
 
-	void* buffer;
+	int message_size = sizeof(int) + instance_name_length;
+
+	void* buffer = malloc(message_size);
 	void* offset = buffer;
 
-	concat_string(&offset, instance_name, message_size);
+	offset = concat_string(offset, instance_name, instance_name_length);
 
-	int result = send(coordinator_socket, buffer, sizeof(buffer) + message_size, 0);
+	int result = send(coordinator_socket, buffer, message_size, 0);
 
 	int confirmation_response;
 
@@ -170,7 +172,7 @@ int main(int argc, char* argv[]) {
 
 	connect_to_coordinator();
 
-	//send_instance_name();
+	send_instance_name();
 
 	receive_instance_configuration(coordinator_socket);
 

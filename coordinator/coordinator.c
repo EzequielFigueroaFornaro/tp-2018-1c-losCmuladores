@@ -247,6 +247,7 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 		instance -> socket_id = socket;
 		instance -> is_available = true;
 		instance -> ip_port = get_client_address(socket);
+		instance -> name = instance_name;
 
 		list_add(instances_thread_list, instance);
 	}
@@ -254,7 +255,7 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 }
 
 void instance_connection_handler(int socket) {
-	char* instance_name = "lalala";
+	char* instance_name;
 
 	bool _is_existent_instance_connected(t_instance* instance){
 		return instance -> name == instance_name && instance -> is_available == true;
@@ -265,7 +266,7 @@ void instance_connection_handler(int socket) {
 		_exit_with_error(socket, "Error sending instance connection success", NULL);
 	} else {
 
-		/*int instance_name_result = recv_string(socket, &instance_name);
+		int instance_name_result = recv_string(socket, &instance_name);
 
 		if(instance_name_result <= 0){
 			_exit_with_error(socket, "Could not receive instance name", NULL);
@@ -277,7 +278,7 @@ void instance_connection_handler(int socket) {
 
 		int r = 1;
 		int send_confirmation_result = send(socket, &r, sizeof(int), 0);
-*/
+
 		int result = send_instance_configuration(socket);
 
 		if(result != 0){
@@ -367,9 +368,6 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> value = value;
 
 	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
-	//TODO guardarlo en la tabla
-	//last_instance_selected = selected_instance;
-	int last_socket_id = last_instance_selected -> socket_id; //TODO revisar.
 
 	int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
 
