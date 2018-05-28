@@ -144,7 +144,7 @@ char* get_client_address(int socket) {
 
 int recv_string(int socket, char** string) {
 	int length;
-	int length_result = recv(socket, &length, sizeof(length), MSG_WAITALL);
+	int length_result = recv_value(socket, &length);
 	if (length_result > 0) {
 		*string = malloc(length);
 		int result = recv(socket, *string, length, MSG_WAITALL);
@@ -157,12 +157,19 @@ int recv_string(int socket, char** string) {
 	}
 }
 
+int recv_value(int socket, int* value) {
+	return recv(socket, value, sizeof(int), MSG_WAITALL);
+}
+
 int recv_sentence_operation(int socket, int *operation) {
-	if (recv(socket, operation, sizeof(int), 0) <= 0 || !is_valid_operation(*operation)) {
+	int result = recv(socket, operation, sizeof(int), 0);
+	if (result < 0) {
 		return -1;
-	} else {
-		return 1;
 	}
+	if (result == 0) {
+		return -2;
+	}
+	return 1;
 }
 
 message_type recv_message(int socket) {

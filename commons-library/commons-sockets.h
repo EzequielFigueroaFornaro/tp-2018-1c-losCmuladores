@@ -42,6 +42,8 @@ char* get_client_address(int socket);
 
 int recv_string(int socket, char** string);
 
+int recv_value(int socket, int* value);
+
 int recv_sentence_operation(int socket, int *operation);
 
 message_type recv_message(int socket);
