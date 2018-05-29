@@ -12,10 +12,10 @@
 
 int main(int argc, char* argv[]) {
 
-	ready_esi_list = list_create();
-	running_esi_list = list_create();
-	blocked_esi_list = list_create();
-	finished_esi_list = list_create();
+	t_list ready_esi_list = list_create();
+	t_list running_esi_list = list_create();
+	t_list blocked_esi_list = list_create();
+	t_list finished_esi_list = list_create();
 	recursos_bloqueados = dictionary_create();
 
 	set_orchestrator(algorithm,ready_esi_list,running_esi_sem_list,blocked_esi_sem_list,finished_esi_list)
@@ -33,31 +33,6 @@ int main(int argc, char* argv[]) {
 
 	pthread_t console_thread = start_console();
 
-
-	/* a - tenemosq que hace un lisener que escuche los nuevos esis
-	 *
-	 * b - tenemos que manear una lista de recusrsos tomados por distintos esis
-	 *
-	 * c - tenmos que hacer que el algoritmo barie por configuracion
-	 *
-	 * d - manejar las colas de estados de los esis, bloqueados , listos , ejecutando
-	 *
-	 *
-	 *
-	 * a - cada vez que llegue un esi, hay que replanificar, hay que manejar una flag para no tomar instrucciones cunado se esta replanificando o vizebersa
-	 *
-	 * b - tenmosq ue ver quien nos informa de que un recurso fue liberado
-	 *
-	 * c -
-	 *
-	 * b -
-	 *
-	 * * cuando el esi nos manda la respuesta del cordinador, tenemos posibles respuestas : un codigo que signifique segui corrientes, y otro que sea una pausa porque error
-	 *
-	 *
-	 *
-	 * */
-
 	pthread_join(console_thread, NULL);
 	return EXIT_SUCCESS;
 }
@@ -72,9 +47,15 @@ int esi_id_generate(){
 	return new_id;
 }
 
-
-void new_esi(){}
-
+bool es_un_esi_libre(esi* esi) {
+	int size = list_size(esis_id_liberadas);
+	for (int i = 0; i < size; ++i) {
+		if (esi->id==(esi->id)) {
+			return true;
+		}
+	}
+	return false;
+}
 bool bloquear_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recursos_bloqueados,recurso)){
@@ -97,20 +78,6 @@ void liberar_recurso(char* recurso){
 
 
 
-void ejecutar_esi(){
-	esi* esi = malloc(sizeof(esi));
-	get_more_priority_esi(ready_esi_list, esi);
-	put_on_list(running_esi_list, esi, &running_esi_sem_list);
-//	mandar_a_correr(esi);
-	free(esi);
-} //mandar mensaje de que se ejecute y poner en lista de ejecutados
-void bloquea_esi(){
-	esi* esi = malloc(sizeof(esi));
-	remove_from_list(running_esi_list, 0, running_esi_sem_list, esi);
-	put_on_list(blocked_esi_list, esi, blocked_esi_sem_list);
-	//mandar_a_bloquear(esi)
-} // sacar de lista poner en lista de bloqueados
-
 
 //TODO test de esto
 void* list_filter_and_remove(t_list *list, bool(*condition)(void*)) {
@@ -128,41 +95,16 @@ void* list_filter_and_remove(t_list *list, bool(*condition)(void*)) {
        return sublist;
 }
 
-void desbloquea_esis(t_list* esis_id_liberadas){
-	bool es_un_esi_libre(esi* esi) {
-		int size = list_size(esis_id_liberadas);
-		for (int i = 0; i < size; ++i) {
-			if (esi->id==(esi->id)) {
-				return true;
-			}
-		}
-		return false;
-	}
 
-	t_list * esi_liberadas = list_filter_and_remove(blocked_esi_list,(void*)es_un_esi_libre);
-//	list_add_all(ready_esi_list, esi_liberadas);
 
-} // sacar de la lista de bloqueados y poner en rdy
+
+
 
 
 void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
 
 
-void put_on_list(t_list* list ,esi* esi, pthread_mutex_t sem_list){
-	pthread_mutex_lock(&sem_list);
-	list_add(list, esi);
-	pthread_mutex_unlock(&sem_list);
-}
 
-void remove_from_list(t_list* list, int index, pthread_mutex_t sem_list, esi* esi){
-	pthread_mutex_lock(&sem_list);
-	esi = list_remove(list, index);
-	pthread_mutex_unlock(&sem_list);
-}
-
-void get_more_priority_esi(t_list * list, esi* esi){
-	remove_from_list(list, 0, ready_esi_sem_list, esi);
-}
 
 
 //-------------------
