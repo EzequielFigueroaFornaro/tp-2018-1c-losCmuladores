@@ -47,6 +47,60 @@ int esi_id_generate(){
 	return new_id;
 }
 
+
+//new_esi(que tiene solo input)
+void new_esi(/*me da algo*/){
+	//con ese algo genero una esi
+	esi new_esi = malloc(sizeof(esi));
+	add_esi(new_esi);
+	/*tengo que devolverle este id a la esi*/esi_id_generate();
+}
+
+//voy_a_ejecutar(tiene input output)
+bool hubo_replanificacion_con_cambio_de_esi/*este bool lo tiene que tener por referencia los algoritmos y poder modificarlo cada vez que hay replanificacion usando semaforos*/
+che_ejecute_esto(int esi_id/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/){
+
+	if(hubo_replanificacion_con_cambio_de_esi){
+
+	}else{
+
+	}
+
+
+}
+
+//ejecuta_vos(output)
+ejecuta_vos(output)
+
+//che_esta_tomado_el_recurso(input_outpu)
+che_esta_tomado_el_recurso(input_outpu)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bool es_un_esi_libre(esi* esi) {
 	int size = list_size(esis_id_liberadas);
 	for (int i = 0; i < size; ++i) {
@@ -75,37 +129,6 @@ void liberar_recurso(char* recurso){
 	pthread_mutex_unlock(&map_boqueados);
 //	desbloquea_esis(listas_de_esis);
 }
-
-
-
-
-//TODO test de esto
-void* list_filter_and_remove(t_list *list, bool(*condition)(void*)) {
-       int size = list_size(list);
-       t_list* sublist = list_create();
-       for (int i = 0; i < size; ++i) {
-    	   esi* esi = list_get(list,i);
-    	   if (condition(esi)) {
-    		   list_add(sublist, esi);
-               list_remove(list, i);
-               size --;
-               i--;
-    	   }
-       }
-       return sublist;
-}
-
-
-
-
-
-
-
-void tomar_respuesta(){} // el esi te informa lo que el cordinador le respondio
-
-
-
-
 
 //-------------------
 void configure_logger() {
