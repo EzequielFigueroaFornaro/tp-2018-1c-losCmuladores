@@ -20,34 +20,45 @@ bool is_same_instance(t_instance *one, t_instance *another){
 }
 
 //TODO Seguramente los mutex no vayan acá, sino en donde se orqueste la selección de la instancia,
+//TODO qué hacemos si no hay ninguna instancia disponible ?
 t_instance* select_instance_to_send_by_equitative_load(){
-	bool _is_available(t_instance* instance){
-		return instance -> is_available;
-	}
-
-	t_instance* selected;
+	t_instance* selected = NULL;
 
 	pthread_mutex_lock(&instances_mtx);
 
-	t_list* available_instances_list = list_filter(instances_thread_list, _is_available);
-	t_link_element *element = available_instances_list -> head;
-	t_link_element *aux = NULL;
+	t_link_element *element = instances_thread_list -> head;
 
-	if(last_instance_selected == NULL){
-		selected = (t_instance*)instances_thread_list -> head -> data;
-	} else {
-		while (element != NULL && !is_same_instance(element -> data, last_instance_selected)) {
-				element = element -> next;
+	bool is_selected = false;
+
+	if(last_instance_selected != NULL) {
+		while (element != NULL && !is_same_instance(element -> data, last_instance_selected)) { //Recorro hasta llegar a la ultima seleccionada.
+			element = element -> next;
 		}
-		selected = element -> next != NULL ? element -> next -> data : instances_thread_list -> head -> data;
+	} else {
+		if (((t_instance*) element -> data) -> is_available){
+			selected = (t_instance*) instances_thread_list -> head -> data;
+			is_selected = true;
+		}
+	}
+
+	element = element -> next;
+	//Recorro hasta encontrar una disponible...si se termina la lista agarro la primera y vuelvo a checkear.
+	while(!is_selected) {
+		if (element != NULL){
+			if(((t_instance*) element -> data) -> is_available) {
+				selected = element -> data;
+				is_selected = true;
+			}
+			element = element -> next;
+		} else {
+			element = instances_thread_list -> head;
+		}
 	}
 
 	free(last_instance_selected);
 	last_instance_selected = malloc(sizeof(t_instance));
 	memcpy(last_instance_selected, selected, sizeof(t_instance));
 	pthread_mutex_unlock(&instances_mtx);
-
-	list_destroy(available_instances_list);
 
 	return selected;
 }
@@ -64,7 +75,15 @@ t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_
 	}
 }
 
-//TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
+
+void handle_instance_disconnection(t_instance* instance){
+	pthread_mutex_lock(&instances_mtx);
+	instance -> is_available = false;
+	pthread_mutex_unlock(&instances_mtx);
+	last_instance_selected -> is_available = false; //TODO poner semaforo acá.
+	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
+}
+
 //3)
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
@@ -80,7 +99,16 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 		log_error(logger, "Could not send sentence operation id to instance.");
 	}
 
-	//Put wkey -> instance.
+	int result;
+	int result_response = recv(instance -> socket_id, &result, sizeof(int), 0);
+
+	if(result_response == 0) {
+		log_error(logger, "Selected instance is not available !");
+		handle_instance_disconnection(instance);
+		return -1;
+	}
+
+	//Put key -> instance.
 	pthread_mutex_lock(&keys_mtx);
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
@@ -104,7 +132,7 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 
 	string_append(&string_to_save, "ESI");
 	string_append_with_format(&string_to_save, "%d | ", ise -> id);
-	string_append_with_format(&string_to_save, "%s | ", operation); //obtener operacion en base al ID.
+	string_append_with_format(&string_to_save, "%s | ", operation);
 	string_append_with_format(&string_to_save, "%s", sentence -> key);
 	string_append(&string_to_save, "\n");
 	if(sentence -> value != NULL){
@@ -202,20 +230,69 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
-void instance_connection_handler(int socket) {
-	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
-	if (send_connection_success(socket) < 0) {
-		_exit_with_error(socket, "Error sending instance connection success", NULL);
-	} else {
-		send_instance_configuration(socket);
+void check_if_exists_or_create_new_instance(char* instance_name, int socket){
+	bool _is_same_instance_name(t_instance* instance){
+		return strcmp(instance -> name, instance_name) == 0;
+	}
 
-		t_instance *instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
+	t_instance* instance;
+	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
+
+	if(instance != NULL){
+		instance -> is_available = true;
+	} else {
+		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
 		instance -> is_available = true;
+		instance -> ip_port = get_client_address(socket);
+		instance -> name = instance_name;
 
 		list_add(instances_thread_list, instance);
+	}
+
+}
+
+void instance_connection_handler(int socket) {
+	char* instance_name;
+
+	bool _is_existent_instance_connected(t_instance* instance){
+		return strcmp(instance -> name, instance_name) == 0 && instance -> is_available == true;
+	}
+
+	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
+	if (send_connection_success(socket) < 0) {
+		_exit_with_error(socket, "Error sending instance connection success", NULL);
+	} else {
+
+		int instance_name_result = recv_string(socket, &instance_name);
+
+		if(instance_name_result <= 0){
+			close(socket);
+			log_error(logger, "Could not receive instance name");
+			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+			//_exit_with_error(socket, "Could not receive instance name", NULL);
+		}
+
+		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
+			close(socket);
+			log_error(logger, "Another instance with same name is connected.");
+			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+						//_exit_with_error(socket, "Could not receive instance name", NULL);
+		}
+
+		int r = 1;
+		int send_confirmation_result = send(socket, &r, sizeof(int), 0);
+
+		int result = send_instance_configuration(socket);
+
+		if(result != 0){
+			log_error(logger, "Error while connecting instance.");
+			return;
+		}
+
+		check_if_exists_or_create_new_instance(instance_name, socket);
 
 		log_info(logger, "Instance connected");
 	}
@@ -297,10 +374,16 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> value = value;
 
 	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
-	//TODO guardarlo en la tabla
-	//last_instance_selected = selected_instance;
-	int last_socket_id = last_instance_selected -> socket_id; //TODO revisar.
-	send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+
+	int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+
+	/*if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == -1) {
+		//if(sentence -> operation_id == GET_SENTENCE)
+		/*Lalala, acá deberíamos ver qué es lo que se está tratando de hacer...
+		 - Si es GET, vamos a otra instancia no pasa nada
+		 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.
+
+	}*/
 	save_operation_log(sentence, ise);
 
 			//***********************
@@ -318,7 +401,7 @@ int main(int argc, char* argv[]) {
 	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
-	//**TODO TEST***/
+	//**PARA TEST***/
 	/*while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
@@ -336,6 +419,7 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
 	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
 
-	sleep(6000);*/
+	sleep(6000);
+*/
 	exit_gracefully(EXIT_SUCCESS);
 }

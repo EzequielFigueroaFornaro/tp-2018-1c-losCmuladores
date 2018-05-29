@@ -17,6 +17,7 @@ void configure_logger() {
 void exit_gracefully(int return_nr) {
 	log_destroy(logger);
 	dictionary_destroy(entries_table);
+	close(coordinator_socket);
 	exit(return_nr);
 }
 
@@ -24,12 +25,14 @@ void exit_gracefully(int return_nr) {
 void load_configuration(char* config_file_path){
 	char* port_name = "COORDINATOR_PORT";
 	char* ip = "COORDINATOR_IP";
+	char* name = "NAME";
 
 	log_info(logger, "Loading configuration file...");
 	t_config* config = config_create(config_file_path);
 
 	coordinator_ip = config_get_string_value(config, ip);
 	coordinator_port = config_get_int_value(config, port_name);
+	instance_name = config_get_string_value(config, name);
 
 	entries_table = dictionary_create();
 
@@ -118,19 +121,65 @@ t_sentence* wait_for_statement(int socket_fd) {
 	return NULL;
 }
 
+void signal_handler(int sig){
+    if (sig == SIGINT) {
+    	log_info(logger,"Caught signal for Ctrl+C\n");
+    	exit_gracefully(0);
+    }
+}
+
+void send_result(int result){
+
+	int send_result = send(coordinator_socket, &result, sizeof(int), 0);
+
+	if(send_result <= 0){
+		log_error(logger, "Could not send result to coordinator.");
+	}
+}
+
+void send_instance_name(){
+	log_info(logger, "Sending Instance name to coordinator.");
+	int instance_name_length = strlen(instance_name) + 1;
+
+	int message_size = sizeof(int) + instance_name_length;
+
+	void* buffer = malloc(message_size);
+	void* offset = buffer;
+
+	concat_string(&offset, instance_name, instance_name_length);
+
+	int result = send(coordinator_socket, buffer, message_size, 0);
+
+	int confirmation_response;
+
+	int name_response = recv(coordinator_socket, &confirmation_response, sizeof(int), 0);
+	if(name_response <= 0){
+		_exit_with_error(coordinator_socket, "Could not receive instance name confirmation from coordinator.", buffer);
+	}
+
+	if(confirmation_response != 1) {
+		_exit_with_error(coordinator_socket, "Instance name error. Maybe other instance with same name is already running.", buffer);
+	}
+	log_info(logger, "Instance name OK.");
+}
+
 
 int main(int argc, char* argv[]) {
 	configure_logger();
+    signal(SIGINT,signal_handler);
 	log_info(logger, "Initializing instance...");
 	load_configuration(argv[1]);
 
 	connect_to_coordinator();
+
+	send_instance_name();
 
 	receive_instance_configuration(coordinator_socket);
 
 	while(true){
 		t_sentence* sentence = wait_for_statement(coordinator_socket);
 		process_sentence(sentence); //TODO obtener resultado.
+		send_result(200);
 		//TODO avisar al coordinador.
 	}
 
