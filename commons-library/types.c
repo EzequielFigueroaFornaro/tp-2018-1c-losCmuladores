@@ -16,7 +16,7 @@ t_buffer serialize_sentence(t_sentence* sentence){
 	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int) + value_length;
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	concat_value(&offset, &sentence -> operation_id, operation_length);
+	concat_value(&offset, &(sentence -> operation_id), operation_length);
 	concat_string(&offset, sentence -> key, key_length);
 	concat_string(&offset, sentence -> value, value_length);
 
@@ -46,4 +46,5 @@ void concat_string(void** mem_address, void* string, int string_length) {
 	void* offset = *mem_address;
 	concat_value(&offset, &string_length, sizeof(string_length));
 	concat_value(&offset, string, string_length);
+	*mem_address = offset;
 }
