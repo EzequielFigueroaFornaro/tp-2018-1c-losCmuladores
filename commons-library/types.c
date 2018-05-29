@@ -46,4 +46,5 @@ void concat_string(void** mem_address, void* string, int string_length) {
 	void* offset = *mem_address;
 	concat_value(&offset, &string_length, sizeof(string_length));
 	concat_value(&offset, string, string_length);
+	*mem_address = offset;
 }
