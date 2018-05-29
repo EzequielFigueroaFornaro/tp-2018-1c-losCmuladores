@@ -25,6 +25,9 @@ void set_orchestrator(char* algorithm,t_list* ready_esi_list,t_list* running_esi
  * ejemplo, podemos tener un mapa de esis por id y el puntero a la esi, desde ahi podemos modificarlas mas rapidametne
  * usando el puntero en el mapa, en vez de ir ala lista correspondinte a tener que buscarla */
 
+
+
+
 int tiempo_cpu_quantum = 0;
 void ejecutar_esi(int esi){
 	//voy al mapa y busco por el id, y por ejemplo calbio el stack del numero de sentencia en la que sta
@@ -41,6 +44,13 @@ void add_esi(esi* esi){
 		default:
 	}
 }
+void add_block_esi(esi* esi){
+	switch(ALGORITHM) {
+			case FIFO: fifo_add_block_esi(esi);
+			default:
+		}
+}
+
 void finish_esi(esi* esi){
 	switch(ALGORITHM) {
 		case FIFO: fifo_finish_esi(esi);
@@ -53,9 +63,14 @@ void bloquea_esi(esi* esi){
 		default:
 	}
 }
-void desbloquea_esis(esi* esi){
+esi* desbloquea_esis(int* esi){
 	switch(ALGORITHM) {
-		case FIFO: fifo_desbloquea_esis(esi);
+		case FIFO: return fifo_desbloquea_esis(esi);
 		default:
 	}
 }
+void add_esi_bloqueada(esi_id){
+	esi* esi = desbloquea_esis(esi_id);
+	add_block_esi(esi);
+}
+

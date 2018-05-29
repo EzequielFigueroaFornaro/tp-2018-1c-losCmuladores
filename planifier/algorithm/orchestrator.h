@@ -15,3 +15,9 @@ enum algorithm {
 } algorithm ;
 
 void set_orchestrator(char* algorithm);
+
+esi* get_esi_running();
+
+void stop_and_block_esi(esi_id);
+
+void add_esi_bloqueada(esi_id);

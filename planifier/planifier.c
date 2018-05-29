@@ -78,56 +78,37 @@ che_esta_tomado_el_recurso(input_outpu)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-bool es_un_esi_libre(esi* esi) {
-	int size = list_size(esis_id_liberadas);
-	for (int i = 0; i < size; ++i) {
-		if (esi->id==(esi->id)) {
-			return true;
-		}
-	}
-	return false;
-}
 bool bloquear_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recursos_bloqueados,recurso)){
-		dictionary_put(recursos_bloqueados,recurso,list_create());
+		dictionary_put(recursos_bloqueados, recurso, queue_create());
 		pthread_mutex_unlock(&map_boqueados);
 		return true;
 	}
-	t_list * listas_de_esis = dictionary_get(recursos_bloqueados,recurso);
-	//TODO aca vamos a buscar el esi que se esta ejecutando y los vamos aagragar la la lista
-	//list_add(listas_de_esis,esi);
+	t_queue* cola_de_esis = dictionary_get(recursos_bloqueados,recurso);
+	int esi_id = get_esi_running()-> id;
+	queue_push(cola_de_esis,(esi_id));
+	stop_and_block_esi(esi_id);
 	pthread_mutex_unlock(&id_mtx);
 	return false;
 }
+esi* get_esi_running(){
+	return list_get(RUNNING_ESI_LIST, 0);
+}
+void stop_and_block_esi(esi_id){
+	esi* esi_running = list_remove(RUNNING_ESI_LIST, 0);
+	if(esi_running->id != esi_id){
+		//TODO error
+	}
+	//llamar al replanifciar del algoritmo
+}
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
-	t_list * listas_de_esis = dictionary_remove(recursos_bloqueados,recurso);
+	t_queue * queue_de_esis = dictionary_remove(recursos_bloqueados,recurso);
+	int* esi_id = queue_push(cola_de_esis);
 	pthread_mutex_unlock(&map_boqueados);
-//	desbloquea_esis(listas_de_esis);
+	replanificar_esi_desbloqueada_esi(esi_id);
+	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
 }
 
 //-------------------

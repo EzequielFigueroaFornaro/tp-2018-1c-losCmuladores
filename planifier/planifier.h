@@ -39,6 +39,9 @@ t_log * logger;
 
 typedef struct {
 	int id;
+	int tiempo_de_entrada;
+	int cantidad_de_instrucciones;
+	int instrucction_pointer;
 }__attribute((packed)) esi;
 
 //t_list * ready_esi_list;
