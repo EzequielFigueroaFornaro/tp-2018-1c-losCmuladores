@@ -1,9 +1,5 @@
-#include "commons-sockets.h"
+#include "commons-list.h"
 
-#include <asm-generic/socket.h>
-#include <netinet/in.h>
-#include <stdbool.h>
-#include <string.h>
 
 typedef struct {
 	int server_socket;
