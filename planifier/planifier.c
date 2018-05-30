@@ -101,8 +101,8 @@ void stop_and_block_esi(esi_id){
 }
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
-	t_queue* queue_de_esis = dictionary_remove(recursos_bloqueados,recurso);
-	int* esi_id = queue_push(cola_de_esis);
+	t_queue* esi_queue = dictionary_remove(recursos_bloqueados,recurso);
+	int* esi_id = queue_push(esi_queue);
 	pthread_mutex_unlock(&map_boqueados);
 	add_esi_bloqueada(esi_id);
 	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
