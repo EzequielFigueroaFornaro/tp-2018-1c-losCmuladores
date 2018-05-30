@@ -59,14 +59,11 @@ void new_esi(/*me da algo*/){
 //voy_a_ejecutar(tiene input output)
 bool hubo_replanificacion_con_cambio_de_esi/*este bool lo tiene que tener por referencia los algoritmos y poder modificarlo cada vez que hay replanificacion usando semaforos*/
 che_ejecute_esto(int esi_id/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/){
-
 	if(hubo_replanificacion_con_cambio_de_esi){
 
 	}else{
 
 	}
-
-
 }
 
 //ejecuta_vos(output)
@@ -104,10 +101,10 @@ void stop_and_block_esi(esi_id){
 }
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
-	t_queue * queue_de_esis = dictionary_remove(recursos_bloqueados,recurso);
+	t_queue* queue_de_esis = dictionary_remove(recursos_bloqueados,recurso);
 	int* esi_id = queue_push(cola_de_esis);
 	pthread_mutex_unlock(&map_boqueados);
-	replanificar_esi_desbloqueada_esi(esi_id);
+	add_esi_bloqueada(esi_id);
 	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
 }
 
