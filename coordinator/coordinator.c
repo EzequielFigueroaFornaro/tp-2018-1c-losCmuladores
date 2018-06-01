@@ -154,7 +154,7 @@ void send_statement_result_to_ise(t_ise* ise, int result) {
 	int message_size = sizeof(message_type) + sizeof(int);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	concat_value(&offset, &SENTENCE_RESULT, sizeof(message_type));
+	concat_value(&offset, &EXECUTION_RESULT, sizeof(message_type));
 	concat_value(&offset, &result, sizeof(int));
 	int send_result = send(ise->socket_id, buffer, message_size, 0);
 	if (send_result <= 0) {
@@ -272,6 +272,22 @@ void ise_connection_handler(int socket) {
 	}
 }
 
+void process_ise_request(t_ise* ise) {
+	log_info(logger, "ESI %d connected. Waiting for statement", ise->id);
+	t_sentence* sentence;
+	if (receive_sentence_execution_request(ise->socket_id, &sentence) < 0) {
+		log_error(logger, "Could not receive sentence from ESI %d", ise->id);
+		return;
+	}
+
+	log_info(logger, "Sentence received: operation_id: %d, key: %s, value: %s",
+			sentence->operation_id, sentence->key, sentence->value);
+	// ***********************************************************************
+	//		int instance_socket; // TODO [Lu] a qué instancia ir...
+	//		int result = send_statement_to_instance_and_wait_for_result(instance_socket, sentence);
+	//		send_statement_result_to_ise(ise, result);
+}
+
 void ise_connection_handler2(int socket) {
 	int ise_id;
 	if (recv_value(socket, &ise_id) <= 0) {
@@ -294,22 +310,6 @@ void ise_connection_handler2(int socket) {
 		process_ise_request(ise);
 	}
 
-}
-
-void process_ise_request(t_ise* ise) {
-	log_info(logger, "ESI %s connected. Waiting for statement", ise->id);
-	t_sentence* sentence;
-	if (receive_sentence_execution_request(ise->socket_id, &sentence) < 0) {
-		log_error(logger, "Could not receive sentence from ESI %s", ise->id);
-		return;
-	}
-
-	log_info(logger, "Sentence received: operation_id: %d, key: %s, value: %s",
-			sentence->operation_id, sentence->key, sentence->value);
-	// ***********************************************************************
-	//		int instance_socket; // TODO [Lu] a qué instancia ir...
-	//		int result = send_statement_to_instance_and_wait_for_result(instance_socket, sentence);
-	//		send_statement_result_to_ise(ise, result);
 }
 
 void connection_handler(int socket) {
@@ -381,11 +381,11 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**TODO TEST***/
-	/*while(instances_thread_list -> elements_count < 3);
+	while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
@@ -402,6 +402,6 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
 	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
 
-	sleep(6000);*/
+	sleep(6000);
 	exit_gracefully(EXIT_SUCCESS);
 }

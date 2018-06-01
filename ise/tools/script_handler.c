@@ -1,10 +1,11 @@
 #include "script_handler.h"
 
-int load_script_from_file(char * file_name) {
+void load_script(char * file_name) {
 	FILE * script_file = fopen(file_name, "r");
 
 	if (script_file == NULL) {
-		return 1;
+		log_error(logger, "File %s not found", file_name);
+		exit_with_error();
 	}
 
 	script = malloc(sizeof(t_ise_script));
@@ -18,7 +19,6 @@ int load_script_from_file(char * file_name) {
 		}
 	}
 	fclose(script_file);
-	return 0;
 }
 
 t_ise_sentence next_sentence() {
@@ -35,8 +35,12 @@ t_ise_sentence next_sentence() {
 }
 
 void destroy_script(t_ise_script * script) {
-	queue_destroy(script->lines);
-	free(script);
+	if (script != NULL) {
+		if (script->lines != NULL) {
+			queue_destroy(script->lines);
+		}
+		free(script);
+	}
 }
 
 void print_script(t_ise_script * script) {
@@ -44,6 +48,33 @@ void print_script(t_ise_script * script) {
 		char* instruction = list_get(script->lines->elements, i);
 		printf("%s", instruction);
 	}
+}
+
+t_sentence* map_to_sentence(t_esi_operacion operation) {
+	t_sentence* sentence = malloc(sizeof(t_sentence));
+	switch(operation.keyword) {
+	case GET:
+		sentence->operation_id = GET_SENTENCE;
+		sentence->key = operation.argumentos.GET.clave;
+		break;
+	case SET:
+		sentence->operation_id = SET_SENTENCE;
+		sentence->key = operation.argumentos.SET.clave;
+		sentence->value = operation.argumentos.SET.valor;
+		break;
+	case STORE:
+		sentence->operation_id = STORE_SENTENCE;
+		sentence->key = operation.argumentos.STORE.clave;
+		break;
+	default:
+		log_error(logger,"Unexpected error: sentence keyword not recognized");
+		exit_with_error();
+	}
+	return sentence;
+}
+
+long get_script_size() {
+	return script == NULL ? 0 : (script->lines == NULL ? 0 : queue_size(script->lines));
 }
 
 

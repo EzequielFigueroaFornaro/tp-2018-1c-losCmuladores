@@ -95,7 +95,6 @@ int connect_to(char* ip, int port) {
 
 	int server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	if (server_socket < 0) {
-		freeaddrinfo(server_info);
 		perror("Error creating socket");
 		return -1;
 	}

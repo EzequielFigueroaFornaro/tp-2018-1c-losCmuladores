@@ -30,6 +30,15 @@ enum operations {
 	STORE_SENTENCE = 602
 } operation ;
 
+typedef enum { COORDINATOR, PLANIFIER, INSTANCE, ISE } module_type;
+
+typedef int message_type;
+extern message_type MODULE_CONNECTED;
+extern message_type CONNECTION_SUCCESS;
+extern message_type EXECUTION_RESULT;
+extern message_type ISE_STOP;
+extern message_type ISE_EXECUTE;
+
 bool is_valid_operation(int operation);
 
 //Devuelve un buffer y su size a partir de una sentencia.
