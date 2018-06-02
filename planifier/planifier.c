@@ -4,7 +4,7 @@
  Author      : losCmuladores
  Version     :
  Copyright   : Your copyright notice
- Description : Redistinto planifier.
+ Description : Redistinto planifier	.
  ============================================================================
  */
 
@@ -12,20 +12,20 @@
 
 int main(int argc, char* argv[]) {
 
-	t_list ready_esi_list = list_create();
-	t_list running_esi_list = list_create();
-	t_list blocked_esi_list = list_create();
-	t_list finished_esi_list = list_create();
+	t_list* ready_esi_list = list_create();
+	t_list* running_esi_list = list_create();
+	t_list* blocked_esi_list = list_create();
+	t_list* finished_esi_list = list_create();
 	recursos_bloqueados = dictionary_create();
 
-	set_orchestrator(algorithm,ready_esi_list,running_esi_sem_list,blocked_esi_sem_list,finished_esi_list)
+	set_orchestrator(algorithm, ready_esi_list, running_esi_list, blocked_esi_list, finished_esi_list);
 
 	configure_logger();
 	load_configuration(argv[1]);
 
 	connect_to_coordinator();
 
-	set_orchestrator(algorithm,ready_esi_list,running_esi_sem_list,blocked_esi_sem_list,finished_esi_list)
+	set_orchestrator(algorithm, ready_esi_list, running_esi_list, blocked_esi_list, finished_esi_list);
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
@@ -51,26 +51,28 @@ int esi_id_generate(){
 //new_esi(que tiene solo input)
 void new_esi(/*me da algo*/){
 	//con ese algo genero una esi
-	esi new_esi = malloc(sizeof(esi));
-	add_esi(new_esi);
+//	esi new_esi = malloc(sizeof(esi));
+//	add_esi(new_esi);
 	/*tengo que devolverle este id a la esi*/esi_id_generate();
 }
 
 //voy_a_ejecutar(tiene input output)
-bool hubo_replanificacion_con_cambio_de_esi/*este bool lo tiene que tener por referencia los algoritmos y poder modificarlo cada vez que hay replanificacion usando semaforos*/
-che_ejecute_esto(int esi_id/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/){
-	if(hubo_replanificacion_con_cambio_de_esi){
-
-	}else{
-
-	}
-}
-
+//bool hubo_replanificacion_con_cambio_de_esi
+///*este bool lo tiene que tener por referencia los algoritmos
+// * y poder modificarlo cada vez que hay replanificacion usando semaforos*/
+//che_ejecute_esto(int esi_id/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/){
+//	if(hubo_replanificacion_con_cambio_de_esi){
+//
+//	}else{
+//
+//	}
+//}
+//
 //ejecuta_vos(output)
-ejecuta_vos(output)
+//ejecuta_vos(output)
 
 //che_esta_tomado_el_recurso(input_outpu)
-che_esta_tomado_el_recurso(input_outpu)
+//che_esta_tomado_el_recurso(input_outpu)
 
 
 
@@ -83,16 +85,16 @@ bool bloquear_recurso(char* recurso){
 		return true;
 	}
 	t_queue* cola_de_esis = dictionary_get(recursos_bloqueados,recurso);
-	int esi_id = get_esi_running()-> id;
-	queue_push(cola_de_esis,(esi_id));
-	stop_and_block_esi(esi_id);
+//	int esi_id = get_esi_running()-> id;
+//	queue_push(cola_de_esis,(esi_id));
+//	stop_and_block_esi(esi_id);
 	pthread_mutex_unlock(&id_mtx);
 	return false;
 }
-esi* get_esi_running(){
-	return list_get(RUNNING_ESI_LIST, 0);
-}
-void stop_and_block_esi(esi_id){
+//esi* get_esi_running(){
+//	return list_get(RUNNING_ESI_LIST, 0);
+//}
+void stop_and_block_esi(int esi_id){
 	esi* esi_running = list_remove(RUNNING_ESI_LIST, 0);
 	if(esi_running->id != esi_id){
 		//TODO error
@@ -100,11 +102,11 @@ void stop_and_block_esi(esi_id){
 	//llamar al replanifciar del algoritmo
 }
 void liberar_recurso(char* recurso){
-	pthread_mutex_lock(&map_boqueados);
-	t_queue* esi_queue = dictionary_remove(recursos_bloqueados,recurso);
-	int* esi_id = queue_push(esi_queue);
-	pthread_mutex_unlock(&map_boqueados);
-	add_esi_bloqueada(esi_id);
+//	pthread_mutex_lock(&map_boqueados);
+//	t_queue* esi_queue = dictionary_remove(recursos_bloqueados,recurso);
+//	int* esi_id = queue_push(esi_queue);
+//	pthread_mutex_unlock(&map_boqueados);
+//	add_esi_bloqueada(esi_id);
 	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
 }
 

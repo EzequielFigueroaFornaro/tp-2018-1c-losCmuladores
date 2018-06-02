@@ -2,6 +2,9 @@
 # Primero podemos definir algunas constantes que vamos a usar muchas veces
 # Como por ejemplo, bibliotecas, flags, el compilador (el "CC")
 
+print-%  : 
+	@echo $* = $($*)
+
 TARGET = planifier # Definimos la tarea que va a ejecutar make por defecto Y el nombre del binario final
 LIBS = -lcommons -pthread -lreadline -lcommons-library# Incluimos las bibliotecas que necesitamos, las commos y la biblio para el MD5
 CC = gcc # Vamos a usar gcc como compilador, porque nos encanta!
@@ -26,8 +29,8 @@ all: default # Si ejecutan all, que ejecute la default
 # y HEADERS, para incluir los headers que definamos.
 # Nota: wildcard implica que seleccione todos los que cumplen con la regex (osea todos los que terminen con .h)
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c), $(wildcard algorithm/*.c))
-HEADERS = $(wildcard *.h **/*.h)
+OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+HEADERS = $(wildcard *.h)
 
 %.o: %.c $(HEADERS) # Las variables que le pasamos a la tarea, le decimos que use todos los .c y todos los .h
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@ # Creamos los objects sin linkear

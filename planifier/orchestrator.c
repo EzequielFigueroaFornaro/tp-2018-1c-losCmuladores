@@ -12,8 +12,8 @@
 
 
 
-void set_orchestrator(char* algorithm,t_list* ready_esi_list,t_list* running_esi_list,
-					  t_list* blocked_esi_list,t_list* finished_esi_list){
+void set_orchestrator(int algorithm, t_list* ready_esi_list, t_list* running_esi_list,
+					  t_list* blocked_esi_list, t_list* finished_esi_list){
 	ALGORITHM = algorithm;
 	READY_ESI_LIST = ready_esi_list;
 	RUNNING_ESI_LIST = running_esi_list;
@@ -40,36 +40,57 @@ void ejecutar_esi(int esi){
 
 void add_esi(esi* esi){
 	switch(ALGORITHM) {
-		case FIFO: fifo_add_esi(esi);
+		case FIFO:
+			fifo_add_esi(esi);
+			break;
 		default:
+			fifo_add_esi(esi);
+			break;
 	}
 }
 void add_block_esi(esi* esi){
 	switch(ALGORITHM) {
-			case FIFO: fifo_add_block_esi(esi);
+			case FIFO:
+				fifo_add_block_esi(esi);
+				break;
 			default:
+				fifo_add_block_esi(esi);
+				break;
 		}
 }
 
 void finish_esi(esi* esi){
 	switch(ALGORITHM) {
-		case FIFO: fifo_finish_esi(esi);
+		case FIFO:
+			fifo_finish_esi(esi);
+			break;
 		default:
+			fifo_finish_esi(esi);
+			break;
 	}
 }
 void bloquea_esi(esi* esi){
 	switch(ALGORITHM) {
-		case FIFO: fifo_bloquea_esi(esi);
+		case FIFO:
+			fifo_bloquea_esi(esi);
+			break;
 		default:
+			fifo_bloquea_esi(esi);
+			break;
 	}
 }
-esi* desbloquea_esis(int* esi){
+esi* desbloquea_esis(int esi){
 	switch(ALGORITHM) {
-		case FIFO: return fifo_desbloquea_esis(esi);
+		case FIFO:
+			return fifo_desbloquea_esis(esi);
+			break;
 		default:
+			return fifo_desbloquea_esis(esi);
+			break;
 	}
+	return NULL;
 }
-void add_esi_bloqueada(esi_id){
+void add_esi_bloqueada(int esi_id){
 	esi* esi = desbloquea_esis(esi_id);
 	add_block_esi(esi);
 }
