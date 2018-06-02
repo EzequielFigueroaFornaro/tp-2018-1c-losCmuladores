@@ -88,7 +88,7 @@ void handle_instance_disconnection(t_instance* instance){
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
-	log_info(logger, "Sending sentence to instance...");
+	log_info(logger, "Sending sentence to instance %s", instance -> name);
 
 	t_buffer buffer = serialize_sentence(sentence);
 
@@ -116,6 +116,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	return 0;
 }
 
+//TODO llevar a commons.
 char* get_operation_as_string(int operation_id){
 	switch(operation_id) {
 		case GET_SENTENCE: return "GET";
@@ -155,10 +156,6 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 	free(string_to_save);
 	log_info(logger, "Operations log successfully saved");
 }
-
-//4)
-//TODO definir el struct del resultado.
-void receive_statement_result_from_instance();
 
 //Devuelve el resultado al ESI.
 //5)
@@ -360,6 +357,37 @@ void signal_handler(int sig){
     }
 }
 
+//TODO se puede reutilizar el código de mandar la sentencia a la instancia.
+bool resource_can_be_manipulated(t_sentence* sentence){
+	/*log_info(logger, "Asking for sentence and resource to planifier %s");
+
+	t_buffer buffer = serialize_sentence(sentence);
+
+	int send_result = send(planifier_socket, buffer.buffer_content, buffer.size, 0);
+	destroy_buffer(buffer);
+
+	if (send_result <= 0) {
+		_exit_with_error(planifier_socket, "Could not send sentence to planifier."); //TODO tener en cuenta que hay muchos sockets que cerrar si hay que bajar el coordinador !!
+	}
+
+	int result;
+	int result_response = recv(planifier_socket, &result, sizeof(int), 0);
+
+	if(result_response == 0) {
+		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.");
+	}
+
+	//Si es distinto de 0, el ESI quedó bloqueado.
+	if(result == 1){
+		log_info("ESI blocked");
+		return -1;
+	} else {
+		log_info("Resource can be acquired by ESI.");
+		return 1;
+	}*/
+
+	return true;
+}
 
 void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
 	//*************************
@@ -372,6 +400,13 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> operation_id = operation_id;
 	sentence -> key = key;
 	sentence -> value = value;
+
+
+	int resource_can_be_manipulated = resource_can_be_manipulated(sentence);
+
+	if(!resource_can_be_manipulated) {
+		//TODO ver como resolver que el ESI debe quedar bloqueado.
+	}
 
 	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
 
