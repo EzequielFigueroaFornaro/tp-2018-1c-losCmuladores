@@ -12,8 +12,7 @@
 
 
 
-void set_orchestrator(int algorithm, t_list* ready_esi_list,
-					  t_list* blocked_esi_list, t_list* finished_esi_list){
+void set_orchestrator(int algorithm){
 	ALGORITHM = algorithm;
 	READY_ESI_LIST = list_create();
 	BLOCKED_ESI_LIST = list_create();
@@ -46,8 +45,8 @@ void add_esi(esi* esi){
 void add_esi_bloqueada(int esi_id){
 	esi* ese_v = dictionary_get(esi_map, esi_id);
 
-	bool equals_esi (esi esi) {
-		  return esi_id == esi->id
+	bool equals_esi (esi* esi) {
+		  return esi_id == (esi -> id);
 	}
 	list_remove_by_condition(BLOCKED_ESI_LIST,equals_esi);
 	switch(ALGORITHM) {
