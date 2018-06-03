@@ -9,9 +9,8 @@
  */
 
 #include "coordinator.h"
-//TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
+
 //Recibe solicitud del ESI.
-//1)
 void receive_statement_request();
 
 bool is_same_instance(t_instance *one, t_instance *another){
@@ -63,8 +62,6 @@ t_instance* select_instance_to_send_by_equitative_load(){
 	return selected;
 }
 
-//Calcula a cuál mandar la instrucción.
-//2)
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_key){
 	switch(distribution) {
@@ -84,7 +81,6 @@ void handle_instance_disconnection(t_instance* instance){
 	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
 }
 
-//3)
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
@@ -158,8 +154,7 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 }
 
 //Devuelve el resultado al ESI.
-//5)
-void send_statement_result_to_ise();
+void send_statement_result_to_ise(int result, int socket);
 
 void configure_logger() {
 	logger = log_create("coordinator.log", "coordinator", 1, LOG_LEVEL_INFO);
@@ -340,6 +335,7 @@ void connection_handler(int socket) {
 	}
 }
 
+//TODO cerrar TODOS los sockets (planificador, el parametrizado, y el de todas las instancias conectadas)
 void _exit_with_error(int socket, char* error_msg, void * buffer){
 	if (buffer != NULL) {
 		free(buffer);
@@ -357,10 +353,8 @@ void signal_handler(int sig){
     }
 }
 
-//TODO se puede reutilizar el código de mandar la sentencia a la instancia.
-bool resource_can_be_manipulated(t_sentence* sentence){
-	/*log_info(logger, "Asking for sentence and resource to planifier %s");
-
+//TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
+int send_sentence_to_planifier_and_receive_confirmation(t_sentence* sentence){
 	t_buffer buffer = serialize_sentence(sentence);
 
 	int send_result = send(planifier_socket, buffer.buffer_content, buffer.size, 0);
@@ -373,21 +367,41 @@ bool resource_can_be_manipulated(t_sentence* sentence){
 	int result;
 	int result_response = recv(planifier_socket, &result, sizeof(int), 0);
 
-	if(result_response == 0) {
+	//TODO AUXILIOOOOOOOO, QUÉ HAGO ACÁ ?
+	if(result_response <= 0) {
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.");
 	}
 
-	//Si es distinto de 0, el ESI quedó bloqueado.
-	if(result == 1){
-		log_info("ESI blocked");
-		return -1;
-	} else {
-		log_info("Resource can be acquired by ESI.");
-		return 1;
-	}*/
-
-	return true;
+	//TODO asumo que se mantiene el protocolo en todo el sistema.
+	return result;
 }
+
+
+int can_resource_be_used(t_sentence* sentence){
+
+	log_info(logger, "Asking for sentence and resource to planifier %s");
+
+	if(sentence -> operation_id == GET_SENTENCE) {
+		//checkear existencia de la key. Si no existe crearla
+	}
+
+	//Avisar/Preguntarle al planificador de esta instruccion con este recurso.
+
+	//TODO todavía no está integrado el planificador.
+	//return send_sentence_to_planifier_and_receive_confirmation(sentence);
+
+	return 0;
+}
+
+/*
+ * case OK : return "Sentencia ejecutada"; 0
+ * 	case KEY_TOO_LONG : return "Error de Tamano de Clave"; 1
+ * 	case KEY_NOT_FOUND : return "Error de Clave no Identificada"; 2
+ * 	case KEY_UNREACHABLE : return "Error de Clave Inaccesible"; 3
+ * 	case KEY_LOCK_NOT_ACQUIRED : return "Error de Clave no Bloqueada"; 4
+ * 	case KEY_BLOCKED : return "Clave bloqueada por otro proceso"; 5
+ * 	case PARSE_ERROR : return "Error al intentar parsear sentencia"; 6
+ * */
 
 void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
 	//*************************
@@ -402,24 +416,32 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> value = value;
 
 
-	int resource_can_be_manipulated = resource_can_be_manipulated(sentence);
+	int resource_can_be_manipulated = can_resource_be_used(sentence);
 
-	if(!resource_can_be_manipulated) {
-		//TODO ver como resolver que el ESI debe quedar bloqueado.
+	if(resource_can_be_manipulated == 0) { //OK.
+
+		t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
+
+		int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+
+		if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == -1) {
+			if(sentence -> operation_id == GET_SENTENCE){
+
+			}
+			/*Lalala, acá deberíamos ver qué es lo que se está tratando de hacer...
+			 - Si es GET, vamos a otra instancia no pasa nada
+			 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.*/
+
+		}
+		save_operation_log(sentence, ise);
+
+		//TODO mapear errores del resultado de la las instancias, al protocolo de ESI.
+		send_statement_result_to_ise(resullt);
+
+	} else {
+
 	}
 
-	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
-
-	int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
-
-	/*if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == -1) {
-		//if(sentence -> operation_id == GET_SENTENCE)
-		/*Lalala, acá deberíamos ver qué es lo que se está tratando de hacer...
-		 - Si es GET, vamos a otra instancia no pasa nada
-		 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.
-
-	}*/
-	save_operation_log(sentence, ise);
 
 			//***********************
 
