@@ -116,15 +116,6 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	return 0;
 }
 
-char* get_operation_as_string(int operation_id){
-	switch(operation_id) {
-		case GET_SENTENCE: return "GET";
-		case SET_SENTENCE: return "SET";
-		case STORE_SENTENCE: return "STORE";
-		default: return NULL;
-	}
-}
-
 void save_operation_log(t_sentence* sentence, t_ise* ise){
 	char* string_to_save = string_new();
 
@@ -398,11 +389,11 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/
-	/*while(instances_thread_list -> elements_count < 3);
+	while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
@@ -420,6 +411,6 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
 
 	sleep(6000);
-*/
+
 	exit_gracefully(EXIT_SUCCESS);
 }
