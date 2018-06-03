@@ -4,6 +4,7 @@
 
 #include <pthread.h>
 #include "commons/collections/list.h"
+#include "commons/collections/dictionary.h"
 #include "esi_structure.h"
 #include "fifo.h"
 
@@ -22,8 +23,7 @@ enum algorithm {
 	FIFO = 1
 };
 
-void set_orchestrator(int algorithm, t_list* ready_esi_list, t_list* running_esi_list,
-		t_list* blocked_esi_list, t_list* finished_esi_list);
+void set_orchestrator(int algorithm);
 
 //esi* get_esi_running();
 
