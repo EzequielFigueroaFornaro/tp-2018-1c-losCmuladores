@@ -38,7 +38,9 @@ int coordinator_socket;
 //Global variables.
 t_log * logger;
 
-t_dictionary * recursos_bloqueados;
+t_dictionary * esis_bloqueados_por_recurso;
+t_dictionary * recurso_tomado_por_esi;
+
 
 pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
