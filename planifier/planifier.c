@@ -11,21 +11,12 @@
 #include "planifier.h"
 
 int main(int argc, char* argv[]) {
+	esis_bloqueados_por_recurso = dictionary_create();
 
-	t_list* ready_esi_list = list_create();
-	t_list* running_esi_list = list_create();
-	t_list* blocked_esi_list = list_create();
-	t_list* finished_esi_list = list_create();
-	recursos_bloqueados = dictionary_create();
-
-	set_orchestrator(algorithm, ready_esi_list, running_esi_list, blocked_esi_list, finished_esi_list);
-
+	set_orchestrator();
 	configure_logger();
 	load_configuration(argv[1]);
-
 	connect_to_coordinator();
-
-	set_orchestrator(algorithm, ready_esi_list, running_esi_list, blocked_esi_list, finished_esi_list);
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
@@ -37,15 +28,33 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-// funciones a modificar o hacer
-
 int esi_id_generate(){
 	pthread_mutex_trylock(&id_mtx);
 	int new_id = id ++;
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
 }
+int cpu_time_incrementate(){
+	pthread_mutex_trylock(&cpu_time_mtx);
+	int new_cpu_time = cpu_time ++;
+	pthread_mutex_unlock(&cpu_time_mtx);
+	return new_cpu_time;
+}
+int new_esi(/*me da algo*/){
+	pthread_mutex_trylock(&cpu_time_mtx);
+	esi new_esi = malloc(sizeof(esi));
+	new_esi -> id = esi_id_generate();
+	pthread_mutex_trylock(&cpu_time_mtx);
+	new_esi -> tiempo_de_entrada = cpu_time;
+	pthread_mutex_unlock(&cpu_time_mtx);
+	new_esi -> cantidad_de_instrucciones = 123/*lo tiene que pasar por parametro el esi, creo que s lo unico que te tiene que pasar*/;
+	new_esi -> instrucction_pointer = 0;
+	pthread_mutex_unlock(&cpu_time_mtx);
+	add_esi(new_esi);
+	return new_esi -> id;
+}
 
+// funciones a modificar o hacer
 
 //new_esi(que tiene solo input)
 void new_esi(esi* new_esi){
@@ -53,7 +62,7 @@ void new_esi(esi* new_esi){
 	add_esi(new_esi);
 }
 
-//voy_a_ejecutar(tiene input output)
+voy_a_ejecutar(tiene input output)
 //bool hubo_replanificacion_con_cambio_de_esi
 ///*este bool lo tiene que tener por referencia los algoritmos
 // * y poder modificarlo cada vez que hay replanificacion usando semaforos*/
@@ -64,14 +73,12 @@ void new_esi(esi* new_esi){
 //	}else{
 //
 //	}
-//}
+}
 //
 //ejecuta_vos(output)
 
 //che_esta_tomado_el_recurso(input_outpu)
-
-
-bool bloquear_recurso(char* recurso){
+bool bloquear_recurso(char* recurso, int esi_id){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recursos_bloqueados,recurso)){
 		dictionary_put(recursos_bloqueados, recurso, queue_create());
@@ -85,24 +92,22 @@ bool bloquear_recurso(char* recurso){
 	pthread_mutex_unlock(&map_boqueados);
 	return false;
 }
+
+
 //esi* get_esi_running(){
 //	return list_get(RUNNING_ESI_LIST, 0);
 //}
-void stop_and_block_esi(int esi_id){
-	esi* esi_running = list_remove(RUNNING_ESI_LIST, 0);
-	if(esi_running->id != esi_id){
-		//TODO error
-	}
-	//llamar al replanifciar del algoritmo
-}
+
 void liberar_recurso(char* recurso){
-//	pthread_mutex_lock(&map_boqueados);
-//	t_queue* esi_queue = dictionary_remove(recursos_bloqueados,recurso);
-//	int* esi_id = queue_push(esi_queue);
-//	pthread_mutex_unlock(&map_boqueados);
-//	add_esi_bloqueada(esi_id);
+	pthread_mutex_lock(&map_boqueados);
+	t_queue* esi_queue = dictionary_remove(recursos_bloqueados,recurso);
+	int* esi_id = queue_push(esi_queue);
+	pthread_mutex_unlock(&map_boqueados);
+	add_esi_bloqueada(esi_id);
 	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
 }
+
+
 
 //-------------------
 void configure_logger() {

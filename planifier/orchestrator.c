@@ -12,13 +12,13 @@
 
 
 
-void set_orchestrator(int algorithm, t_list* ready_esi_list, t_list* running_esi_list,
+void set_orchestrator(int algorithm, t_list* ready_esi_list,
 					  t_list* blocked_esi_list, t_list* finished_esi_list){
 	ALGORITHM = algorithm;
-	READY_ESI_LIST = ready_esi_list;
-	RUNNING_ESI_LIST = running_esi_list;
-	BLOCKED_ESI_LIST = blocked_esi_list;
-	FINISHED_ESI_LIST = finished_esi_list;
+	READY_ESI_LIST = list_create();
+	BLOCKED_ESI_LIST = list_create();
+	FINISHED_ESI_LIST = list_create();
+
 };
 
 /*aca se pueden tener un par de funciones globales para todas las esis
@@ -34,11 +34,8 @@ void ejecutar_esi(int esi){
 //	pthread_mutex_unlock(&tiempo_cpu_sem);
 }
 
-void initialize_clock_and_sem(){
-	clock_cpu = 0;
-}
-
 void add_esi(esi* esi){
+	dictionary_put(esi_map, esi->id, esi);
 	switch(ALGORITHM) {
 		case FIFO:
 			fifo_add_esi(esi);
@@ -48,50 +45,27 @@ void add_esi(esi* esi){
 			break;
 	}
 }
-void add_block_esi(esi* esi){
+
+
+void add_esi_bloqueada(int esi_id){
+	esi* ese_v = dictionary_get(esi_map, esi_id);
+
+	bool equals_esi (esi esi) {
+		  return esi_id == esi->id
+	}
+
+	list_remove_by_condition(BLOCKED_ESI_LIST,equals_esi);
 	switch(ALGORITHM) {
 			case FIFO:
-				fifo_add_block_esi(esi);
+				fifo_add_esi(ese_v);
 				break;
 			default:
-				fifo_add_block_esi(esi);
+				fifo_add_esi(ese_v);
 				break;
 		}
 }
 
-void finish_esi(esi* esi){
-	switch(ALGORITHM) {
-		case FIFO:
-			fifo_finish_esi(esi);
-			break;
-		default:
-			fifo_finish_esi(esi);
-			break;
-	}
-}
-void bloquea_esi(esi* esi){
-	switch(ALGORITHM) {
-		case FIFO:
-			fifo_bloquea_esi(esi);
-			break;
-		default:
-			fifo_bloquea_esi(esi);
-			break;
-	}
-}
-esi* desbloquea_esis(int esi){
-	switch(ALGORITHM) {
-		case FIFO:
-			return fifo_desbloquea_esis(esi);
-			break;
-		default:
-			return fifo_desbloquea_esis(esi);
-			break;
-	}
-	return NULL;
-}
-void add_esi_bloqueada(int esi_id){
-	esi* esi = desbloquea_esis(esi_id);
-	add_block_esi(esi);
-}
+
+
+
 
