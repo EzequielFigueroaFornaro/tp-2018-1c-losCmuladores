@@ -1,11 +1,11 @@
 #ifndef _ORCHESTRATOR_H_
 #define _ORCHESTRATOR_H_
 
-#include "fifo.h"
+
 #include <pthread.h>
 #include "commons/collections/list.h"
-#include "planifier.h"
-
+#include "esi_structure.h"
+#include "fifo.h"
 
 int ALGORITHM;
 t_list * READY_ESI_LIST;
@@ -13,8 +13,8 @@ t_list * RUNNING_ESI_LIST;
 t_list * BLOCKED_ESI_LIST;
 t_list * FINISHED_ESI_LIST;
 
-pthread_mutex_t tiempo_cpu = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
+int clock_cpu = 0;
 
 enum algorithm {
 	FIFO = 1

@@ -20,8 +20,9 @@
 #include <commons/log.h>
 #include "commons-sockets.h"
 #include <commons/collections/queue.h>
-#include "orchestrator.h"
 #include "commons/collections/list.h"
+#include "orchestrator.h"
+#include "esi_structure.h"
 
 int server_port;
 int server_max_connections;
@@ -35,13 +36,6 @@ int coordinator_socket;
 
 //Global variables.
 t_log * logger;
-
-typedef struct {
-	int id;
-	int tiempo_de_entrada;
-	int cantidad_de_instrucciones;
-	int instrucction_pointer;
-}__attribute((packed)) esi;
 
 t_dictionary * recursos_bloqueados;
 

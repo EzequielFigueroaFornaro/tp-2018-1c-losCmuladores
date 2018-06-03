@@ -41,10 +41,10 @@ int main(int argc, char* argv[]) {
 
 int id = 0;
 int esi_id_generate(){
-	pthread_mutex_trylock(&id_mtx);
-	int new_id = id ++;
-	pthread_mutex_unlock(&id_mtx);
-	return new_id;
+//	pthread_mutex_trylock(&id_mtx);
+//	int new_id = id ++;
+//	pthread_mutex_unlock(&id_mtx);
+	return 0;
 }
 
 
@@ -53,7 +53,8 @@ void new_esi(/*me da algo*/){
 	//con ese algo genero una esi
 //	esi new_esi = malloc(sizeof(esi));
 //	add_esi(new_esi);
-	/*tengo que devolverle este id a la esi*/esi_id_generate();
+	/*tengo que devolverle este id a la esi*/
+	esi_id_generate();
 }
 
 //voy_a_ejecutar(tiene input output)
