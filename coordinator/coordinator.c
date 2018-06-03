@@ -361,7 +361,7 @@ int send_sentence_to_planifier_and_receive_confirmation(t_sentence* sentence){
 	destroy_buffer(buffer);
 
 	if (send_result <= 0) {
-		_exit_with_error(planifier_socket, "Could not send sentence to planifier."); //TODO tener en cuenta que hay muchos sockets que cerrar si hay que bajar el coordinador !!
+		_exit_with_error(planifier_socket, "Could not send sentence to planifier.", NULL); //TODO tener en cuenta que hay muchos sockets que cerrar si hay que bajar el coordinador !!
 	}
 
 	int result;
@@ -369,7 +369,7 @@ int send_sentence_to_planifier_and_receive_confirmation(t_sentence* sentence){
 
 	//TODO AUXILIOOOOOOOO, QUÉ HAGO ACÁ ?
 	if(result_response <= 0) {
-		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.");
+		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
 	//TODO asumo que se mantiene el protocolo en todo el sistema.
@@ -436,7 +436,7 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 		save_operation_log(sentence, ise);
 
 		//TODO mapear errores del resultado de la las instancias, al protocolo de ESI.
-		send_statement_result_to_ise(resullt);
+		//send_statement_result_to_ise(resullt);
 
 	} else {
 

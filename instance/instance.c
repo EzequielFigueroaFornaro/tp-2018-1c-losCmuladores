@@ -100,12 +100,11 @@ t_sentence* wait_for_statement(int socket_fd) {
 	if (recv_sentence_operation(socket_fd, &operation_id) > 0) {
 		if (recv_string(socket_fd, &key_buffer) > 0) {
 			if (recv_string(socket_fd, &value_buffer) > 0) {
-				log_info(logger, "Sentence successfully received.");
-
 				t_sentence* sentence = malloc(sizeof(t_sentence));
 				sentence -> operation_id = operation_id;
 				sentence -> key = key_buffer;
 				sentence -> value = value_buffer;
+				log_info(logger, "Sentence successfully received: %s", sentence_to_string(sentence));
 				return sentence;
 			} else {
 				free(key_buffer);

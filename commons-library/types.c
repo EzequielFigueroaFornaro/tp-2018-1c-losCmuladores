@@ -7,6 +7,12 @@
 
 #include "types.h"
 
+message_type MODULE_CONNECTED = 100;
+message_type CONNECTION_SUCCESS = 101;
+message_type EXECUTION_RESULT = 200;
+message_type ISE_STOP = 300;
+message_type ISE_EXECUTE = 301;
+
 t_buffer serialize_sentence(t_sentence* sentence){
 	int operation_length = sizeof(sentence -> operation_id);
 	int key_length = strlen(sentence -> key) + 1;
@@ -47,4 +53,22 @@ void concat_string(void** mem_address, void* string, int string_length) {
 	concat_value(&offset, &string_length, sizeof(string_length));
 	concat_value(&offset, string, string_length);
 	*mem_address = offset;
+}
+
+char* get_operation_as_string(int operation_id) {
+	switch(operation_id) {
+		case GET_SENTENCE: return "GET";
+		case SET_SENTENCE: return "SET";
+		case STORE_SENTENCE: return "STORE";
+		default: return NULL;
+	}
+}
+
+char* sentence_to_string(t_sentence* sentence) {
+	if (strcmp(sentence->value, "") == 0) {
+		return string_from_format("{ %s %s }",
+				get_operation_as_string(sentence->operation_id), sentence->key);
+	}
+	return string_from_format("{ %s %s %s }",
+			get_operation_as_string(sentence->operation_id), sentence->key, sentence->value);
 }
