@@ -11,7 +11,7 @@
 #include "planifier.h"
 
 int main(int argc, char* argv[]) {
-	esis_bloqueados_por_recurso = dictionary_create();
+	e = dictionary_create();
 
 	set_orchestrator();
 	configure_logger();

@@ -27,11 +27,7 @@ void set_orchestrator(int algorithm, t_list* ready_esi_list,
 
 
 void ejecutar_esi(int esi){
-	//voy al mapa y busco por el id, y por ejemplo calbio el stack del numero de sentencia en la que sta
-	//o modificamos en base al tiempo de cpu  la prioridad en el hrrn
-//	pthread_mutex_trylock(&tiempo_cpu_sem);
 	clock_cpu ++;
-//	pthread_mutex_unlock(&tiempo_cpu_sem);
 }
 
 void add_esi(esi* esi){
@@ -53,7 +49,6 @@ void add_esi_bloqueada(int esi_id){
 	bool equals_esi (esi esi) {
 		  return esi_id == esi->id
 	}
-
 	list_remove_by_condition(BLOCKED_ESI_LIST,equals_esi);
 	switch(ALGORITHM) {
 			case FIFO:
@@ -65,7 +60,9 @@ void add_esi_bloqueada(int esi_id){
 		}
 }
 
+void finish(){
 
+}
 
 
 
