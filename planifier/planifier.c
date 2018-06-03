@@ -48,19 +48,17 @@ int esi_id_generate(){
 
 
 //new_esi(que tiene solo input)
-void new_esi(/*me da algo*/){
-	//con ese algo genero una esi
-//	esi new_esi = malloc(sizeof(esi));
-//	add_esi(new_esi);
-	/*tengo que devolverle este id a la esi*/
-	esi_id_generate();
+void new_esi(esi* new_esi){
+	new_esi -> id = esi_id_generate();
+	add_esi(new_esi);
 }
 
 //voy_a_ejecutar(tiene input output)
 //bool hubo_replanificacion_con_cambio_de_esi
 ///*este bool lo tiene que tener por referencia los algoritmos
 // * y poder modificarlo cada vez que hay replanificacion usando semaforos*/
-//che_ejecute_esto(int esi_id/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/){
+//che_ejecute_esto(int esi_id){
+/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/
 //	if(hubo_replanificacion_con_cambio_de_esi){
 //
 //	}else{
@@ -69,12 +67,8 @@ void new_esi(/*me da algo*/){
 //}
 //
 //ejecuta_vos(output)
-//ejecuta_vos(output)
 
 //che_esta_tomado_el_recurso(input_outpu)
-//che_esta_tomado_el_recurso(input_outpu)
-
-
 
 
 bool bloquear_recurso(char* recurso){
@@ -85,10 +79,10 @@ bool bloquear_recurso(char* recurso){
 		return true;
 	}
 	t_queue* cola_de_esis = dictionary_get(recursos_bloqueados,recurso);
-//	int esi_id = get_esi_running()-> id;
-//	queue_push(cola_de_esis,(esi_id));
-//	stop_and_block_esi(esi_id);
-	pthread_mutex_unlock(&id_mtx);
+	esi running_esi = get_esi_running();
+	queue_push(cola_de_esis,(running_esi->id));
+	stop_and_block_esi(running_esi -> id);
+	pthread_mutex_unlock(&map_boqueados);
 	return false;
 }
 //esi* get_esi_running(){
