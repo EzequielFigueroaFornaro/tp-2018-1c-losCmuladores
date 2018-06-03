@@ -28,6 +28,7 @@ int server_port;
 int server_max_connections;
 int algorithm;
 int id = 0;
+int cpu_time = 0;
 
 int coordinator_port;
 char* coordinator_ip;
@@ -45,6 +46,7 @@ pthread_mutex_t running_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t blocked_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t finished_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cpu_time_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 void configure_logger();
 
