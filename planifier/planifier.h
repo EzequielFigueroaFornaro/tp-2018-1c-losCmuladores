@@ -27,7 +27,7 @@
 int server_port;
 int server_max_connections;
 int algorithm;
-
+int id = 0;
 
 int coordinator_port;
 char* coordinator_ip;

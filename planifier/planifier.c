@@ -39,12 +39,11 @@ int main(int argc, char* argv[]) {
 
 // funciones a modificar o hacer
 
-int id = 0;
 int esi_id_generate(){
-//	pthread_mutex_trylock(&id_mtx);
-//	int new_id = id ++;
-//	pthread_mutex_unlock(&id_mtx);
-	return 0;
+	pthread_mutex_trylock(&id_mtx);
+	int new_id = id ++;
+	pthread_mutex_unlock(&id_mtx);
+	return new_id;
 }
 
 

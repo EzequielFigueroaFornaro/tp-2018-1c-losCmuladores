@@ -1,3 +1,6 @@
+#ifndef COMMONS_SOCKET_H_
+#define COMMONS_SOCKET_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -37,3 +40,5 @@ char* get_client_address(int socket);
 int recv_string(int socket, char** string);
 
 int recv_sentence_operation(int socket, int *operation);
+
+#endif

@@ -13,12 +13,14 @@ t_list * RUNNING_ESI_LIST;
 t_list * BLOCKED_ESI_LIST;
 t_list * FINISHED_ESI_LIST;
 
-pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
-int clock_cpu = 0;
+//pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
+int clock_cpu;
 
 enum algorithm {
 	FIFO = 1
 };
+
+void initialize_clock_and_sem();
 
 void set_orchestrator(int algorithm, t_list* ready_esi_list, t_list* running_esi_list,
 		t_list* blocked_esi_list, t_list* finished_esi_list);

@@ -64,6 +64,8 @@ dkms.conf
 *.project
 .metadata/
 cmake-build-debug/
+*.xml
+*.iml
 
 **/Debug
 

@@ -29,11 +29,14 @@ void set_orchestrator(int algorithm, t_list* ready_esi_list, t_list* running_esi
 void ejecutar_esi(int esi){
 	//voy al mapa y busco por el id, y por ejemplo calbio el stack del numero de sentencia en la que sta
 	//o modificamos en base al tiempo de cpu  la prioridad en el hrrn
-	pthread_mutex_trylock(&tiempo_cpu_sem);
-	clock_cpu = clock_cpu +1;
-	pthread_mutex_unlock(&tiempo_cpu_sem);
+//	pthread_mutex_trylock(&tiempo_cpu_sem);
+	clock_cpu ++;
+//	pthread_mutex_unlock(&tiempo_cpu_sem);
 }
 
+void initialize_clock_and_sem(){
+	clock_cpu = 0;
+}
 
 void add_esi(esi* esi){
 	switch(ALGORITHM) {
