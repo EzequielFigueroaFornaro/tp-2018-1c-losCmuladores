@@ -20,6 +20,8 @@
 #include <errno.h>
 #include "types.h"
 
+extern int MODULE_DISCONNECTED;
+
 int start_server(int port, int max_connections, void *(*_connection_handler)(void *), bool async, t_log *logger);
 
 int connect_to(char* ip, int port);
@@ -32,7 +34,9 @@ char* get_client_address(int socket);
 
 int recv_string(int socket, char** string);
 
-int recv_value(int socket, int* value);
+int recv_int(int socket, int* value);
+
+int recv_long(int socket, long* id);
 
 int recv_sentence_operation(int socket, int *operation);
 

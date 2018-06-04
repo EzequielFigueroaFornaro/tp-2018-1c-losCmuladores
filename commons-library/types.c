@@ -54,3 +54,21 @@ void concat_string(void** mem_address, void* string, int string_length) {
 	concat_value(&offset, string, string_length);
 	*mem_address = offset;
 }
+
+char* get_operation_as_string(int operation_id) {
+	switch(operation_id) {
+		case GET_SENTENCE: return "GET";
+		case SET_SENTENCE: return "SET";
+		case STORE_SENTENCE: return "STORE";
+		default: return NULL;
+	}
+}
+
+char* sentence_to_string(t_sentence* sentence) {
+	if (strcmp(sentence->value, "") == 0) {
+		return string_from_format("{ %s %s }",
+				get_operation_as_string(sentence->operation_id), sentence->key);
+	}
+	return string_from_format("{ %s %s %s }",
+			get_operation_as_string(sentence->operation_id), sentence->key, sentence->value);
+}

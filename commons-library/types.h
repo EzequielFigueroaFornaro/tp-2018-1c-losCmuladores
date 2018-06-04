@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "commons/string.h"
 
 typedef struct {
 	int operation_id;
@@ -52,5 +53,9 @@ void concat_value(void** mem_address, void* value, int size_of_value);
 
 /* Copia el tamaño del string junto al contenido y actualiza la posicion de memoria para copiar otro valor */
 void concat_string(void** mem_address, void* string, int string_length);
+
+char* get_operation_as_string(int operation_id);
+
+char* sentence_to_string(t_sentence* sentence);
 
 #endif /* TYPES_H_ */

@@ -73,7 +73,9 @@ typedef struct {
 	pthread_t instance_thread;
 	int socket_id;
 	bool is_available;
-} __attribute__((packed)) t_instance;
+	char* ip_port;
+	char* name;
+} t_instance;
 
 t_instance *last_instance_selected;
 

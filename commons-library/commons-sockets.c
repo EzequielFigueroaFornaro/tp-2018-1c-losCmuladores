@@ -11,6 +11,8 @@ typedef struct {
 	t_log * logger;
 } t_accept_params;
 
+int MODULE_DISCONNECTED = 0;
+
 void accept_connections(t_accept_params *accept_params);
 t_accept_params* build_accept_params(int server_socket, void *(*connection_handler)(void *), t_log *logger);
 
@@ -143,7 +145,7 @@ char* get_client_address(int socket) {
 
 int recv_string(int socket, char** string) {
 	int length;
-	int length_result = recv_value(socket, &length);
+	int length_result = recv_int(socket, &length);
 	if (length_result > 0) {
 		*string = malloc(length);
 		int result = recv(socket, *string, length, MSG_WAITALL);
@@ -156,19 +158,20 @@ int recv_string(int socket, char** string) {
 	}
 }
 
-int recv_value(int socket, int* value) {
+int recv_int(int socket, int* value) {
 	return recv(socket, value, sizeof(int), MSG_WAITALL);
+}
+
+int recv_long(int socket, long* id) {
+	return recv(socket, id, sizeof(long), MSG_WAITALL);
 }
 
 int recv_sentence_operation(int socket, int *operation) {
 	int result = recv(socket, operation, sizeof(int), 0);
-	if (result < 0) {
+	if (!is_valid_operation(*operation)) {
 		return -1;
 	}
-	if (result == 0) {
-		return -2;
-	}
-	return 1;
+	return result;
 }
 
 message_type recv_message(int socket) {
