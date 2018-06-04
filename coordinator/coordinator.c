@@ -63,12 +63,16 @@ t_instance* select_instance_to_send_by_equitative_load(){
 }
 
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
-t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_key){
-	switch(distribution) {
-		case EL: return select_instance_to_send_by_equitative_load();
-		case LSU: return NULL;//TODO
-		case KE: return NULL; //TODO
-		default: return NULL; //TODO
+t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
+	if(sentence -> operation_id == SET_SENTENCE){
+		switch(distribution) {
+			case EL: return select_instance_to_send_by_equitative_load();
+			case LSU: return NULL;//TODO
+			case KE: return NULL; //TODO
+			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
+		}
+	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
+		return (t_instance*) dictionary_get(keys_location, sentence -> key);
 	}
 }
 
@@ -101,7 +105,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	if(result_response == 0) {
 		log_error(logger, "Selected instance is not available !");
 		handle_instance_disconnection(instance);
-		return -1;
+		return KEY_UNREACHABLE;
 	}
 
 	//Put key -> instance.
@@ -109,7 +113,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
-	return 0;
+	return OK;
 }
 
 //TODO llevar a commons.
@@ -154,7 +158,19 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 }
 
 //Devuelve el resultado al ESI.
-void send_statement_result_to_ise(int result, int socket);
+void send_statement_result_to_ise(int result, t_ise* ise) {
+	int message_size = sizeof(int) + sizeof(int);
+
+	void* buffer;
+	void* offset = buffer;
+	concat_value(offset, OK, sizeof(execution_result));
+
+	int send_result = send(ise -> socket_id, buffer, sizeof(message_size), 0);
+
+	if(send_result <= 0) {
+		log_error(logger, "Could not send execution result to ISE %s", ise -> id);
+	}
+}
 
 void configure_logger() {
 	logger = log_create("coordinator.log", "coordinator", 1, LOG_LEVEL_INFO);
@@ -354,7 +370,8 @@ void signal_handler(int sig){
 }
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
-int send_sentence_to_planifier_and_receive_confirmation(t_sentence* sentence){
+int validate_resource_with_planifier_and_receive_confirmation(t_sentence* sentence){
+	/*log_info(logger, "Asking for sentence and resource to planifier %s");
 	t_buffer buffer = serialize_sentence(sentence);
 
 	int send_result = send(planifier_socket, buffer.buffer_content, buffer.size, 0);
@@ -373,24 +390,8 @@ int send_sentence_to_planifier_and_receive_confirmation(t_sentence* sentence){
 	}
 
 	//TODO asumo que se mantiene el protocolo en todo el sistema.
-	return result;
-}
-
-
-int can_resource_be_used(t_sentence* sentence){
-
-	log_info(logger, "Asking for sentence and resource to planifier %s");
-
-	if(sentence -> operation_id == GET_SENTENCE) {
-		//checkear existencia de la key. Si no existe crearla
-	}
-
-	//Avisar/Preguntarle al planificador de esta instruccion con este recurso.
-
-	//TODO todavía no está integrado el planificador.
-	//return send_sentence_to_planifier_and_receive_confirmation(sentence);
-
-	return 0;
+	return result;*/
+	return OK;
 }
 
 /*
@@ -415,36 +416,36 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> key = key;
 	sentence -> value = value;
 
+	int result_to_ise;
 
-	int resource_can_be_manipulated = can_resource_be_used(sentence);
+	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
+	int planifier_validation = validate_resource_with_planifier_and_receive_confirmation(sentence);
 
-	if(resource_can_be_manipulated == 0) { //OK.
+	if(planifier_validation == OK && (sentence -> operation_id) != GET_SENTENCE) { //OK.
 
-		t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
+		t_instance* selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
-		int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+		result_to_ise = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
 
-		if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == -1) {
-			if(sentence -> operation_id == GET_SENTENCE){
+		if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == KEY_UNREACHABLE) {
 
+			if(sentence -> operation_id == STORE_SENTENCE){
+				dictionary_remove(keys_location, sentence -> key);
+				//TODO Llamada al PLANIFICADOR para que aborte el ESI correspondiente.. Ver protocolo...
+				result_to_ise = KEY_UNREACHABLE;
 			}
-			/*Lalala, acá deberíamos ver qué es lo que se está tratando de hacer...
-			 - Si es GET, vamos a otra instancia no pasa nada
-			 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.*/
-
+			 //- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 		}
+
+		dictionary_put(keys_location, sentence -> key, selected_instance);
 		save_operation_log(sentence, ise);
 
-		//TODO mapear errores del resultado de la las instancias, al protocolo de ESI.
-		//send_statement_result_to_ise(resullt);
-
 	} else {
-
+		dictionary_put(keys_location, sentence -> key, NULL);
+		result_to_ise = OK;
 	}
 
-
-			//***********************
-
+	send_statement_result_to_ise(result_to_ise, ise);
 }
 
 int main(int argc, char* argv[]) {
@@ -455,11 +456,11 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/
-	/*while(instances_thread_list -> elements_count < 3);
+	while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
@@ -477,6 +478,6 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
 
 	sleep(6000);
-*/
+
 	exit_gracefully(EXIT_SUCCESS);
 }
