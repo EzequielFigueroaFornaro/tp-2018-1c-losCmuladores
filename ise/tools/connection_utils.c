@@ -34,3 +34,23 @@ char* get_module_name(module_type module) {
 	default : return "unknown";
 	}
 }
+
+char* get_ip(module_type module) {
+	return get_config(module)->ip;
+}
+
+int get_port(module_type module) {
+	return get_config(module)->port;
+}
+
+int get_socket(module_type module) {
+	return get_config(module)->socket;
+}
+
+void set_socket(module_type module, int socket) {
+	get_config(module)->socket = socket;
+}
+
+void close_connection(module_type module) {
+	close(get_socket(module));
+}

@@ -56,6 +56,7 @@ t_sentence* map_to_sentence(t_esi_operacion operation) {
 	case GET:
 		sentence->operation_id = GET_SENTENCE;
 		sentence->key = operation.argumentos.GET.clave;
+		sentence->value = "";
 		break;
 	case SET:
 		sentence->operation_id = SET_SENTENCE;
@@ -65,6 +66,7 @@ t_sentence* map_to_sentence(t_esi_operacion operation) {
 	case STORE:
 		sentence->operation_id = STORE_SENTENCE;
 		sentence->key = operation.argumentos.STORE.clave;
+		sentence->value = "";
 		break;
 	default:
 		log_error(logger,"Unexpected error: sentence keyword not recognized");

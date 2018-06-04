@@ -7,11 +7,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include "logging.h"
 #include "script_handler.h"
 #include "config.h"
 #include "types.h"
+#include "connection_utils.h"
 
 void exit_gracefully(int code);
 
