@@ -19,6 +19,7 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include "commons-sockets.h"
+#include "response_codes.h"
 
 int server_port;
 int server_max_connections;
