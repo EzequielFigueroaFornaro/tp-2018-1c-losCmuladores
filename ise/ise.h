@@ -15,14 +15,14 @@
 #include "commons-sockets.h"
 #include "types.h"
 #include "response_codes.h"
+#include "logging.h"
 
 #include "tools/script_handler.h"
-#include "tools/logging.h"
 #include "tools/config.h"
 #include "tools/exit_handler.h"
 #include "tools/connection_utils.h"
 
-int my_id = 42;
+long self_id = 42;
 
 int self_module_type = ISE;
 
