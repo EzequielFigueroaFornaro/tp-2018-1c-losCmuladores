@@ -30,31 +30,44 @@ void ejecutar_esi(int esi){
 }
 
 void add_esi(esi* esi){
+	pthread_mutex_lock(&esi_map_mtx);
 	dictionary_put(esi_map, esi->id, esi);
+	pthread_mutex_unlock(&esi_map_mtx);
 	switch(ALGORITHM) {
 		case FIFO:
-			fifo_add_esi(esi);
+			fifo_add_esi(READY_ESI_LIST, ready_list_mtx, (esi->id));
 			break;
 		default:
-			fifo_add_esi(esi);
+			fifo_add_esi(READY_ESI_LIST, ready_list_mtx, (esi->id));
 			break;
 	}
 }
 
 
-void add_esi_bloqueada(int esi_id){
-	esi* ese_v = dictionary_get(esi_map, esi_id);
-
-	bool equals_esi (esi* esi) {
-		  return esi_id == (esi -> id);
-	}
-	list_remove_by_condition(BLOCKED_ESI_LIST,equals_esi);
+void block_esi(int esi_id){
 	switch(ALGORITHM) {
 			case FIFO:
-				fifo_add_esi(ese_v);
+				fifo_block_esi(BLOCKED_ESI_LIST, blocked_list_mtx, READY_ESI_LIST, ready_list_mtx, RUNNING_ESI, running_esi_mtx, esi_id);
 				break;
 			default:
-				fifo_add_esi(ese_v);
+				fifo_block_esi(BLOCKED_ESI_LIST, blocked_list_mtx, READY_ESI_LIST, ready_list_mtx, RUNNING_ESI, running_esi_mtx, esi_id);
+				break;
+		}
+}
+
+void unlock_esi(int esi_id){
+	bool equals_esi (int esi) {
+		  return esi_id == esi;
+	}
+	pthread_mutex_lock(&blocked_list_mtx);
+	list_remove_by_condition(BLOCKED_ESI_LIST,equals_esi);
+	pthread_mutex_unlock(&blocked_list_mtx);
+	switch(ALGORITHM) {
+			case FIFO:
+				fifo_add_esi(READY_ESI_LIST, ready_list_mtx, esi_id);
+				break;
+			default:
+				fifo_add_esi(READY_ESI_LIST, ready_list_mtx, esi_id);
 				break;
 		}
 }
