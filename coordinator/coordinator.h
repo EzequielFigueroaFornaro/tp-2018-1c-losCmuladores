@@ -15,15 +15,18 @@
 #include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close
 #include <readline/readline.h> // Para usar readline
+#include <pthread.h>
+#include <signal.h>
+#include <errno.h>
+
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/collections/list.h"
-#include <pthread.h>
 #include "commons-sockets.h"
-#include "types.h"
 #include "commons/txt.h"
-#include <signal.h>
-#include <errno.h>
+
+#include "types.h"
+#include "response_codes.h"
 
 char* OPERATIONS_LOG_PATH = "operations.log";
 //#define PORT 8080

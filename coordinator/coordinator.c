@@ -11,23 +11,20 @@
 #include "coordinator.h"
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 
+bool test_block = true;
+void test_sentence_result(t_sentence* sentence, int socket, long ise_id);
+
 //Recibe solicitud del ESI.
 //1)
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
 	*sentence = malloc(sizeof(t_sentence));
-	int result = recv_sentence_operation(ise_socket, &((*sentence)->operation_id));
-	if (result == -2) {
-		log_error(logger, "ESI disconnected");
-	}
-	if (result > 0) {
-		if (recv_string(ise_socket, &((*sentence)->key)) > 0) {
-			if (recv_string(ise_socket, &((*sentence)->value)) > 0) {
-				return 0;
-			}
+	int result;
+	if ((result = recv_sentence_operation(ise_socket, &((*sentence)->operation_id))) > 0) {
+		if ((result = recv_string(ise_socket, &((*sentence)->key))) > 0) {
+			result = recv_string(ise_socket, &((*sentence)->value));
 		}
 	}
-	free(*sentence);
-	return -1;
+	return result;
 }
 
 bool is_same_instance(t_instance *one, t_instance *another){
@@ -104,15 +101,6 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	return 0;
 }
 
-char* get_operation_as_string(int operation_id){
-	switch(operation_id) {
-		case GET_SENTENCE: return "GET";
-		case SET_SENTENCE: return "SET";
-		case STORE_SENTENCE: return "STORE";
-		default: return NULL;
-	}
-}
-
 void save_operation_log(t_sentence* sentence, t_ise* ise){
 	char* string_to_save = string_new();
 
@@ -150,15 +138,18 @@ void receive_statement_result_from_instance();
 
 //Devuelve el resultado al ESI.
 //5)
-void send_statement_result_to_ise(t_ise* ise, int result) {
+void send_statement_result_to_ise2(int socket, long ise_id, execution_result result) {
 	int message_size = sizeof(message_type) + sizeof(int);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
 	concat_value(&offset, &EXECUTION_RESULT, sizeof(message_type));
 	concat_value(&offset, &result, sizeof(int));
-	int send_result = send(ise->socket_id, buffer, message_size, 0);
+	int send_result = send(socket, buffer, message_size, 0);
+	free(buffer);
+
 	if (send_result <= 0) {
-		log_error(logger, "Could not send sentence execution result to ESI %s", ise->id);
+		log_error(logger, "Could not send sentence execution result to ESI %s",
+				ise_id);
 		// TODO: Agregar al log de operaciones del coordinador?
 	}
 }
@@ -259,57 +250,42 @@ void planifier_connection_handler(int socket) {
 }
 
 void ise_connection_handler(int socket) {
-	if (send_connection_success(socket) < 0) {
-		_exit_with_error(socket, "Error sending ESI connection success", NULL);
-	} else {
-		t_ise *ise = (t_ise*) malloc(sizeof(t_ise));
-
-		ise -> ise_thread = pthread_self();
-		ise -> socket_id = socket;
-		list_add(ise_thread_list, ise);
-
-		log_info(logger, "ESI connected");
-	}
-}
-
-void process_ise_request(t_ise* ise) {
-	log_info(logger, "ESI %d connected. Waiting for statement", ise->id);
-	t_sentence* sentence;
-	if (receive_sentence_execution_request(ise->socket_id, &sentence) < 0) {
-		log_error(logger, "Could not receive sentence from ESI %d", ise->id);
-		return;
-	}
-
-	log_info(logger, "Sentence received: operation_id: %d, key: %s, value: %s",
-			sentence->operation_id, sentence->key, sentence->value);
-	// ***********************************************************************
-	//		int instance_socket; // TODO [Lu] a qué instancia ir...
-	//		int result = send_statement_to_instance_and_wait_for_result(instance_socket, sentence);
-	//		send_statement_result_to_ise(ise, result);
-}
-
-void ise_connection_handler2(int socket) {
-	int ise_id;
-	if (recv_value(socket, &ise_id) <= 0) {
+	long ise_id;
+	log_info(logger, "Socket del ESI: %d", socket);
+	if (recv_long(socket, &ise_id) <= 0) {
 		log_error(logger, "Could not receive ESI id");
 		return;
 	}
 
 	if (send_connection_success(socket) < 0) {
-		log_error(logger, "Error sending connection success to ESI");
-	} else {
-		t_ise *ise = (t_ise*) malloc(sizeof(t_ise));
-
-		ise -> ise_thread = pthread_self();
-		ise -> socket_id = socket;
-		ise -> id = ise_id;
-		list_add(ise_thread_list, ise);
-
-		log_info(logger, "ESI connected");
-
-		process_ise_request(ise);
+		log_error(logger, "Error sending connection success to ESI %ld", ise_id);
+		return;
 	}
 
+	log_info(logger, "ESI %ld connected", ise_id);
+
+	while (true) { // TODO [Lu] Lo puse así ahora pero mmmmmm....
+		log_info(logger, "Waiting for statement...");
+
+		t_sentence* sentence;
+		int sentence_received = receive_sentence_execution_request(socket, &sentence);
+		if (sentence_received == MODULE_DISCONNECTED) {
+			log_error(logger, "ESI %ld disconnected", ise_id);
+			return;
+		}
+		if (sentence_received < 0) {
+			log_error(logger, "Could not receive sentence from ESI %ld", ise_id);
+			continue;
+		}
+
+		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
+		test_sentence_result(sentence, socket, ise_id);
+
+//		int instance_socket; // TODO [Lu] a qué instancia ir...
+//		int result = send_statement_to_instance_and_wait_for_result(instance_socket, sentence);
+//		send_statement_result_to_ise(ise, result);
+		free(sentence);
+	}
 }
 
 void connection_handler(int socket) {
@@ -327,7 +303,7 @@ void connection_handler(int socket) {
 		} else if (module_type == PLANIFIER) {
 			planifier_connection_handler(socket);
 		} else if (module_type == ISE) {
-			ise_connection_handler2(socket);
+			ise_connection_handler(socket);
 		}
 	}
 }
@@ -404,4 +380,15 @@ int main(int argc, char* argv[]) {
 
 	sleep(6000);
 	exit_gracefully(EXIT_SUCCESS);
+}
+
+void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
+	if (sentence->operation_id == GET_SENTENCE && test_block) {
+		log_info(logger, "[TEST] Sending key_blocked result to esi %ld", ise_id);
+		send_statement_result_to_ise2(socket, ise_id, KEY_BLOCKED);
+		test_block = false;
+	} else {
+		log_info(logger, "[TEST] Sending ok result to esi %ld", ise_id);
+		send_statement_result_to_ise2(socket, ise_id, OK);
+	}
 }
