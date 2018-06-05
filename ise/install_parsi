@@ -4,23 +4,23 @@ if [[ -f "/usr/lib/libparsi.so" || -f "/usr/include/libparsi.so" ]]; then
 	exit 0
 fi
 
-cd /tmp
-if [ -d "parsi" ]; then
-	rm -rf parsi
+if [ -d "/tmp/parsi" ]; then
+	rm -rf /tmp/parsi
 fi
-echo "Descargando ParSI..."
-git clone https://github.com/sisoputnfrba/parsi.git
-#mkdir parsi
-if [ -d "parsi" ]; then
+echo "Descomprimiendo ParSI..."
+unzip parsi.zip -d /tmp/
+
+if [ -d "/tmp/parsi" ]; then
 	echo "Instalando ParSI..."
-	cd parsi
+	cd /tmp/parsi
 	sudo make install
-	#touch libparsi.so
-	#sudo mv libparsi.so /usr/lib/libparsi.so
+
 	if [[ -f "/usr/lib/libparsi.so" || -f "/usr/include/libparsi.so" ]]; then
 		echo "Biblioteca ParSI instalada correctamente"
+		exit 0
 	else
 		echo "Error instalando biblioteca ParSI"
+		exit 1
 	fi
 else
 	echo "Error descargando ParSI"

@@ -1,5 +1,7 @@
 #include "config.h"
 
+bool config_loaded = false;
+
 t_module_config* coordinator_config;
 t_module_config* planifier_config;
 
@@ -20,7 +22,7 @@ void load_config(char* config_file_path) {
 	modules_config = dictionary_create();
 	dictionary_put(modules_config, string_itoa(COORDINATOR), coordinator_config);
 	dictionary_put(modules_config, string_itoa(PLANIFIER), planifier_config);
-
+	config_loaded = true;
 	log_info(logger, "OK Loading.");
 }
 
@@ -29,7 +31,9 @@ t_module_config* get_config(module_type module) {
 }
 
 void destroy_config() {
-	free(coordinator_config);
-	free(planifier_config);
-	dictionary_destroy(modules_config);
+	if (config_loaded) {
+		free(coordinator_config);
+		free(planifier_config);
+		dictionary_destroy(modules_config);
+	}
 }

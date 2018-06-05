@@ -9,6 +9,8 @@
 #include "logging.h"
 #include "types.h"
 
+extern bool config_loaded;
+
 t_dictionary* modules_config;
 
 typedef struct {

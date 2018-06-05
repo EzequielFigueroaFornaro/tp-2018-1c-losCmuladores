@@ -7,11 +7,17 @@
 
 #include "ise.h"
 
+void assert_not_blank(char* msg, char* arg);
+
 t_ise_sentence current_sentence;
 bool retry_current_sentence = false;
 
 int main(int argc, char* argv[]) {
 	init_logger();
+
+	assert_not_blank("Configuration file required!", argv[1]);
+	assert_not_blank("Script file required!", argv[2]);
+
 	load_config(argv[1]);
 	load_script(argv[2]);
 
@@ -136,5 +142,12 @@ execution_result send_sentence_to_coordinator(t_esi_operacion operation) {
 		exit_with_error();
 	}
 	return result;
+}
+
+void assert_not_blank(char* msg, char* arg) {
+	if (arg == NULL || string_is_empty(arg)) {
+		log_error(logger, msg);
+		exit_with_error();
+	}
 }
 

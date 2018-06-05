@@ -2,4 +2,6 @@
 run_dir="$(dirname "$0")"
 cd "$run_dir"
 export LD_LIBRARY_PATH="../commons-library"
+make clean
+make
 ./ise ise.conf $1
