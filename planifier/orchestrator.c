@@ -35,10 +35,10 @@ void add_esi(esi* esi){
 	pthread_mutex_unlock(&esi_map_mtx);
 	switch(ALGORITHM) {
 		case FIFO:
-			fifo_add_esi(READY_ESI_LIST, ready_list_mtx, (esi->id));
+			fifo_add_esi(READY_ESI_LIST, &ready_list_mtx, (esi->id));
 			break;
 		default:
-			fifo_add_esi(READY_ESI_LIST, ready_list_mtx, (esi->id));
+			fifo_add_esi(READY_ESI_LIST, &ready_list_mtx, (esi->id));
 			break;
 	}
 }
@@ -47,10 +47,18 @@ void add_esi(esi* esi){
 void block_esi(int esi_id){
 	switch(ALGORITHM) {
 			case FIFO:
-				fifo_block_esi(BLOCKED_ESI_LIST, blocked_list_mtx, READY_ESI_LIST, ready_list_mtx, RUNNING_ESI, running_esi_mtx, esi_id);
+				fifo_block_esi(BLOCKED_ESI_LIST, &blocked_list_mtx,
+							   READY_ESI_LIST, &ready_list_mtx,
+							   &RUNNING_ESI, &running_esi_mtx,
+							   &NEXT_RUNNING_ESI, &next_running_esi_mtx,
+							   esi_id);
 				break;
 			default:
-				fifo_block_esi(BLOCKED_ESI_LIST, blocked_list_mtx, READY_ESI_LIST, ready_list_mtx, RUNNING_ESI, running_esi_mtx, esi_id);
+				fifo_block_esi(BLOCKED_ESI_LIST, &blocked_list_mtx,
+							   READY_ESI_LIST, &ready_list_mtx,
+							   &RUNNING_ESI, &running_esi_mtx,
+							   &NEXT_RUNNING_ESI, &next_running_esi_mtx,
+							   esi_id);
 				break;
 		}
 }
@@ -64,10 +72,10 @@ void unlock_esi(int esi_id){
 	pthread_mutex_unlock(&blocked_list_mtx);
 	switch(ALGORITHM) {
 			case FIFO:
-				fifo_add_esi(READY_ESI_LIST, ready_list_mtx, esi_id);
+				fifo_add_esi(READY_ESI_LIST, &ready_list_mtx, esi_id);
 				break;
 			default:
-				fifo_add_esi(READY_ESI_LIST, ready_list_mtx, esi_id);
+				fifo_add_esi(READY_ESI_LIST, &ready_list_mtx, esi_id);
 				break;
 		}
 }
