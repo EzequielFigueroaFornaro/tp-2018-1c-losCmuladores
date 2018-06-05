@@ -13,6 +13,24 @@ message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 
+t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){
+	int key_length = strlen(key) + 1;
+	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int);
+
+	void* buffer = malloc(message_size);
+	void* offset = buffer;
+
+	concat_value(&offset, &(operation_id), sizeof(int));
+	concat_string(&offset, key, key_length);
+	concat_value(&offset, &ise_id, sizeof(int));
+
+	t_buffer buffer_struct;
+	buffer_struct.buffer_content = buffer;
+	buffer_struct.size = message_size;
+
+	return buffer_struct;
+}
+
 t_buffer serialize_sentence(t_sentence* sentence){
 	int operation_length = sizeof(sentence -> operation_id);
 	int key_length = strlen(sentence -> key) + 1;

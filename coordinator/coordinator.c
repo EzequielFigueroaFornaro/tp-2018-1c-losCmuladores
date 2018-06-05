@@ -159,17 +159,18 @@ void save_operation_log(t_sentence* sentence, t_ise* ise){
 
 //Devuelve el resultado al ESI.
 void send_statement_result_to_ise(int result, t_ise* ise) {
-	int message_size = sizeof(int) + sizeof(int);
+	/*int message_size = sizeof(int) + sizeof(int);
 
-	void* buffer;
+	void* buffer = malloc(message_size);
 	void* offset = buffer;
-	concat_value(offset, OK, sizeof(execution_result));
+	concat_value(&offset, &result, sizeof(int));
 
-	int send_result = send(ise -> socket_id, buffer, sizeof(message_size), 0);
+	int send_result = send(ise -> socket_id, buffer, sizeof(message_size), 0); //TODO acá se rompe.
 
 	if(send_result <= 0) {
 		log_error(logger, "Could not send execution result to ISE %s", ise -> id);
-	}
+	}*/
+	return;
 }
 
 void configure_logger() {
@@ -370,9 +371,10 @@ void signal_handler(int sig){
 }
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
-int validate_resource_with_planifier_and_receive_confirmation(t_sentence* sentence){
+int validate_resource_with_planifier_and_receive_confirmation(t_sentence* sentence, int esi_id){
 	/*log_info(logger, "Asking for sentence and resource to planifier %s");
-	t_buffer buffer = serialize_sentence(sentence);
+
+	t_buffer buffer = serialize_operation_resource_request(sentence -> operation_id, sentence -> key, esi_id);
 
 	int send_result = send(planifier_socket, buffer.buffer_content, buffer.size, 0);
 	destroy_buffer(buffer);
@@ -404,10 +406,9 @@ int validate_resource_with_planifier_and_receive_confirmation(t_sentence* senten
  * 	case PARSE_ERROR : return "Error al intentar parsear sentencia"; 6
  * */
 
-void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
+void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise, int operation_id){
 	//*************************
 	//****ESTO ES DE PRUEBA;
-	int operation_id = 601;
 	char* key = forced_key;
 	char* value = forced_value;
 	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
@@ -417,32 +418,35 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> value = value;
 
 	int result_to_ise;
+	t_instance* selected_instance;
 
 	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
-	int planifier_validation = validate_resource_with_planifier_and_receive_confirmation(sentence);
+	int planifier_validation = validate_resource_with_planifier_and_receive_confirmation(sentence, ise -> id);
 
-	if(planifier_validation == OK && (sentence -> operation_id) != GET_SENTENCE) { //OK.
+	if(planifier_validation == OK){
 
-		t_instance* selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
+		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
 
-		result_to_ise = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
-		if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == KEY_UNREACHABLE) {
+			result_to_ise = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
 
-			if(sentence -> operation_id == STORE_SENTENCE){
-				dictionary_remove(keys_location, sentence -> key);
-				//TODO Llamada al PLANIFICADOR para que aborte el ESI correspondiente.. Ver protocolo...
-				result_to_ise = KEY_UNREACHABLE;
+			if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == KEY_UNREACHABLE) {
+
+				if(sentence -> operation_id == STORE_SENTENCE){
+					dictionary_remove(keys_location, sentence -> key);
+					//TODO Llamada al PLANIFICADOR para que aborte el ESI correspondiente.. Ver protocolo...
+					result_to_ise = KEY_UNREACHABLE;
+				}
+				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
-			 //- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
+		} else {
+			result_to_ise = planifier_validation;
 		}
-
 		dictionary_put(keys_location, sentence -> key, selected_instance);
 		save_operation_log(sentence, ise);
-
 	} else {
-		dictionary_put(keys_location, sentence -> key, NULL);
-		result_to_ise = OK;
+		result_to_ise = planifier_validation;
 	}
 
 	send_statement_result_to_ise(result_to_ise, ise);
@@ -471,11 +475,11 @@ int main(int argc, char* argv[]) {
 	t_ise* ise3 = malloc(sizeof(t_ise));
 	ise3 -> id = 3;
 
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1);
-	send_instruction_for_test("barcelona:jugadores", "neymar", ise2);
-	send_instruction_for_test("barcelona:jugadores", "busquets", ise3);
-	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
-	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
+	send_instruction_for_test("barcelona:jugadores", "neymar", ise2, 601);
+	send_instruction_for_test("barcelona:jugadores", "busquets", ise3, 602);
+	send_instruction_for_test("barcelona:jugadores", "pique", ise3, 600);
+	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2, 601);
 
 	sleep(6000);
 
