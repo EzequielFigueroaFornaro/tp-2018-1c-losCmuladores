@@ -190,7 +190,6 @@ void load_configuration(char* config_file_path){
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
 
 	instance_configuration = malloc(sizeof(t_instance_configuration));
-	instance_configuration -> operation_id = 1;
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");

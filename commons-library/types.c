@@ -13,6 +13,22 @@ message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 
+t_sentence* sentence_create() {
+	t_sentence* sentence = malloc(sizeof(t_sentence));
+	sentence->operation_id = 0;
+	sentence->key = NULL;
+	sentence->value = NULL;
+	return sentence;
+}
+
+void sentence_destroy(t_sentence* sentence) {
+	if (NULL == sentence) {
+		free(sentence->key);
+		free(sentence->value);
+		free(sentence);
+	}
+}
+
 t_buffer serialize_sentence(t_sentence* sentence){
 	int operation_length = sizeof(sentence -> operation_id);
 	int key_length = strlen(sentence -> key) + 1;

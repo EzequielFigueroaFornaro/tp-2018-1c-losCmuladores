@@ -59,12 +59,6 @@ typedef struct  {
   //TODO lo que sea necesario.
 } __attribute__((packed)) t_new_instance_header;
 
-typedef struct {
-	int operation_id;
-	long entries_size;
-	long entries_quantity;
-}__attribute((packed)) t_instance_configuration;
-
 t_instance_configuration *instance_configuration;
 
 typedef struct {
