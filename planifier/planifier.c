@@ -10,10 +10,6 @@
 
 #include "planifier.h"
 
-long generate_esi_id();
-void test_esi(int socket, long esi_id);
-int test_executions_count = 0;
-
 int main(int argc, char* argv[]) {
 	configure_logger();
 	load_configuration(argv[1]);
@@ -106,63 +102,15 @@ void esi_connection_handler(int socket) {
 	}
 
 	if (module_type == ISE) {
-		long script_size;
-		recv_long(socket, &script_size); // TODO Validar
-		int message_size = sizeof(message_type) + sizeof(long);
-		void* buffer = malloc(message_size);
-		void* offset = buffer;
-		concat_value(&offset, &CONNECTION_SUCCESS, sizeof(message_type));
-		long esi_id = generate_esi_id();
-		concat_value(&offset, &esi_id, sizeof(long));
-
-		log_info(logger, "Sending connection success message to ESI %ld", esi_id);
-		if (send(socket, buffer, message_size, 0) < 0) {
+		if (send_connection_success(socket) < 0) {
 			log_error(logger, "Error sending \"connection success\" message to %s",	get_client_address(socket));
 			close(socket);
 			return;
 		}
-		free(buffer);
-		log_info(logger, "ESI %ld connected! (from %s). Socket: %d, Script lines: %ld", esi_id, get_client_address(socket), socket, script_size);
-		/**** PRUEBA *****/
-		test_esi(socket, esi_id);
+		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
 	} else {
 		log_info(logger, "Ignoring connected client because it was not an ESI");
 	}
-}
-
-/**** PRUEBA *****/
-void test_esi(int socket, long esi_id) {
-	send(socket, &ISE_EXECUTE, sizeof(message_type), 0);
-	log_info(logger, "Waiting for ESI %ld notification", esi_id);
-	while (test_executions_count < 3) {
-		message_type msg;
-		recv_msg(socket, &msg);
-		if (msg != EXECUTION_RESULT) {
-			log_error(logger,
-					"Could not receive execution result message from ESI %ld",
-					esi_id);
-			return;
-		}
-		int execution_result;
-		if (recv_int(socket, &execution_result) <= 0) {
-			log_error(logger, "Could not receive execution result from ESI %ld",
-					esi_id);
-			return;
-		}
-		test_executions_count++;
-		log_info(logger, "Executions count: %d", test_executions_count);
-		log_info(logger, "Sending continue signal to ESI %ld", esi_id);
-		send(socket, &ISE_EXECUTE, sizeof(message_type), 0);
-	}
-	log_info(logger, "Sending stop signal to ESI %ld", esi_id);
-	send(socket, &ISE_STOP, sizeof(message_type), 0);
-}
-
-long generate_esi_id() {
-	//TODO
-	long esi_id = 42;
-	log_info(logger, "Id %ld created for newly connected ESI", esi_id);
-	return esi_id;
 }
 
 void listen_for_commands() {
