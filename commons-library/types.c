@@ -36,7 +36,7 @@ t_buffer serialize_sentence(t_sentence* sentence){
 	int key_length = strlen(sentence -> key) + 1;
 	int value_length = strlen(sentence -> value) + 1;
 
-	// operation_id + key_int + key_length + value_int + value_length
+	// operation_id + key_length + value_int + value_length
 	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int) + value_length;
 	void* buffer = malloc(message_size);
 	void* offset = buffer;

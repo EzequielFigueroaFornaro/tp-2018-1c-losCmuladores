@@ -64,16 +64,17 @@ t_instance* select_instance_to_send_by_equitative_load(){
 
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
-	if(sentence -> operation_id == SET_SENTENCE){
+	//if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
 			case LSU: return NULL;//TODO
 			case KE: return NULL; //TODO
 			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
 		}
-	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
-		return (t_instance*) dictionary_get(keys_location, sentence -> key);
-	}
+	/*} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
+		//TODO: descomentar cunado esté la integración con la instancia.
+		//return (t_instance*) dictionary_get(keys_location, sentence -> key);
+	}*/
 }
 
 
@@ -371,7 +372,7 @@ void signal_handler(int sig){
 }
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
-int validate_resource_with_planifier_and_receive_confirmation(t_sentence* sentence, int esi_id){
+int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id){
 	/*log_info(logger, "Asking for sentence and resource to planifier %s");
 
 	t_buffer buffer = serialize_operation_resource_request(sentence -> operation_id, sentence -> key, esi_id);
@@ -421,7 +422,7 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise,
 	t_instance* selected_instance;
 
 	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
-	int planifier_validation = validate_resource_with_planifier_and_receive_confirmation(sentence, ise -> id);
+	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise -> id);
 
 	if(planifier_validation == OK){
 
@@ -429,15 +430,15 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise,
 
 			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
-			result_to_ise = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
 
-			if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == KEY_UNREACHABLE) {
+			if(send_to_instance_result == KEY_UNREACHABLE) {
 
-				if(sentence -> operation_id == STORE_SENTENCE){
+				//if(sentence -> operation_id == STORE_SENTENCE){
 					dictionary_remove(keys_location, sentence -> key);
-					//TODO Llamada al PLANIFICADOR para que aborte el ESI correspondiente.. Ver protocolo...
+					notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise -> id);
 					result_to_ise = KEY_UNREACHABLE;
-				}
+				//}
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
 		} else {
