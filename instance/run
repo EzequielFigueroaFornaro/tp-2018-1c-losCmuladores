@@ -2,4 +2,6 @@
 run_dir="$(dirname "$0")"
 cd "$run_dir"
 export LD_LIBRARY_PATH="../commons-library"
-./instance instance.conf
+CONFIG_FILE=$1
+TEST_FLAG=$2
+./instance ${CONFIG_FILE:-instance.conf} ${TEST_FLAG:-}

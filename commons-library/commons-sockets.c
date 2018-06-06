@@ -11,7 +11,10 @@ typedef struct {
 	t_log * logger;
 } t_accept_params;
 
+int MODULE_DISCONNECTED = 0;
+
 void accept_connections(t_accept_params *accept_params);
+t_accept_params* build_accept_params(int server_socket, void *(*connection_handler)(void *), t_log *logger);
 
 /* Starts a server in specified port and accepts incoming connections using threads.
  * Function _connection_handler must only receive a socket as argument
@@ -35,11 +38,8 @@ int start_server(int port, int max_connections, void *(*_connection_handler)(voi
 
 	listen(server_socket, max_connections);
 
-	t_accept_params* accept_params = malloc(sizeof(t_accept_params));
-	accept_params->server_socket = server_socket;
-	accept_params->connection_handler = _connection_handler;
-	accept_params->logger = logger;
 	pthread_t listener_thread;
+	t_accept_params* accept_params = build_accept_params(server_socket, _connection_handler, logger);
 	if (pthread_create(&listener_thread, NULL, (void*) accept_connections, (void*) accept_params) < 0) { //TODO acá pasa algo segun valgrind
 		log_error(logger, "Could not create thread");
 		return -1;
@@ -77,6 +77,14 @@ void accept_connections(t_accept_params *accept_params) {
 	free(accept_params);
 }
 
+t_accept_params* build_accept_params(int server_socket, void *(*connection_handler)(void *), t_log *logger) {
+	t_accept_params* accept_params = malloc(sizeof(t_accept_params));
+	accept_params->server_socket = server_socket;
+	accept_params->connection_handler = connection_handler;
+	accept_params->logger = logger;
+	return accept_params;
+}
+
 int connect_to(char* ip, int port) {
 	struct addrinfo hints;
 	struct addrinfo *server_info;
@@ -101,14 +109,14 @@ int connect_to(char* ip, int port) {
 	return server_socket;
 }
 
-int send_module_connected(int socket, module_type module_type) {
-	int message_size = sizeof(message_type) + sizeof(module_type);
+int send_module_connected(int socket, module_type self) {
+	int message_size = sizeof(message_type) + sizeof(self);
 	void *message_buffer = malloc(message_size);
 
 	message_type message_type = MODULE_CONNECTED;
 
 	memcpy(message_buffer, &message_type, sizeof(message_type));
-	memcpy(message_buffer + sizeof(message_type), &module_type, sizeof(module_type));
+	memcpy(message_buffer + sizeof(message_type), &self, sizeof(self));
 
 	int result = send(socket, message_buffer, message_size, 0);
 
@@ -137,7 +145,7 @@ char* get_client_address(int socket) {
 
 int recv_string(int socket, char** string) {
 	int length;
-	int length_result = recv(socket, &length, sizeof(length), MSG_WAITALL);
+	int length_result = recv_int(socket, &length);
 	if (length_result > 0) {
 		*string = malloc(length);
 		int result = recv(socket, *string, length, MSG_WAITALL);
@@ -150,12 +158,27 @@ int recv_string(int socket, char** string) {
 	}
 }
 
-int recv_sentence_operation(int socket, int *operation) {
-	if (recv(socket, operation, sizeof(int), 0) <= 0 || !is_valid_operation(*operation)) {
-		return -1;
-	} else {
-		return 1;
-	}
+int recv_int(int socket, int* value) {
+	return recv(socket, value, sizeof(int), MSG_WAITALL);
 }
 
+int recv_long(int socket, long* id) {
+	return recv(socket, id, sizeof(long), MSG_WAITALL);
+}
 
+int recv_sentence_operation(int socket, int *operation) {
+	int result = recv(socket, operation, sizeof(int), 0);
+	if (result > 0 && !is_valid_operation(*operation)) {
+		return -1;
+	}
+	return result;
+}
+
+message_type recv_message(int socket) {
+	message_type message_type;
+	int message_type_result = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
+	if (message_type_result <= 0) {
+		return -1;
+	}
+	return message_type;
+}
