@@ -17,35 +17,29 @@
 #include <commons/config.h>
 #include "commons-sockets.h"
 #include "types.h"
+#include "storage/entry-table.h"
 #include "commons/collections/dictionary.h"
+#include <signal.h>
+#include <string.h>
 
-void connect_to_coordinator();
+int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
 
 void _exit_with_error(int socket, char *error_msg, void *buffer);
 
+typedef struct {
+	int coordinator_port;
+	char *coordinator_ip;
+	char *instance_name;
+	char *mount_path;
+	char *replacement_algorithm;
+} t_instance_config;
+
 //Global variables.
-t_log * logger;
+t_log * logger = NULL;
+t_instance_config *instance_config = NULL;
 int coordinator_socket;
-int coordinator_port;
-char *coordinator_ip;
 
 
-//Structs
-typedef struct {
-	int operation_id;
-	long entries_size;
-	long entries_quantity;
-} __attribute__((packed)) t_instance_configuration;
-
-t_instance_configuration *instance_configuration;
-
-//La tabla de entradas guarda esta estructura.
-typedef struct {
-	char* key;
-	void* entry_addr;
-	int length;
-} entry;
-
-t_dictionary* entries_table;
+t_entry_table* entries_table = NULL;
 
 #endif /* INSTANCE_H_ */

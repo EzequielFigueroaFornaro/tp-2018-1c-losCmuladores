@@ -24,6 +24,7 @@
 #include "commons/txt.h"
 #include <signal.h>
 #include <errno.h>
+#include <pthread.h>
 
 char* OPERATIONS_LOG_PATH = "operations.log";
 //#define PORT 8080
@@ -58,19 +59,15 @@ typedef struct  {
   //TODO lo que sea necesario.
 } __attribute__((packed)) t_new_instance_header;
 
-typedef struct {
-	int operation_id;
-	long entries_size;
-	long entries_quantity;
-}__attribute((packed)) t_instance_configuration;
-
 t_instance_configuration *instance_configuration;
 
 typedef struct {
 	pthread_t instance_thread;
 	int socket_id;
 	bool is_available;
-} __attribute__((packed)) t_instance;
+	char* ip_port;
+	char* name;
+} t_instance;
 
 t_instance *last_instance_selected;
 

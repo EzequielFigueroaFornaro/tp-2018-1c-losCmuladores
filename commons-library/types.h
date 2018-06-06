@@ -12,6 +12,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "commons/string.h"
+
+typedef struct {
+	long entries_size;
+	long entries_quantity;
+}__attribute((packed)) t_instance_configuration;
 
 typedef struct {
 	int operation_id;
@@ -30,18 +36,35 @@ enum operations {
 	STORE_SENTENCE = 602
 } operation ;
 
+typedef enum { COORDINATOR, PLANIFIER, INSTANCE, ISE } module_type;
+
+typedef int message_type;
+extern message_type MODULE_CONNECTED;
+extern message_type CONNECTION_SUCCESS;
+extern message_type EXECUTION_RESULT;
+extern message_type ISE_STOP;
+extern message_type ISE_EXECUTE;
+
+t_sentence* sentence_create();
+
+void sentence_destroy(t_sentence* sentence);
+
 bool is_valid_operation(int operation);
 
 //Devuelve un buffer y su size a partir de una sentencia.
-t_buffer serialize_sentence(t_sentence* sentence);
+t_buffer serialize_sentence(t_sentence* sentence); // TODO [Lu] no deberia devolver un puntero a t_buffer?
 
 //Destruye el buffer correspondiente.
 void destroy_buffer(t_buffer buffer);
 
-/* Copia el valor y devuelve la posicion de memoria para copiar otro valor */
-void* concat_value(void* mem_address, void* value, int size_of_value);
+/* Copia el valor y actualiza la posicion de memoria para copiar otro valor */
+void concat_value(void** mem_address, void* value, int size_of_value);
 
-/* Copia el tamaño del string junto al contenido y devuelve la posicion de memoria para copiar otro valor */
-void* concat_string(void* mem_address, void* string, int string_length);
+/* Copia el tamaño del string junto al contenido y actualiza la posicion de memoria para copiar otro valor */
+void concat_string(void** mem_address, void* string, int string_length);
+
+char* get_operation_as_string(int operation_id);
+
+char* sentence_to_string(t_sentence* sentence);
 
 #endif /* TYPES_H_ */
