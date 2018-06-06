@@ -89,7 +89,7 @@ int process_sentence(t_sentence* sentence){
 	case GET_SENTENCE:;
 		char *value = entry_table_get(entries_table, sentence->key);
 		if (NULL == value) {
-			log_info(logger, "Value %s get for key %s", value, sentence->key);
+			log_info(logger, "Value not present for key %s", sentence->key);
 		} else {
 			log_info(logger, "Value %s get for key %s", value, sentence->key);
 		}
