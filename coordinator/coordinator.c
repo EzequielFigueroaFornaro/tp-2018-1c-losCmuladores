@@ -64,17 +64,17 @@ t_instance* select_instance_to_send_by_equitative_load(){
 
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
-	//if(sentence -> operation_id == SET_SENTENCE){
+	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
 			case LSU: return NULL;//TODO
 			case KE: return NULL; //TODO
 			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
 		}
-	/*} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
-		//TODO: descomentar cunado esté la integración con la instancia.
-		//return (t_instance*) dictionary_get(keys_location, sentence -> key);
-	}*/
+	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
+		t_instance* instance = (t_instance*) dictionary_get(keys_location, sentence -> key);
+		return instance;
+	}
 }
 
 
@@ -391,7 +391,6 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
-	//TODO asumo que se mantiene el protocolo en todo el sistema.
 	return result;*/
 	return OK;
 }
@@ -440,10 +439,10 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise,
 				//}
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
+			dictionary_put(keys_location, &(sentence -> key), selected_instance);
 		} else {
 			result_to_ise = planifier_validation;
 		}
-		dictionary_put(keys_location, sentence -> key, selected_instance);
 		save_operation_log(sentence, ise);
 	} else {
 		result_to_ise = planifier_validation;
@@ -476,10 +475,20 @@ int main(int argc, char* argv[]) {
 	ise3 -> id = 3;
 
 	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
-	send_instruction_for_test("barcelona:jugadores", "neymar", ise2, 601);
-	send_instruction_for_test("barcelona:jugadores", "busquets", ise3, 602);
-	send_instruction_for_test("barcelona:jugadores", "pique", ise3, 601);
-	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2, 601);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 601);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 602);
+
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 600);
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 601);
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 602);
+
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 600);
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 601);
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 602);
+
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 600);
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 601);
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 602);
 
 	sleep(6000);
 
