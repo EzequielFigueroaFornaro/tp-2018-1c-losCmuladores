@@ -23,7 +23,6 @@
 #include "tools/connection_utils.h"
 
 long self_id = 42;
-
 int self_module_type = ISE;
 
 void connect_to_planifier();

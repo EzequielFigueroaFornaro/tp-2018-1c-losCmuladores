@@ -341,18 +341,17 @@ void ise_connection_handler(int socket) {
 
 	log_info(logger, "ESI %ld connected", ise_id);
 
-	while (true) { // TODO [Lu] Lo puse así ahora pero mmmmmm....
-		log_info(logger, "Waiting for statement...");
-
-		t_sentence* sentence;
-		int sentence_received = receive_sentence_execution_request(socket, &sentence);
+	log_info(logger, "Waiting for first statement...");
+	t_sentence* sentence;
+	int sentence_received;
+	while ((sentence_received = receive_sentence_execution_request(socket, &sentence))) {
 		if (sentence_received == MODULE_DISCONNECTED) {
 			log_error(logger, "ESI %ld disconnected", ise_id);
 			return;
 		}
 		if (sentence_received < 0) {
 			log_error(logger, "Could not receive sentence from ESI %ld", ise_id);
-			continue;
+			return;
 		}
 
 		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
@@ -440,7 +439,7 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/

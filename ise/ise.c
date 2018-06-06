@@ -9,9 +9,6 @@
 
 void assert_not_blank(char* msg, char* arg);
 
-t_ise_sentence current_sentence;
-bool retry_current_sentence = false;
-
 int main(int argc, char* argv[]) {
 	init_logger();
 
@@ -20,6 +17,8 @@ int main(int argc, char* argv[]) {
 
 	load_config(argv[1]);
 	load_script(argv[2]);
+
+	start_signal_listener();
 
 	connect_to_planifier();
 	connect_to_coordinator();
@@ -58,10 +57,8 @@ void connect_to_coordinator() {
 }
 
 void execute_script() {
-	do {
-		if (!retry_current_sentence) {
-			current_sentence = next_sentence();
-		}
+	t_ise_sentence current_sentence;
+	while(!(current_sentence = get_sentence_to_execute()).empty) {
 		wait_to_execute();
 
 		execution_result result;
@@ -71,19 +68,21 @@ void execute_script() {
 			result = PARSE_ERROR;
 		}
 		handle_execution_result(result);
-	} while (!current_sentence.empty);
+	}
 }
 
 void handle_execution_result(execution_result result) {
 	log_info(logger, "Received result from coordinator: %s", get_execution_result_description(result));
 	notify_planifier(result);
 	if (result == KEY_BLOCKED) {
-		retry_current_sentence = true;
+		log_info(logger, "Going to retry that last sentence later...");
+		set_retry_current_sentence(true);
+		return;
 	} else if (result != OK) {
 		log_error(logger, "%s. Aborting", get_execution_result_description(result));
 		exit_with_error();
 	}
-	retry_current_sentence = false;
+	set_retry_current_sentence(false);
 }
 
 void wait_to_execute() {

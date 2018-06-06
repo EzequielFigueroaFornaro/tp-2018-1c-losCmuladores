@@ -1,5 +1,8 @@
 #include "script_handler.h"
 
+t_ise_sentence current_sentence;
+bool retry_current_sentence = false;
+
 void load_script(char * file_name) {
 	FILE * script_file = fopen(file_name, "r");
 
@@ -21,17 +24,21 @@ void load_script(char * file_name) {
 	fclose(script_file);
 }
 
-t_ise_sentence next_sentence() {
-	char* line = queue_pop(script->lines);
-	t_ise_sentence sentence;
-	if (line != NULL) {
-		string_trim(&line);
-		sentence.operation = parse(line);
-		sentence.empty = false;
-	} else {
-		sentence.empty = true;
+t_ise_sentence get_sentence_to_execute() {
+	if (!retry_current_sentence) {
+		char* line = queue_pop(script->lines);
+		t_ise_sentence sentence;
+		if (line != NULL) {
+			string_trim(&line);
+			sentence.operation = parse(line);
+			sentence.empty = false;
+		} else {
+			sentence.empty = true;
+		}
+		current_sentence = sentence;
+		return sentence;
 	}
-	return sentence;
+	return current_sentence;
 }
 
 void destroy_script(t_ise_script * script) {
@@ -69,7 +76,7 @@ t_sentence* map_to_sentence(t_esi_operacion operation) {
 		sentence->value = "";
 		break;
 	default:
-		log_error(logger,"Unexpected error: sentence keyword not recognized");
+		log_error(logger,"Unexpected error: operation %d not recognized", operation.keyword);
 		exit_with_error();
 	}
 	return sentence;
@@ -77,6 +84,10 @@ t_sentence* map_to_sentence(t_esi_operacion operation) {
 
 long get_script_size() {
 	return script == NULL ? 0 : (script->lines == NULL ? 0 : queue_size(script->lines));
+}
+
+void set_retry_current_sentence(bool retry) {
+	retry_current_sentence = retry;
 }
 
 

@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "logging.h"
 #include "script_handler.h"
 #include "config.h"
@@ -16,5 +17,7 @@
 void exit_gracefully(int code);
 
 void exit_with_error();
+
+void start_signal_listener();
 
 #endif /* TOOLS_EXIT_HANDLER_H_ */

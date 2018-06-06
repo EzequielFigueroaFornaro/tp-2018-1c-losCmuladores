@@ -52,5 +52,6 @@ void set_socket(module_type module, int socket) {
 }
 
 void close_connection(module_type module) {
+	log_info(logger, "Closing connection with %s", get_module_name(module));
 	close(get_socket(module));
 }

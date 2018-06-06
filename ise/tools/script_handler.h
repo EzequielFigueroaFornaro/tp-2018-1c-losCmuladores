@@ -20,10 +20,9 @@ typedef struct {
 	bool empty;
 } t_ise_sentence;
 
-
 void load_script(char * file_name);
 
-t_ise_sentence next_sentence();
+t_ise_sentence get_sentence_to_execute();
 
 void destroy_script(t_ise_script * script);
 
@@ -32,5 +31,7 @@ void print_script(t_ise_script * script);
 t_sentence* map_to_sentence(t_esi_operacion operation);
 
 long get_script_size();
+
+void set_retry_current_sentence(bool retry);
 
 #endif /* SCRIPT_HANDLER_H_ */
