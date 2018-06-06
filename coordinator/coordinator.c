@@ -11,8 +11,9 @@
 #include "coordinator.h"
 //TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 
+/* TEST
 bool test_block = true;
-void test_sentence_result(t_sentence* sentence, int socket, long ise_id);
+void test_sentence_result(t_sentence* sentence, int socket, long ise_id);*/
 
 //Recibe solicitud del ESI.
 //1)
@@ -129,19 +130,19 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	return 0;
 }
 
-void save_operation_log(t_sentence* sentence, t_ise* ise){
+void save_operation_log(t_sentence* sentence, long ise_id){
 	char* string_to_save = string_new();
 
 	char* operation = get_operation_as_string(sentence -> operation_id);
 
 	string_append(&string_to_save, "ESI");
-	string_append_with_format(&string_to_save, "%d | ", ise -> id);
+	string_append_with_format(&string_to_save, "%ld | ", ise_id);
 	string_append_with_format(&string_to_save, "%s | ", operation);
 	string_append_with_format(&string_to_save, "%s", sentence -> key);
-	string_append(&string_to_save, "\n");
-	if(sentence -> value != NULL){
-		string_append(&string_to_save, sentence -> value);
+	if(sentence -> value != NULL && !string_is_empty(sentence -> value)){
+		string_append_with_format(&string_to_save, " %s", sentence -> value);
 	}
+	string_append(&string_to_save, "\n");
 
 	log_info(logger, "Saving operations log with: %s", string_to_save);
 
@@ -166,7 +167,7 @@ void receive_statement_result_from_instance();
 
 //Devuelve el resultado al ESI.
 //5)
-void send_statement_result_to_ise2(int socket, long ise_id, execution_result result) {
+void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
 	int message_size = sizeof(message_type) + sizeof(int);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
@@ -178,7 +179,6 @@ void send_statement_result_to_ise2(int socket, long ise_id, execution_result res
 	if (send_result <= 0) {
 		log_error(logger, "Could not send sentence execution result to ESI %s",
 				ise_id);
-		// TODO: Agregar al log de operaciones del coordinador?
 	}
 }
 
@@ -355,11 +355,18 @@ void ise_connection_handler(int socket) {
 		}
 
 		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
-		test_sentence_result(sentence, socket, ise_id);
+		save_operation_log(sentence, ise_id);
 
-//		int instance_socket; // TODO [Lu] a qué instancia ir...
-//		int result = send_statement_to_instance_and_wait_for_result(instance_socket, sentence);
-//		send_statement_result_to_ise(ise, result);
+		/* TEST: devuelve al primer GET, key_blocked, en los siguientes y para cualquier
+		  otra sentencia, devuelve OK al ESI (no hay comunicación con el planificador):
+
+		test_sentence_result(sentence, socket, ise_id);   */
+
+		// TODO: Acciones a ejecutar ante tipo de sentencia
+
+		/* TODO: Descomentar cuando ya se tenga el resultado:
+		send_statement_result_to_ise(socket, ise_id, execution_result); */
+
 		free(sentence);
 	}
 }
@@ -425,7 +432,7 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 		 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.
 
 	}*/
-	save_operation_log(sentence, ise);
+	save_operation_log(sentence, ise->id);
 
 			//***********************
 
@@ -465,6 +472,7 @@ int main(int argc, char* argv[]) {
 	exit_gracefully(EXIT_SUCCESS);
 }
 
+/* TEST
 void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
 	if (sentence->operation_id == GET_SENTENCE && test_block) {
 		log_info(logger, "[TEST] Sending key_blocked result to esi %ld", ise_id);
@@ -474,4 +482,4 @@ void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
 		log_info(logger, "[TEST] Sending ok result to esi %ld", ise_id);
 		send_statement_result_to_ise2(socket, ise_id, OK);
 	}
-}
+}*/
