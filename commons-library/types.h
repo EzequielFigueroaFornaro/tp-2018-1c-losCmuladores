@@ -15,6 +15,11 @@
 #include "commons/string.h"
 
 typedef struct {
+	long entries_size;
+	long entries_quantity;
+}__attribute((packed)) t_instance_configuration;
+
+typedef struct {
 	int operation_id;
 	char* key;
 	char* value;
@@ -39,6 +44,10 @@ extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
+
+t_sentence* sentence_create();
+
+void sentence_destroy(t_sentence* sentence);
 
 bool is_valid_operation(int operation);
 

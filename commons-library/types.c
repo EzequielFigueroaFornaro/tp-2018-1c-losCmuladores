@@ -13,6 +13,7 @@ message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 
+
 t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){
 	int key_length = strlen(key) + 1;
 	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int);
@@ -29,6 +30,22 @@ t_buffer serialize_operation_resource_request(int operation_id, char* key, int i
 	buffer_struct.size = message_size;
 
 	return buffer_struct;
+}
+
+t_sentence* sentence_create() {
+	t_sentence* sentence = malloc(sizeof(t_sentence));
+	sentence->operation_id = 0;
+	sentence->key = NULL;
+	sentence->value = NULL;
+	return sentence;
+}
+
+void sentence_destroy(t_sentence* sentence) {
+	if (NULL == sentence) {
+		free(sentence->key);
+		free(sentence->value);
+		free(sentence);
+	}
 }
 
 t_buffer serialize_sentence(t_sentence* sentence){

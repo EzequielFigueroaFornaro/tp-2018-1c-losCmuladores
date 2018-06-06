@@ -209,7 +209,6 @@ void load_configuration(char* config_file_path){
 	server_max_connections = config_get_int_value(config, "MAX_ACCEPTED_CONNECTIONS");
 
 	instance_configuration = malloc(sizeof(t_instance_configuration));
-	instance_configuration -> operation_id = 1;
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
@@ -479,7 +478,7 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
 	send_instruction_for_test("barcelona:jugadores", "neymar", ise2, 601);
 	send_instruction_for_test("barcelona:jugadores", "busquets", ise3, 602);
-	send_instruction_for_test("barcelona:jugadores", "pique", ise3, 600);
+	send_instruction_for_test("barcelona:jugadores", "pique", ise3, 601);
 	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2, 601);
 
 	sleep(6000);
