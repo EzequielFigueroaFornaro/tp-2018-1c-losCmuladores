@@ -38,7 +38,7 @@ HEADERS = $(wildcard *.h)
 .PRECIOUS: $(TARGET) $(OBJECTS) # Nos permite mantener los archivos temporales terminados si matan a make con Cntl-C
 
 $(TARGET): $(OBJECTS) # Le pasamos a la tarea los objects ya compilados
-	$(CC) $(LIBPATH) $(OBJECTS) $(CFLAGS) $(LIBS) -o $@ # Usamos el compilador para linkear los objects a las bibliotecas y tener nuestro binario
+$(CC) $(LIBPATH) $(OBJECTS) $(CFLAGS) $(LIBS) -o $@ # Usamos el compilador para linkear los objects a las bibliotecas y tener nuestro binario
 
 clean: # Finalmente creamos una tarea para eliminar todos los .o y el binario
 	-rm -f *.o

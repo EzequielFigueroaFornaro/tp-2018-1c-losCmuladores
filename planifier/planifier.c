@@ -12,8 +12,8 @@
 
 int main(int argc, char* argv[]) {
 	esis_bloqueados_por_recurso = dictionary_create();
-
-	set_orchestrator();
+int i = 1;
+	set_orchestrator(i);
 	configure_logger();
 	load_configuration(argv[1]);
 	connect_to_coordinator();
@@ -42,8 +42,9 @@ int cpu_time_incrementate(){
 }
 
 int new_esi(/*me da algo*/){
-	esi new_esi = malloc(sizeof(esi));
+	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = esi_id_generate();
+	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = cpu_time;
 	new_esi -> cantidad_de_instrucciones = 123/*lo tiene que pasar por parametro el esi, creo que s lo unico que te tiene que pasar*/;
 	new_esi -> instrucction_pointer = 0;
@@ -54,8 +55,8 @@ int new_esi(/*me da algo*/){
 // funciones a modificar o hacer
 
 
-che_ejecute_esto(tiene input output) //esi diciendo ejecute algo
-cpu_time_incrementate();
+
+//che_ejecute_esto(tiene input output){ //esi diciendo ejecute algo
 //bool hubo_replanificacion_con_cambio_de_esi
 ///*este bool lo tiene que tener por referencia los algoritmos
 // * y poder modificarlo cada vez que hay replanificacion usando semaforos*/
@@ -64,8 +65,8 @@ cpu_time_incrementate();
 //
 //	}else{
 //
-//	}
-}
+//S}
+//}
 //
 //ejecuta_vos(output)
 //ejecuta_vos(output)
@@ -89,14 +90,34 @@ bool bloquear_recurso(char/*no se que es esto*/ recurso, int esi_id){
 	return false;
 }
 
+bool deshabilitar_recurso(char/*no se que es esto*/ recurso, int esi_id_desabilitado){
+	pthread_mutex_lock(&map_boqueados);
+	if(!dictionary_has_key(recurso_tomado_por_esi,recurso)){
+		dictionary_put(recurso_tomado_por_esi, recurso, ESI_BLOQUEADO);
+		dictionary_put(esis_bloqueados_por_recurso, recurso, queue_create());
+		pthread_mutex_unlock(&map_boqueados);
+		return true;
+	}
+	int esi_id = dictionary_get(recurso_tomado_por_esi,recurso);
+	if(!(esi_id == esi_id_desabilitado)){
+		t_queue* cola_de_esis = dictionary_get(esis_bloqueados_por_recurso,recurso);
+		queue_push(cola_de_esis, esi_id);
+		stop_and_block_esi(esi_id);
+	}
+	finish_esi(esi_id);
+	dictionary_put(recurso_tomado_por_esi, recurso, ESI_BLOQUEADO);
+	pthread_mutex_unlock(&map_boqueados);
+
+}
+
 
 
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
 	//TODO ver que onda desbloqueo todo o una sola
-	t_queue* esi_queue = dictionary_remove(recurso_tomado_por_esi, recurso);
+	dictionary_remove(recurso_tomado_por_esi, recurso);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso,recurso);
-	int esi_id = queue_push(esi_queue);
+	int esi_id = queue_pop(esi_queue);
 	pthread_mutex_unlock(&map_boqueados);
 	add_esi_bloqueada(esi_id);
 	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
