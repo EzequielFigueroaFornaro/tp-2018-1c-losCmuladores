@@ -9,14 +9,11 @@
  */
 
 #include "coordinator.h"
-//TODO recibir modelo de Statement. Recibir acá el resultado, o es async ?
 
 /* TEST
 bool test_block = true;
 void test_sentence_result(t_sentence* sentence, int socket, long ise_id);*/
 
-//Recibe solicitud del ESI.
-//1)
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
 	*sentence = malloc(sizeof(t_sentence));
 	int result;
@@ -77,15 +74,18 @@ t_instance* select_instance_to_send_by_equitative_load(){
 	return selected;
 }
 
-//Calcula a cuál mandar la instrucción.
-//2)
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
-t_instance* select_instance_to_send_by_distribution_strategy(char first_char_of_key){
-	switch(distribution) {
-		case EL: return select_instance_to_send_by_equitative_load();
-		case LSU: return NULL;//TODO
-		case KE: return NULL; //TODO
-		default: return NULL; //TODO
+t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
+	if(sentence -> operation_id == SET_SENTENCE){
+		switch(distribution) {
+			case EL: return select_instance_to_send_by_equitative_load();
+			case LSU: return NULL;//TODO
+			case KE: return NULL; //TODO
+			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
+		}
+	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
+		t_instance* instance = (t_instance*) dictionary_get(keys_location, sentence -> key);
+		return instance;
 	}
 }
 
@@ -98,11 +98,10 @@ void handle_instance_disconnection(t_instance* instance){
 	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
 }
 
-//3)
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
 	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
-	log_info(logger, "Sending sentence to instance...");
+	log_info(logger, "Sending sentence to instance %s", instance -> name);
 
 	t_buffer buffer = serialize_sentence(sentence);
 
@@ -119,7 +118,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	if(result_response == 0) {
 		log_error(logger, "Selected instance is not available !");
 		handle_instance_disconnection(instance);
-		return -1;
+		return KEY_UNREACHABLE;
 	}
 
 	//Put key -> instance.
@@ -127,7 +126,17 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
-	return 0;
+	return OK;
+}
+
+//TODO llevar a commons.
+char* get_operation_as_string(int operation_id){
+	switch(operation_id) {
+		case GET_SENTENCE: return "GET";
+		case SET_SENTENCE: return "SET";
+		case STORE_SENTENCE: return "STORE";
+		default: return NULL;
+	}
 }
 
 void save_operation_log(t_sentence* sentence, long ise_id){
@@ -161,11 +170,6 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	log_info(logger, "Operations log successfully saved");
 }
 
-//4)
-//TODO definir el struct del resultado.
-void receive_statement_result_from_instance();
-
-//Devuelve el resultado al ESI.
 //5)
 void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
 	int message_size = sizeof(message_type) + sizeof(int);
@@ -177,8 +181,7 @@ void send_statement_result_to_ise(int socket, long ise_id, execution_result resu
 	free(buffer);
 
 	if (send_result <= 0) {
-		log_error(logger, "Could not send sentence execution result to ESI %s",
-				ise_id);
+		log_error(logger, "Could not send sentence execution result to ESI %s", ise_id);
 	}
 }
 
@@ -325,6 +328,41 @@ void planifier_connection_handler(int socket) {
 	}
 }
 
+int process_sentence(t_sentence* sentence, long ise_id){
+	int result_to_ise;
+	t_instance* selected_instance;
+
+	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
+	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
+
+	if(planifier_validation == OK){
+
+		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
+
+			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
+
+			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+
+			if(send_to_instance_result == KEY_UNREACHABLE) {
+
+				//if(sentence -> operation_id == STORE_SENTENCE){
+				dictionary_remove(keys_location, sentence -> key);
+				notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise_id);
+				result_to_ise = KEY_UNREACHABLE;
+				//}
+				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
+			}
+			dictionary_put(keys_location, &(sentence -> key), selected_instance);
+		} else {
+			result_to_ise = planifier_validation;
+		}
+	} else {
+		result_to_ise = planifier_validation;
+	}
+
+	return result_to_ise;
+}
+
 void ise_connection_handler(int socket) {
 	long ise_id;
 	log_info(logger, "Socket del ESI: %d", socket);
@@ -363,8 +401,10 @@ void ise_connection_handler(int socket) {
 
 		// TODO: Acciones a ejecutar ante tipo de sentencia
 
-		/* TODO: Descomentar cuando ya se tenga el resultado:
-		send_statement_result_to_ise(socket, ise_id, execution_result); */
+		/* TODO: Descomentar cuando ya se tenga el resultado:*/
+
+		int execution_result = process_sentence(sentence, ise_id);
+		send_statement_result_to_ise(socket, ise_id, execution_result);
 
 		free(sentence);
 	}
@@ -390,6 +430,7 @@ void connection_handler(int socket) {
 	}
 }
 
+//TODO cerrar TODOS los sockets (planificador, el parametrizado, y el de todas las instancias conectadas)
 void _exit_with_error(int socket, char* error_msg, void * buffer){
 	if (buffer != NULL) {
 		free(buffer);
@@ -407,11 +448,44 @@ void signal_handler(int sig){
     }
 }
 
+//TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
+int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id){
+	/*log_info(logger, "Asking for sentence and resource to planifier %s");
 
-void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise){
+	t_buffer buffer = serialize_operation_resource_request(sentence -> operation_id, sentence -> key, esi_id);
+
+	int send_result = send(planifier_socket, buffer.buffer_content, buffer.size, 0);
+	destroy_buffer(buffer);
+
+	if (send_result <= 0) {
+		_exit_with_error(planifier_socket, "Could not send sentence to planifier.", NULL); //TODO tener en cuenta que hay muchos sockets que cerrar si hay que bajar el coordinador !!
+	}
+
+	int result;
+	int result_response = recv(planifier_socket, &result, sizeof(int), 0);
+
+	//TODO AUXILIOOOOOOOO, QUÉ HAGO ACÁ ?
+	if(result_response <= 0) {
+		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
+	}
+
+	return result;*/
+	return OK;
+}
+
+/*
+ * case OK : return "Sentencia ejecutada"; 0
+ * 	case KEY_TOO_LONG : return "Error de Tamano de Clave"; 1
+ * 	case KEY_NOT_FOUND : return "Error de Clave no Identificada"; 2
+ * 	case KEY_UNREACHABLE : return "Error de Clave Inaccesible"; 3
+ * 	case KEY_LOCK_NOT_ACQUIRED : return "Error de Clave no Bloqueada"; 4
+ * 	case KEY_BLOCKED : return "Clave bloqueada por otro proceso"; 5
+ * 	case PARSE_ERROR : return "Error al intentar parsear sentencia"; 6
+ * */
+
+void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise, int operation_id){
 	//*************************
 	//****ESTO ES DE PRUEBA;
-	int operation_id = 601;
 	char* key = forced_key;
 	char* value = forced_value;
 	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
@@ -420,21 +494,39 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise)
 	sentence -> key = key;
 	sentence -> value = value;
 
-	t_instance* selected_instance = select_instance_to_send_by_distribution_strategy(forced_key[0]);
+	int result_to_ise;
+	t_instance* selected_instance;
 
-	int resullt = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
+	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise -> id);
 
-	/*if(send_statement_to_instance_and_wait_for_result(selected_instance, sentence) == -1) {
-		//if(sentence -> operation_id == GET_SENTENCE)
-		/*Lalala, acá deberíamos ver qué es lo que se está tratando de hacer...
-		 - Si es GET, vamos a otra instancia no pasa nada
-		 - Si es SET o STORE, tendríamos que avisar al planificador para qeu aborte el ESI correspondiente.
+	if(planifier_validation == OK){
 
-	}*/
-	save_operation_log(sentence, ise->id);
+		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
 
-			//***********************
+			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
+			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+
+			if(send_to_instance_result == KEY_UNREACHABLE) {
+
+				//if(sentence -> operation_id == STORE_SENTENCE){
+					dictionary_remove(keys_location, sentence -> key);
+					notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise -> id);
+					result_to_ise = KEY_UNREACHABLE;
+				//}
+				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
+			}
+			dictionary_put(keys_location, &(sentence -> key), selected_instance);
+		} else {
+			result_to_ise = planifier_validation;
+		}
+		save_operation_log(sentence, ise);
+	} else {
+		result_to_ise = planifier_validation;
+	}
+
+	send_statement_result_to_ise(ise -> socket_id, ise -> id, result_to_ise);
 }
 
 int main(int argc, char* argv[]) {
@@ -460,11 +552,21 @@ int main(int argc, char* argv[]) {
 	t_ise* ise3 = malloc(sizeof(t_ise));
 	ise3 -> id = 3;
 
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1);
-	send_instruction_for_test("barcelona:jugadores", "neymar", ise2);
-	send_instruction_for_test("barcelona:jugadores", "busquets", ise3);
-	send_instruction_for_test("barcelona:jugadores", "pique", ise3);
-	send_instruction_for_test("barcelona:jugadores", "iniesta", ise2);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 601);
+	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 602);
+
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 600);
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 601);
+	send_instruction_for_test("independiente:jugadores", "meza", ise3, 602);
+
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 600);
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 601);
+	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 602);
+
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 600);
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 601);
+	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 602);
 
 	sleep(6000);
 */
