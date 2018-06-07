@@ -60,6 +60,6 @@ pthread_t start_console();
 
 void exit_with_error(int socket, char* error_msg);
 
-void esi_connection_handler(int socket);
+void connection_handler(int socket);
 
 #endif /* PLANIFIER_H_ */

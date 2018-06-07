@@ -9,10 +9,10 @@ void fifo_add_esi(t_list* ready_list, pthread_mutex_t* sem_ready_list, int esi);
 
 void fifo_block_esi(t_list* BLOCKED_ESI_LIST, pthread_mutex_t* blocked_list_mtx,
 					t_list* READY_ESI_LIST, pthread_mutex_t* ready_list_mtx,
-					int* RUNNING_ESI, pthread_mutex_t*  running_esi_mtx,
-					int* NEXT_RUNNING_ESI, pthread_mutex_t* next_running_esi_mtx,
-					int block_esi_id);
+					long* RUNNING_ESI, pthread_mutex_t*  running_esi_mtx,
+					long* NEXT_RUNNING_ESI, pthread_mutex_t* next_running_esi_mtx,
+					long block_esi_id);
 
-void fifo_replan(t_list* READY_ESI_LIST, int* NEXT_RUNNING_ESI);
+void fifo_replan(t_list* READY_ESI_LIST, long* NEXT_RUNNING_ESI);
 
 #endif
