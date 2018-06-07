@@ -24,8 +24,6 @@
 
 int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
 
-void _exit_with_error(int socket, char *error_msg, void *buffer);
-
 typedef struct {
 	int coordinator_port;
 	char *coordinator_ip;

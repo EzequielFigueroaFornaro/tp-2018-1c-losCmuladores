@@ -16,6 +16,8 @@
 
 bool instance_running = true;
 
+void _exit_with_error(int socket, char *error_msg, void *buffer);
+
 void configure_logger() {
 	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
 }
@@ -136,8 +138,7 @@ void signal_handler(int sig){
     }
 }
 
-void send_result(int result){
-
+void send_result(int coordinator_socket, int result){
 	int send_result = send(coordinator_socket, &result, sizeof(int), 0);
 
 	if(send_result <= 0){
@@ -189,7 +190,7 @@ int instance_run(int argc, char* argv[]) {
 	while(instance_running){
 		t_sentence* sentence = wait_for_statement(coordinator_socket);
 		process_sentence(sentence);
-		send_result(200);
+		send_result(coordinator_socket, 200);
 		//TODO avisar al coordinador.
 	}
 	return 0;
