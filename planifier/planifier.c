@@ -183,8 +183,8 @@ void connection_handler(int socket) {
 }
 
 void esi_connection_handler(int socket){
-	module_type module_type = malloc(sizeof(module_type));
-	int result_module_type = recv_int(socket, &module_type);
+	module_type *module_type;
+	int result_module_type = recv(socket, &module_type, sizeof(module_type), MSG_WAITALL);
 	if (result_module_type <= 0) {
 		log_error(logger, "Error trying to receive module type. Closing connection");
 		close(socket);

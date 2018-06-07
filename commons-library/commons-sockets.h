@@ -35,4 +35,6 @@ int recv_long(int socket, long* id);
 
 int recv_sentence_operation(int socket, int *operation);
 
+message_type recv_message(int socket);
+
 #endif /* COMMONS_SOCKETS_H_ */
