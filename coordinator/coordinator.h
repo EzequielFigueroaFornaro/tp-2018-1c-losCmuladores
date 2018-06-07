@@ -23,6 +23,8 @@
 #include "commons/config.h"
 #include "commons/collections/list.h"
 #include "commons-sockets.h"
+#include "response_codes.h"
+#include "types.h"
 #include "commons/txt.h"
 
 #include "types.h"
