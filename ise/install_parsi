@@ -1,0 +1,28 @@
+#!/bin/bash
+if [[ -f "/usr/lib/libparsi.so" || -f "/usr/include/libparsi.so" ]]; then
+	echo "Biblioteca ParSI ya instalada"
+	exit 0
+fi
+
+if [ -d "/tmp/parsi" ]; then
+	rm -rf /tmp/parsi
+fi
+echo "Descomprimiendo ParSI..."
+unzip parsi.zip -d /tmp/
+
+if [ -d "/tmp/parsi" ]; then
+	echo "Instalando ParSI..."
+	cd /tmp/parsi
+	sudo make install
+
+	if [[ -f "/usr/lib/libparsi.so" || -f "/usr/include/libparsi.so" ]]; then
+		echo "Biblioteca ParSI instalada correctamente"
+		exit 0
+	else
+		echo "Error instalando biblioteca ParSI"
+		exit 1
+	fi
+else
+	echo "Error descargando ParSI"
+	exit 1
+fi

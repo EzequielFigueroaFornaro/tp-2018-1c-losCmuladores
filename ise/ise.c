@@ -7,96 +7,146 @@
 
 #include "ise.h"
 
+void assert_not_blank(char* msg, char* arg);
+
 int main(int argc, char* argv[]) {
-	configure_logger();
-	log_info(logger, "Initializing...");
-	load_configuration(argv[1]);
+	init_logger();
 
-	handshake_coordinator();
-	handshake_planifier();
+	assert_not_blank("Configuration file required!", argv[1]);
+	assert_not_blank("Script file required!", argv[2]);
 
-	return EXIT_SUCCESS;
+	load_config(argv[1]);
+	load_script(argv[2]);
+
+	start_signal_listener();
+
+	connect_to_planifier();
+	connect_to_coordinator();
+
+	execute_script();
+	exit_gracefully(EXIT_SUCCESS);
 }
 
-int handshake_coordinator() {
-	log_info(logger, "Starting handshake process with coordinator...");
-	int connect_result = connect_to(coordinator_ip, coordinator_port);
-	if (connect_result < 0) {
-		log_error(logger, "Could not connect to coordinator on %s:%d",
-				coordinator_ip, coordinator_port);
-		exit_gracefully(EXIT_FAILURE);
-	}
+void connect_to_planifier() {
+	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(long);
+	void* buffer = malloc(message_size);
+	void* offset = buffer;
+	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
+	concat_value(&offset, &self_module_type, sizeof(module_type));
+	long script_size = get_script_size();
+	concat_value(&offset, &script_size, sizeof(script_size));
 
-	int socket = connect_result;
-
-	if (send_module_connected(socket, ISE) < 0) {
-		log_error(logger, "Could not send message to coordinator on %s:%d", coordinator_ip, coordinator_port);
-		close(socket);
-		exit_gracefully(EXIT_FAILURE);
+	handshake(PLANIFIER, buffer, message_size);
+	if (recv_long(get_socket(PLANIFIER), &self_id) <= 0) {
+		log_error(logger, "Could not receive my id from planifier. Aborting");
+		exit_with_error();
 	}
-
-	message_type message_type;
-	int message_type_result = recv(socket, &message_type, sizeof(message_type),	MSG_WAITALL);
-	if (message_type_result <= 0 || message_type != CONNECTION_SUCCESS) {
-		log_error(logger,
-				"Expected CONNECTION_SUCCESS (%d) from coordinator on %s:%d, actual: %d",
-				CONNECTION_SUCCESS, coordinator_ip, coordinator_port, message_type);
-		close(socket);
-		exit_gracefully(EXIT_FAILURE);
-	}
-	log_info(logger, "Connected to coordinator!");
-	return connect_result;
+	log_info(logger, "Connected to planifier! My id is: %ld", self_id);
 }
 
-int handshake_planifier() {
-	log_info(logger, "Starting handshake process with planifier...");
-	int connect_result = connect_to(planifier_ip, planifier_port);
-	if (connect_result < 0) {
-		log_error(logger, "Could not connect to planifier on %s:%d",
-				planifier_ip, planifier_port);
-		exit_gracefully(EXIT_FAILURE);
+void connect_to_coordinator() {
+	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(long);
+	void* buffer = malloc(message_size);
+	void* offset = buffer;
+	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
+	concat_value(&offset, &self_module_type, sizeof(module_type));
+	concat_value(&offset, &self_id, sizeof(long));
+
+	handshake(COORDINATOR, buffer, message_size);
+	log_info(logger, "Connected to coordinator! Now waiting planifier signal to execute...");
+}
+
+void execute_script() {
+	t_ise_sentence current_sentence;
+	while(!(current_sentence = get_sentence_to_execute()).empty) {
+		wait_to_execute();
+
+		execution_result result;
+		if (current_sentence.operation.valido) {
+			result = send_sentence_to_coordinator(current_sentence.operation);
+		} else {
+			result = PARSE_ERROR;
+		}
+		handle_execution_result(result);
+	}
+}
+
+void handle_execution_result(execution_result result) {
+	log_info(logger, "Received result from coordinator: %s", get_execution_result_description(result));
+	notify_planifier(result);
+	if (result == KEY_BLOCKED) {
+		log_info(logger, "Going to retry that last sentence later...");
+		set_retry_current_sentence(true);
+		return;
+	} else if (result != OK) {
+		log_error(logger, "%s. Aborting", get_execution_result_description(result));
+		exit_with_error();
+	}
+	set_retry_current_sentence(false);
+}
+
+void wait_to_execute() {
+	message_type msg;
+	int socket = get_socket(PLANIFIER);
+	while ((msg = recv_message(socket)) != ISE_EXECUTE) {
+		if (msg <= 0) {
+			log_error(logger, "Lost connection with planifier! Aborting");
+			exit_with_error(); // TODO [Lu] Debería hacer esto?
+		}
+		if (msg == ISE_STOP) {
+			log_info(logger,
+					"Received stop signal from planifier. Waiting to continue...");
+		} else {
+			log_error(logger,
+					"Received unknown signal from planifier. Will keep on waiting just in case...");
+		}
+	}
+	log_info(logger, "Received execute signal from planifier");
+}
+
+void notify_planifier(execution_result result) {
+	log_info(logger, "Notifying planifier of result: %s", get_execution_result_description(result));
+	int message_size = sizeof(message_type) + sizeof(execution_result);
+	void* buffer = malloc(message_size);
+	void* offset = buffer;
+	concat_value(&offset, &EXECUTION_RESULT, sizeof(message_type));
+	concat_value(&offset, &result, sizeof(execution_result));
+	if (send(get_socket(PLANIFIER), buffer, message_size, 0) < 0) {
+		log_error(logger, "Could not notify planifier of sentence execution");
+	}
+	free(buffer);
+}
+
+execution_result send_sentence_to_coordinator(t_esi_operacion operation) {
+	t_sentence* sentence = map_to_sentence(operation);
+	t_buffer sentence_buffer = serialize_sentence(sentence);
+
+	log_info(logger, "Sending sentence to coordinator: %s",	sentence_to_string(sentence));
+
+	int socket = get_socket(COORDINATOR);
+	int send_result = send(socket, sentence_buffer.buffer_content, sentence_buffer.size, 0);
+	free(sentence_buffer.buffer_content);
+	if (send_result < 0) {
+		log_error(logger, "Could not send operation.");
+		exit_with_error();
+	}
+	if (recv_message(socket) != EXECUTION_RESULT) {
+		log_error(logger, "Unexpected message received when waiting for sentence execution result");
+		exit_with_error();
 	}
 
-	int socket = connect_result;
-	if (send_module_connected(socket, ISE) < 0) {
-		log_error(logger, "Could not send message to planifier on %s:%d", planifier_ip, planifier_port);
-		close(socket);
-		exit_gracefully(EXIT_FAILURE);
+	int result;
+	if (recv_int(socket, &result) <= 0) {
+		log_error(logger, "Error while trying to receive sentence execution result");
+		exit_with_error();
 	}
+	return result;
+}
 
-	message_type message_type;
-	int message_type_result = recv(socket, &message_type, sizeof(message_type),	MSG_WAITALL);
-
-	if (message_type_result <= 0 || message_type != CONNECTION_SUCCESS) {
-		log_error(logger,
-				"Expected CONNECTION_SUCCESS (%d) from planifier on %s:%d, actual: %d",
-				CONNECTION_SUCCESS, planifier_ip, planifier_port, message_type);
-		close(socket);
-		exit_gracefully(EXIT_FAILURE);
+void assert_not_blank(char* msg, char* arg) {
+	if (arg == NULL || string_is_empty(arg)) {
+		log_error(logger, msg);
+		exit_with_error();
 	}
-	log_info(logger, "Connected to planifier!");
-	return connect_result;
 }
 
-void exit_gracefully(int code) {
-	log_destroy(logger);
-	exit(code);
-}
-
-void configure_logger() {
-	logger = log_create("ise.log", "ise", 1, LOG_LEVEL_INFO);
-}
-
-void load_configuration(char* config_file_path) {
-	configure_logger();
-	log_info(logger, "Loading configuration file...");
-	t_config* config = config_create(config_file_path);
-
-	planifier_port = config_get_int_value(config, "PLANIFIER_PORT");
-	planifier_ip = config_get_string_value(config, "PLANIFIER_IP");
-
-	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
-	coordinator_ip = config_get_string_value(config, "COORDINATOR_IP");
-
-	log_info(logger, "OK Loading.");
-}

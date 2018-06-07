@@ -4,48 +4,33 @@
  *  Created on: Apr 23, 2018
  *      Author: losCmuladores
  */
-
-#ifndef SRC_ISE_H_
-#define SRC_ISE_H_
+#ifndef ISE_H_
+#define ISE_H_
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <readline/readline.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <commons/collections/list.h>
 #include <pthread.h>
+#include <commons/log.h>
+
 #include "commons-sockets.h"
-#include <signal.h>
+#include "types.h"
+#include "response_codes.h"
+#include "logging.h"
 
-int server_port;
-int server_max_connections;
+#include "tools/script_handler.h"
+#include "tools/config.h"
+#include "tools/exit_handler.h"
+#include "tools/connection_utils.h"
 
-//coordinator
-int coordinator_socket;
+long self_id = 42;
+int self_module_type = ISE;
 
-int planifier_socket;
+void connect_to_planifier();
+void connect_to_coordinator();
+void wait_to_execute();
+void execute_script();
+execution_result send_sentence_to_coordinator(t_esi_operacion operation);
+void handle_execution_result(execution_result result);
+void notify_planifier(execution_result result);
 
-int coordinator_port;
-char* coordinator_ip;
-
-int planifier_port;
-char* planifier_ip;
-
-//Global variables.
-t_log * logger;
-
-int handshake_planifier();
-
-int handshake_coordinator();
-
-void exit_gracefully(int code);
-
-void load_configuration(char* config_file_path);
-
-void configure_logger();
-
-#endif /* SRC_ISE_H_ */
+#endif /* ISE_H_ */
