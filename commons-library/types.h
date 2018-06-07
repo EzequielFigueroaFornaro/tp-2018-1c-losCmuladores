@@ -44,6 +44,7 @@ extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
+extern message_type ISE_KILL;
 
 t_sentence* sentence_create();
 

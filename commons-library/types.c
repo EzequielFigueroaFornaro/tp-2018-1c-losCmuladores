@@ -12,6 +12,7 @@ message_type CONNECTION_SUCCESS = 101;
 message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
+message_type ISE_KILL = 302;
 
 t_sentence* sentence_create() {
 	t_sentence* sentence = malloc(sizeof(t_sentence));
