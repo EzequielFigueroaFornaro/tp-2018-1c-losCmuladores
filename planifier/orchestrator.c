@@ -41,13 +41,9 @@ void set_orchestrator(int algorithm){
  * usando el puntero en el mapa, en vez de ir ala lista correspondinte a tener que buscarla */
 
 
-void ejecutar_esi(int esi){
-	clock_cpu ++;
-}
-
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx);
-	dictionary_put(esi_map, esi->id, esi);
+	dictionary_put(esi_map,string_key(esi->id), esi);
 	pthread_mutex_unlock(&esi_map_mtx);
 	switch(ALGORITHM) {
 		case FIFO:
@@ -80,16 +76,15 @@ void block_esi(int esi_id){
 		}
 }
 
-void modificar_estado(int esi_id, int nuevo_estado){
+void modificar_estado(long esi_id, int nuevo_estado){
 	pthread_mutex_lock(&esi_map_mtx);
-	esi esi = *dictionary_get(esi_map, esi_id);
+	esi* esi = dictionary_get(esi_map, string_key(esi_id));
 	esi -> estado = nuevo_estado;
 	pthread_mutex_unlock(&esi_map_mtx);
 }
 
-
-void unlock_esi(int esi_id){
-	bool equals_esi (int esi) {
+void unlock_esi(long esi_id){
+	bool equals_esi (long esi) {
 		  return esi_id == esi;
 	}
 	pthread_mutex_lock(&blocked_list_mtx);
@@ -106,10 +101,9 @@ void unlock_esi(int esi_id){
 		}
 }
 
-void finish_esi(int esi_id){
+void finish_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx);
-
-	esi esi = *dictionary_get(esi_map, esi_id);
+	esi* esi = dictionary_get(esi_map, string_key(esi_id));
 	int estado_actual = esi -> estado;
 	bool equals_esi (int esi_id) {
 		return esi_id == estado_actual;
@@ -121,7 +115,7 @@ void finish_esi(int esi_id){
 		case BLOQUEADO:
 			pthread_mutex_lock(&blocked_list_mtx);
 			list_remove_by_condition(BLOCKED_ESI_LIST, equals_esi);
-			pthread_mutex_unlock(&blocked_list_mtx)
+			pthread_mutex_unlock(&blocked_list_mtx);
 			break;
 		case CORRIENDO:
 			fifo_finish_esi(READY_ESI_LIST, &ready_list_mtx, NEXT_RUNNING_ESI, &next_running_esi_mtx);
@@ -134,11 +128,15 @@ void finish_esi(int esi_id){
 	}
 }
 
-void free_esi(int esi_id){
+void free_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx);
-	dictionary_remove_and_destroy(esi_map, esi_id); /*como mierda liberar el espacio del esi*/
+	esi* esi = dictionary_remove(esi_map, string_key(esi_id)); /*como mierda liberar el espacio del esi*/
+	free(esi);
 	pthread_mutex_unlock(&esi_map_mtx);
 }
 
+char* string_key(long key){
+	return string_from_format("%l",key);
+}
 
 

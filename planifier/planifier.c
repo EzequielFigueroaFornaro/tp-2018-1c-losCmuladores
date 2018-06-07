@@ -75,7 +75,7 @@ int new_esi(/*me da algo*/){
 //che_esta_tomado_el_recurso(input_outpu)
 
 
-bool bloquear_recurso(char/*no se que es esto*/ recurso, int esi_id){
+bool bloquear_recurso(char/*no se que es esto*/ recurso, long esi_id){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recurso_tomado_por_esi,recurso)){
 		dictionary_put(recurso_tomado_por_esi, recurso, esi_id);
@@ -90,7 +90,7 @@ bool bloquear_recurso(char/*no se que es esto*/ recurso, int esi_id){
 	return false;
 }
 
-bool deshabilitar_recurso(char/*no se que es esto*/ recurso, int esi_id_desabilitado){
+bool deshabilitar_recurso(char/*no se que es esto*/ recurso, long esi_id_desabilitado){
 	pthread_mutex_lock(&map_boqueados);
 	if(!dictionary_has_key(recurso_tomado_por_esi,recurso)){
 		dictionary_put(recurso_tomado_por_esi, recurso, ESI_BLOQUEADO);
@@ -107,7 +107,6 @@ bool deshabilitar_recurso(char/*no se que es esto*/ recurso, int esi_id_desabili
 	finish_esi(esi_id);
 	dictionary_put(recurso_tomado_por_esi, recurso, ESI_BLOQUEADO);
 	pthread_mutex_unlock(&map_boqueados);
-
 }
 
 

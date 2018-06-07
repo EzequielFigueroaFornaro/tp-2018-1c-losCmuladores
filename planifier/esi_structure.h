@@ -2,7 +2,7 @@
 #define ESI_STRUCTURE_H_
 
 typedef struct {
-	int id;
+	long id;
 	int estado;
 	int tiempo_de_entrada;
 	int cantidad_de_instrucciones;
