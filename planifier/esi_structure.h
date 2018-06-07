@@ -7,6 +7,8 @@ typedef struct {
 	int tiempo_de_entrada;
 	int cantidad_de_instrucciones;
 	int instrucction_pointer;
+	pthread_t esi_thread;
+	int socket_id;
 }__attribute((packed)) esi;
 
 enum tipo_de_esi {

@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 	configure_logger();
 	load_configuration(argv[1]);
 	connect_to_coordinator();
-	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
+	int server_started = start_server(server_port, server_max_connections, (void *) connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
 	}
@@ -35,19 +35,23 @@ int esi_id_generate(){
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
 }
+
 int cpu_time_incrementate(){
 	pthread_mutex_trylock(&cpu_time_mtx);
 	int new_cpu_time = cpu_time ++;
 	pthread_mutex_unlock(&cpu_time_mtx);
 	return new_cpu_time;
 }
-int new_esi(/*me da algo*/){
+
+int new_esi(int socket, long esi_size){
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = esi_id_generate();
 	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = cpu_time;
+	new_esi -> socket_id = socket;
+	new_esi -> esi_thread = pthread_self();
 	pthread_mutex_unlock(&cpu_time_mtx);
-	new_esi -> cantidad_de_instrucciones = 123/*lo tiene que pasar por parametro el esi, creo que s lo unico que te tiene que pasar*/;
+	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instrucction_pointer = 0;
 	pthread_mutex_unlock(&cpu_time_mtx);
 	add_esi(new_esi);
@@ -167,34 +171,20 @@ void connect_to_coordinator() {
 	}
 }
 
-void send_coordinator_connection_completed(int coordinator_socket) {
-	if (send_connection_success(coordinator_socket) < 0) {
-		exit_with_error(coordinator_socket,
-				"Error sending coordinator completed");
-	} else {
-		log_info(logger, "Coordinator connection completed");
+void connection_handler(int socket) {
+	if (recv_message(socket) == MODULE_CONNECTED) {
+		esi_connection_handler(socket);
+	}else{
+		log_info(logger, "Connection was received but the message type does not imply connection. Ignoring");
+		close(socket);
+		return;
+		//TODO MANDAR A OPERACIONES DEL COORDINADOR
 	}
 }
 
-void esi_connection_handler(int socket) {
-	message_type message_type;
-	int result_message_type = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
-
-	if (result_message_type <= 0) {
-		log_error(logger, "Error trying to receive message. Closing connection");
-		close(socket);
-		return;
-	}
-
-	if (message_type != MODULE_CONNECTED) {
-		log_warning(logger, "Connection was received but the message type does not imply connection. Ignoring");
-		close(socket);
-		return;
-	}
-
-	module_type module_type;
-	int result_module_type = recv(socket, &module_type, sizeof(module_type),
-			MSG_WAITALL);
+void esi_connection_handler(int socket){
+	module_type module_type = malloc(sizeof(module_type));
+	int result_module_type = recv_int(socket, &module_type);
 	if (result_module_type <= 0) {
 		log_error(logger, "Error trying to receive module type. Closing connection");
 		close(socket);
@@ -202,15 +192,28 @@ void esi_connection_handler(int socket) {
 	}
 
 	if (module_type == ISE) {
-		if (send_connection_success(socket) < 0) {
-			log_error(logger, "Error sending \"connection success\" message to %s",	get_client_address(socket));
+		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
+
+		long esi_size;
+		int result_esi_size = recv_long(socket, &esi_size);
+
+		if (result_esi_size <= 0) {
+			log_error(logger, "Error trying to receive message. Closing connection");
 			close(socket);
 			return;
 		}
-		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
+
+		int new_esi_id = add_esi(socket, esi_size);
+		int result_send_new_esi_id = send(socket, new_esi_id, sizeof(new_esi_id), 0);
+		if (result_send_new_esi_id < 0) {
+			log_error(logger, "Error sending the id to the new esi. Client-Address %s",	get_client_address(socket));
+			close(socket);
+			return;
+		}
 	} else {
 		log_info(logger, "Ignoring connected client because it was not an ESI");
 	}
+
 }
 
 void listen_for_commands() {
