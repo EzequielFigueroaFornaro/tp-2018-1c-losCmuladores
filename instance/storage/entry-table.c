@@ -79,11 +79,13 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char * value = entry_table_get(entry_table, key);
-	if (NULL == value) {
-		return -1;
-	} else {
-		return file_system_save(file_name, value);
+	int result = -1;
+	if (NULL != value) {
+		result = file_system_save(file_name, value);
 	}
+	free(file_name);
+	free(value);
+	return result;
 }
 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -147,9 +149,7 @@ void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *valu
 	entry->index = index;
 	entry->length = strlen(value) + 1;
 
-	char* dup_key = strdup(key);
-
-	dictionary_put(table->entries, dup_key, (void*)entry);
+	dictionary_put(table->entries, key, (void*)entry);
 }
 
 

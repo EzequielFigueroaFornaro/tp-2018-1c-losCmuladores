@@ -181,7 +181,7 @@ void send_statement_result_to_ise(int socket, long ise_id, execution_result resu
 	free(buffer);
 
 	if (send_result <= 0) {
-		log_error(logger, "Could not send sentence execution result to ESI %s", ise_id);
+		log_error(logger, "Could not send sentence execution result to ESI %d", ise_id);
 	}
 }
 
