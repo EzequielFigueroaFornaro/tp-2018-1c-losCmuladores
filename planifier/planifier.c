@@ -248,6 +248,7 @@ void listen_for_commands() {
 		if (is_exit_command) {
 			log_info(logger, "Exiting...");
 		} else {
+			//todo switch case con todos los comandos posibles, default invalid command
 			log_info(logger, "Invalid command");
 		}
 		free(command);
