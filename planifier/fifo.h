@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include "commons/collections/list.h"
-#include "esi_structure.h"
+#include "planifier_structures.h"
 
 void fifo_add_esi(t_list* ready_list, pthread_mutex_t* sem_ready_list, long esi);
 

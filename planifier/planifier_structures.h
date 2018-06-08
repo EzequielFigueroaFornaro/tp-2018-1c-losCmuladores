@@ -1,5 +1,5 @@
-#ifndef ESI_STRUCTURE_H_
-#define ESI_STRUCTURE_H_
+#ifndef PLANIFIER_STRUCTURES_H_
+#define PLANIFIER_STRUCTURES_H_
 
 typedef struct {
 	long id;
