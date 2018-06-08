@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 }
 
 void configure_logger() {
-	logger = log_create("planifier.log", "planifier", true, LOG_LEVEL_INFO);
+	logger = log_create("planifier.log", "planifier", false, LOG_LEVEL_INFO);
 }
 
 void load_configuration(char *config_file_path) {
@@ -111,29 +111,6 @@ void esi_connection_handler(int socket) {
 	} else {
 		log_info(logger, "Ignoring connected client because it was not an ESI");
 	}
-}
-
-void listen_for_commands() {
-	char *command;
-	int is_exit_command;
-	do {
-		command = readline("Command: ");
-		is_exit_command = string_equals_ignore_case(command, "EXIT");
-		if (is_exit_command) {
-			log_info(logger, "Exiting...");
-		} else {
-			log_info(logger, "Invalid command");
-		}
-		free(command);
-	} while (!is_exit_command);
-}
-
-pthread_t start_console() {
-	pthread_t console_thread;
-	if (pthread_create(&console_thread, NULL, (void*) listen_for_commands, NULL) < 0) {
-		exit_with_error(0, "Error starting console thread");
-	};
-	return console_thread;
 }
 
 void exit_gracefully(int return_nr) {

@@ -26,7 +26,7 @@ all: default # Si ejecutan all, que ejecute la default
 # y HEADERS, para incluir los headers que definamos.
 # Nota: wildcard implica que seleccione todos los que cumplen con la regex (osea todos los que terminen con .h)
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c) $(wildcard console/*.c))
 HEADERS = $(wildcard *.h)
 
 %.o: %.c $(HEADERS) # Las variables que le pasamos a la tarea, le decimos que use todos los .c y todos los .h
@@ -39,4 +39,5 @@ $(TARGET): $(OBJECTS) # Le pasamos a la tarea los objects ya compilados
 
 clean: # Finalmente creamos una tarea para eliminar todos los .o y el binario
 	-rm -f *.o
+	-rm -f console/*.o
 	-rm -f $(TARGET)

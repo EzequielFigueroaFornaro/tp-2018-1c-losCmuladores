@@ -20,6 +20,8 @@
 #include <commons/log.h>
 #include "commons-sockets.h"
 
+#include "console/console.h"
+
 int server_port;
 int server_max_connections;
 
