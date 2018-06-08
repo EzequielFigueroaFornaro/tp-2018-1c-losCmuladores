@@ -118,7 +118,7 @@ bool deshabilitar_recurso(char/*no se que es esto*/ recurso, long esi_id_desabil
 
 void liberar_recurso(char* recurso){
 	pthread_mutex_lock(&map_boqueados);
-	//TODO ver que onda desbloqueo todo o una sola
+	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
 	dictionary_remove(recurso_tomado_por_esi, recurso);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso,recurso);
 	long esi_id = queue_pop(esi_queue);
@@ -127,7 +127,7 @@ void liberar_recurso(char* recurso){
 	}
 	pthread_mutex_unlock(&map_boqueados);
 	add_esi_bloqueada(esi_id);
-	//OJO AL PIJO el frre de datos como el id que guardamos de la esi bloqueada;
+	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
 }
 
 
@@ -183,7 +183,7 @@ void connect_to_coordinator() {
 					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
 					break;
 				case STORE_SENTENCE:
-					//liberar_recurso_handler();
+					recv_and_free_resource();
 					break;
 				default:
 					log_info(logger, "Connection was received but the operation its not supported. Ignoring");
@@ -193,12 +193,22 @@ void connect_to_coordinator() {
 	}
 }
 
+void recv_and_free_resource(){
+	char** resource;
+	if(recv_string(coordinator_socket, &resource) < 0){
+		log_info(logger, "Could not get the resource to free");
+		//TODO que hago si no lo pude recibir?
+	}
+	liberar_recurso(&resource);
+}
+
+
 void connection_handler(int socket) {
 	message_type message_type_result = recv_message(socket);
 	if(message_type_result == MODULE_CONNECTED){
 		esi_connection_handler(socket);
 	}else if(message_type_result == EXECUTION_RESULT){
-		//execution_result_handler();
+		esi_execution_result_handler();
 	}else{
 		log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
 		close(socket);
@@ -214,7 +224,7 @@ void esi_connection_handler(int socket){
 		return;
 	}
 
-	if (module_type == ISE) {
+	if (*module_type == ISE) {
 		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
 
 		long esi_size;
@@ -237,6 +247,44 @@ void esi_connection_handler(int socket){
 		log_info(logger, "Ignoring connected client because it was not an ESI");
 	}
 
+}
+
+void esi_execution_result_handler(){
+	execution_result *esi_execution_result;
+	int esi_execution_result_status = recv(socket, &esi_execution_result, sizeof(execution_result), MSG_WAITALL);
+	if (esi_execution_result_status <= 0) {
+		log_error(logger, "Error trying to receive the execution result");
+		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?
+	}
+	switch (esi_execution_result) {
+		case OK:
+			//TODO que pasa cuando me dice ok
+			break;
+		case KEY_TOO_LONG:
+			//idem ok
+			break;
+		case KEY_UNREACHABLE:
+			//idem ok
+			break;
+		case KEY_LOCK_NOT_ACQUIRED:
+			//idem ok
+			break;
+		case KEY_BLOCKED:
+			//idem ok
+			break;
+		case PARSE_ERROR:
+			//TODO no deberia venirme este problema
+			break;
+		case NEED_COMPACTION:
+			//TODO esto es propio del coord? yo que hago, lo bloqueo?
+			break;
+		case START_COMPACTION:
+			//TODO IDEM ARRIBA
+			break;
+		default:
+			log_info(logger, "Ignoring message because it was not an known execution result");
+			break;
+	}
 }
 
 void listen_for_commands() {

@@ -20,10 +20,11 @@
 #include <commons/log.h>
 #include "commons-sockets.h"
 #include <types.h>
+#include <response_codes.h>
 #include <commons/collections/queue.h>
 #include "commons/collections/list.h"
 #include "orchestrator.h"
-#include "esi_structure.h"
+#include "planifier_structures.h"
 
 int server_port;
 int server_max_connections;
