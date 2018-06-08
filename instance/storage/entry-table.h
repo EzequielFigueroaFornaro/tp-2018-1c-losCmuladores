@@ -16,6 +16,11 @@
 typedef struct {
 	int index;
 	int length;
+} t_replacement_circular;
+
+typedef struct {
+	int index;
+	int length;
 } t_entry;
 
 typedef struct {
@@ -30,16 +35,40 @@ t_entry_table *entry_table_create(int max_entries, size_t entry_size);
 
 void entry_table_destroy(t_entry_table* entry_table);
 
+/**
+ * Inserta una nueva clave en la tabla
+ */
 int entry_table_put(t_entry_table* entry_table, char *key, char *value);
 
+/**
+ * Obtiene el valor de la entrada
+ */
 char* entry_table_get(t_entry_table* entry_table, char *key);
 
+/**
+ * Elimina la entrada de la tabla
+ */
 void entry_table_remove(t_entry_table * entry_table, char *key);
 
-int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key);
+/**
+ * Almacena el valor de la entrada en disco
+ */
+int entry_table_store(t_entry_table * entry_table, char* mounting_path, char *key);
 
-int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key);
+/**
+ * Carga el valor del archivo en disco a la tabla de entradas
+ */
+int entry_table_load(t_entry_table * entry_table, char* mounting_path, char *key);
 
-t_entry_table *entry_table_create(int max_entries, size_t entry_size);
+/**
+ * determina si hay suficiente espacio continuo para poder almacenar el valor
+ */
+bool entry_table_can_put(t_entry_table* entry_table, char *value);
+
+/**
+ * Determina si hay suficiente espacio poder almacenar el valor, no necesariamente el espacio es continuo
+ * Usado para compactar
+ */
+bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value);
 
 #endif /* STORAGE_ENTRY_TABLE_H_ */

@@ -14,6 +14,6 @@ void file_system_delete(char* name);
 
 char* file_system_read(char* name);
 
-int create_key_folder(char* mounth_path);
+int create_folder(char* folder);
 
 #endif /* STORAGE_FILE_FILE_SYSTEM_H_ */

@@ -92,6 +92,21 @@ int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	return entry_table_put(entry_table, key, value);
 }
 
+bool entry_table_can_put(t_entry_table* entry_table, char *value) {
+	int count = _calculate_value_entries_count(entry_table, value);
+	return availability_has_free_countinuous_space(entry_table->availability, count);
+}
+
+bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value) {
+	int count_needed = _calculate_value_entries_count(entry_table, value);
+	int free_entries = availability_get_free_entries_count(entry_table->availability);
+	return free_entries >= count_needed;
+}
+
+
+
+
+
 char* _make_full_file_name(char *mount_path, char *key) {
 	char *file_name = string_duplicate(mount_path);
 	string_append(&file_name, key);

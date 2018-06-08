@@ -16,7 +16,7 @@
 
 bool instance_running = true;
 
-void _exit_with_error(int socket, char *error_msg, void *buffer);
+void _exit_with_error(int socket, void *buffer, char *error_msg, ...);
 
 void configure_logger() {
 	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
@@ -48,17 +48,17 @@ t_instance_config* load_configuration(char* config_file_path){
 	return instance_config;
 }
 
-void _exit_with_error(int socket,char* error_msg, void * buffer){
+void _exit_with_error(int socket, void * buffer, char* error_msg, ...){
 	if (buffer != NULL) {
 		free(buffer);
 	}
-	log_error(logger, error_msg);
+	log_error(logger, error_msg, ...);
 	close(socket);
 	exit_gracefully(1);
 }
 
-void exit_with_error(int socket, char *error_msg) {
-	_exit_with_error(socket, error_msg, NULL);
+void exit_with_error(int socket, char *error_msg, ...) {
+	_exit_with_error(socket, NULL, error_msg, ...);
 }
 
 t_instance_configuration *receive_instance_configuration(int socket){
@@ -85,7 +85,16 @@ void check_if_connection_was_ok(int server_socket){
 	  log_info(logger, "Connected !");
 }
 
-int process_sentence(t_sentence* sentence){
+int process_sentence_set(t_sentence* sentence) {
+	char *value = sentence->value;
+	if (entry_table_can_put(entries_table, value)) {
+		return entry_table_put(entries_table, sentence->key, sentence->value);
+	} else if (entry_table_enough_free_entries(entries_table, value)) {
+
+	}
+}
+
+int process_sentence(t_sentence* sentence) {
 	log_info(logger, "Processing statement...");
 	switch(sentence->operation_id) {
 	case GET_SENTENCE:;
@@ -97,7 +106,7 @@ int process_sentence(t_sentence* sentence){
 		}
 		return 0;
 	case SET_SENTENCE:
-		return entry_table_put(entries_table, sentence->key, sentence->value);
+		return process_sentence_set(sentence);
 	case STORE_SENTENCE:
 		return entry_table_store(entries_table, instance_config->mount_path, sentence->key);
 	default:
@@ -170,6 +179,13 @@ void send_instance_name(int coordinator_socket, char *instance_name) {
 		_exit_with_error(coordinator_socket, "Instance name error. Maybe other instance with same name is already running.", buffer);
 	}
 	log_info(logger, "Instance name sent OK.");
+}
+
+void create_mounting_path(char* mounting_path) {
+	if (create_folder(mounting_path) == -1) {
+		log_error(logger, "Error when trying to create mounting path: %s", mounting_path);
+		exit_with_error()
+	}
 }
 
 int instance_run(int argc, char* argv[]) {

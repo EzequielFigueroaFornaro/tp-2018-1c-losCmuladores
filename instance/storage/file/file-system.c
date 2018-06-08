@@ -49,10 +49,10 @@ char* file_system_read(char* name) {
 	return value;
 }
 
-int create_key_folder(char* mounth_path) {
+int create_folder(char* folder) {
 	struct stat st;
-	if (stat(mounth_path, &st) == -1) {
-	    return mkdir(mounth_path, 666);
+	if (stat(folder, &st) == -1) {
+	    return mkdir(folder, 666);
 	} else {
 		return 0;
 	}
