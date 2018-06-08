@@ -139,7 +139,9 @@ t_sentence* wait_for_statement(int socket_fd) {
 	if (recv_sentence_operation(socket_fd, &sentence->operation_id) > 0) {
 		if (recv_string(socket_fd, &sentence->key) > 0) {
 			if (recv_string(socket_fd, &sentence->value) > 0) {
-				log_info(logger, "Sentence successfully received: %s", sentence_to_string(sentence));
+				char *sentence_str = sentence_to_string(sentence);
+				log_info(logger, "Sentence successfully received: %s", sentence_str);
+				free(sentence_str);
 				return sentence;
 			} else {
 				log_error(logger, "Could not receive sentence value.");
