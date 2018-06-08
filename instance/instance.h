@@ -22,10 +22,6 @@
 #include <signal.h>
 #include <string.h>
 
-int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
-
-void _exit_with_error(int socket, char *error_msg, void *buffer);
-
 typedef struct {
 	int coordinator_port;
 	char *coordinator_ip;
@@ -34,12 +30,16 @@ typedef struct {
 	char *replacement_algorithm;
 } t_instance_config;
 
+int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
+
+t_instance_config* instance_config_create();
+
+void instance_config_destroy(t_instance_config *instance_config);
+
 //Global variables.
-t_log * logger = NULL;
+t_log *logger = NULL;
 t_instance_config *instance_config = NULL;
-int coordinator_socket;
-
-
 t_entry_table* entries_table = NULL;
+int coordinator_socket;
 
 #endif /* INSTANCE_H_ */
