@@ -191,6 +191,24 @@ void connect_to_coordinator() {
 		} else {
 			log_info(logger, "Connexion con el coordinador establecida");
 		}
+
+		int operation;
+		while(recv_sentence_operation(coordinator_socket, &operation) > 0){//todo que condicion pongo aca?
+			switch(operation){
+				case GET_SENTENCE:
+					//esi_tomando_recurso_handler();
+					break;
+				case SET_SENTENCE:
+					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
+					break;
+				case STORE_SENTENCE:
+					//liberar_recurso_handler();
+					break;
+				default:
+					log_info(logger, "Connection was received but the operation its not supported. Ignoring");
+					break;
+			}
+		}
 	}
 }
 
@@ -201,15 +219,6 @@ void connection_handler(int socket) {
 			break;
 		case EXECUTION_RESULT:
 			//execution_result_handler();
-			break;
-		case GET_SENTENCE:
-			//esi_tomando_recurso_handler();
-			break;
-		case SET_SENTENCE:
-			//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
-			break;
-		case STORE_SENTENCE:
-			//liberar_recurso_handler();
 			break;
 		default:
 			log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
