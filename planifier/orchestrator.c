@@ -11,7 +11,6 @@
 #include "orchestrator.h"
 
 pthread_mutex_t esi_map_mtx = PTHREAD_MUTEX_INITIALIZER;
-t_dictionary * esi_map;
 
 pthread_mutex_t running_esi_mtx = PTHREAD_MUTEX_INITIALIZER;
 int RUNNING_ESI = -1;
@@ -147,4 +146,7 @@ char* string_key(long key){
 	return string_from_format("%l",key);
 }
 
+void add_esi_bloqueada(long esi_id){
+	//TODO no me acuerdo que hacia aca
+}
 

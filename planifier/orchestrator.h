@@ -10,6 +10,7 @@
 
 int ALGORITHM;
 
+t_dictionary * esi_map;
 
 //pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
 enum algorithm {

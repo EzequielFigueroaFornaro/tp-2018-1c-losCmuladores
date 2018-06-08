@@ -10,25 +10,6 @@
 
 #include "planifier.h"
 
-int main(int argc, char* argv[]) {
-
-	esis_bloqueados_por_recurso = dictionary_create();
-	int i = 1;
-	set_orchestrator(i);
-	configure_logger();
-	load_configuration(argv[1]);
-	connect_to_coordinator();
-	int server_started = start_server(server_port, server_max_connections, (void *) connection_handler, true, logger);
-	if (server_started < 0) {
-		log_error(logger, "Server not started");
-	}
-
-	pthread_t console_thread = start_console();
-
-	pthread_join(console_thread, NULL);
-	return EXIT_SUCCESS;
-}
-
 long esi_id_generate(){
 	pthread_mutex_trylock(&id_mtx);
 	int new_id = id ++;
@@ -141,7 +122,7 @@ void liberar_recurso(char* recurso){
 	dictionary_remove(recurso_tomado_por_esi, recurso);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso,recurso);
 	long esi_id = queue_pop(esi_queue);
-	while(!is_valiSd_esi(esi_id)){
+	while(!is_valid_esi(esi_id)){
 		esi_id = queue_pop(esi_queue);
 	}
 	pthread_mutex_unlock(&map_boqueados);
@@ -213,17 +194,14 @@ void connect_to_coordinator() {
 }
 
 void connection_handler(int socket) {
-	switch (recv_message(socket) == MODULE_CONNECTED) {
-		case /*MODULE_CONNECTED*/GET_SENTENCE:
-			esi_connection_handler(socket);
-			break;
-		case /*EXECUTION_RESULT*/GET_SENTENCE:
-			//execution_result_handler();
-			break;
-		default:
-			log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
-			close(socket);
-			break;
+	message_type message_type_result = recv_message(socket);
+	if(message_type_result == MODULE_CONNECTED){
+		esi_connection_handler(socket);
+	}else if(message_type_result == EXECUTION_RESULT){
+		//execution_result_handler();
+	}else{
+		log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
+		close(socket);
 	}
 }
 
@@ -293,4 +271,23 @@ void exit_with_error(int socket, char* error_msg) {
 	log_error(logger, error_msg);
 	close(socket);
 	exit_gracefully(1);
+}
+
+int main(int argc, char* argv[]) {
+
+	esis_bloqueados_por_recurso = dictionary_create();
+	int i = 1;
+	set_orchestrator(i);
+	configure_logger();
+	load_configuration(argv[1]);
+	connect_to_coordinator();
+	int server_started = start_server(server_port, server_max_connections, (void *) connection_handler, true, logger);
+	if (server_started < 0) {
+		log_error(logger, "Server not started");
+	}
+
+	pthread_t console_thread = start_console();
+
+	pthread_join(console_thread, NULL);
+	return EXIT_SUCCESS;
 }
