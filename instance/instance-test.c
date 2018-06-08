@@ -12,7 +12,7 @@
 
 char *key = "key";
 char *value = "value";
-char *mount_path = "/home/utnso/entries/";
+char *mounting_path = "/home/utnso/entries/";
 char *file_name = "/home/utnso/entries/key";
 
 int instance_run_test() {
@@ -45,7 +45,7 @@ void test_file_system_store_key() {
 	size_t entry_size = 40;
 	t_entry_table *table = entry_table_create(max_entries, entry_size);
 	entry_table_put(table, key, "value");
-	entry_table_store(table, mount_path, key);
+	entry_table_store(table, mounting_path, key);
 }
 
 void test_file_system_load_key() {
@@ -57,7 +57,7 @@ void test_file_system_load_key() {
 	size_t entry_size = 40;
 	t_entry_table *table = entry_table_create(max_entries, entry_size);
 
-	entry_table_load(table, mount_path, key);
+	entry_table_load(table, mounting_path, key);
 
 	char *value_loaded = entry_table_get(table, key);
 	CU_ASSERT_STRING_EQUAL(value_loaded, value);

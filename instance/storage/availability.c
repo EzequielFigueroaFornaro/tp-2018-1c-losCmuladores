@@ -36,6 +36,8 @@ t_availability *availability_create(int entries_count) {
 }
 
 void availability_destroy(t_availability *availability) {
+	// bug de la commons, no libera
+	free(availability -> bitarray -> bitarray);
 	bitarray_destroy(availability -> bitarray);
 	free(availability);
 }

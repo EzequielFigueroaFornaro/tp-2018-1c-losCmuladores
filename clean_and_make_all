@@ -2,25 +2,31 @@
 run_dir="$(dirname "$0")"
 cd "$run_dir"
 
+cd commons-library
+echo "------------------------COMMONS-LIBRARY-----------------------"
+make clean
+make
+
+cd ..
 cd coordinator
-echo "--------------COORDINATOR-------------"
+echo "--------------------------COORDINATOR-------------------------"
 make clean
 make
 
 cd ..
 cd planifier
-echo "---------------PANIFIER---------------"
+echo "---------------------------PANIFIER---------------------------"
 make clean
 make
 
 cd ..
 cd instance
-echo "---------------INSTANCE---------------"
+echo "---------------------------INSTANCE---------------------------"
 make clean
 make
 
 cd ..
 cd ise
-echo "-----------------ISE------------------"
+echo "-----------------------------ISE------------------------------"
 make clean
 make

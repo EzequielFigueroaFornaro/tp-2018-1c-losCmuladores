@@ -22,7 +22,7 @@ t_sentence* sentence_create() {
 }
 
 void sentence_destroy(t_sentence* sentence) {
-	if (NULL == sentence) {
+	if (NULL != sentence) {
 		free(sentence->key);
 		free(sentence->value);
 		free(sentence);
