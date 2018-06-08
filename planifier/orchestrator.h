@@ -24,4 +24,6 @@ void add_esi_bloqueada(long esi_id);
 
 bool is_valid_esi(long esi_id);
 
+char* string_key(long key);
+
 #endif
