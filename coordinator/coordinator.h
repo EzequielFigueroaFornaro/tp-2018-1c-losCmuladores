@@ -15,16 +15,20 @@
 #include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close
 #include <readline/readline.h> // Para usar readline
+#include <pthread.h>
+#include <signal.h>
+#include <errno.h>
+
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/collections/list.h"
-#include <pthread.h>
 #include "commons-sockets.h"
+#include "response_codes.h"
 #include "types.h"
 #include "commons/txt.h"
-#include <signal.h>
-#include <errno.h>
-#include <pthread.h>
+
+#include "types.h"
+#include "response_codes.h"
 
 char* OPERATIONS_LOG_PATH = "operations.log";
 //#define PORT 8080
@@ -74,7 +78,7 @@ t_instance *last_instance_selected;
 typedef struct {
 	pthread_t ise_thread;
 	int socket_id;
-	int id;
+	long id;
 } __attribute__((packed)) t_ise;
 
 void _exit_with_error(int socket,char* error_msg, void * buffer);

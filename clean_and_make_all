@@ -29,4 +29,5 @@ cd ..
 cd ise
 echo "-----------------------------ISE------------------------------"
 make clean
+./install_parsi
 make

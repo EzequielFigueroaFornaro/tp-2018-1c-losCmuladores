@@ -44,12 +44,15 @@ extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
+extern message_type ISE_KILL;
 
 t_sentence* sentence_create();
 
 void sentence_destroy(t_sentence* sentence);
 
 bool is_valid_operation(int operation);
+
+t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id);
 
 //Devuelve un buffer y su size a partir de una sentencia.
 t_buffer serialize_sentence(t_sentence* sentence); // TODO [Lu] no deberia devolver un puntero a t_buffer?

@@ -170,7 +170,7 @@ int recv_long(int socket, long* id) {
 
 int recv_sentence_operation(int socket, int *operation) {
 	int result = recv(socket, operation, sizeof(int), 0);
-	if (!is_valid_operation(*operation)) {
+	if (result > 0 && !is_valid_operation(*operation)) {
 		return -1;
 	}
 	return result;
