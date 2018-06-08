@@ -12,6 +12,7 @@ message_type CONNECTION_SUCCESS = 101;
 message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
+message_type ISE_KILL = 302;
 
 
 t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){

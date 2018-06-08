@@ -10,8 +10,8 @@
 
 #include "coordinator.h"
 
-/* TEST
-bool test_block = true;
+/* TEST */
+/*bool test_block = true;
 void test_sentence_result(t_sentence* sentence, int socket, long ise_id);*/
 
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
@@ -394,14 +394,10 @@ void ise_connection_handler(int socket) {
 		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
 		save_operation_log(sentence, ise_id);
 
-		/* TEST: devuelve al primer GET, key_blocked, en los siguientes y para cualquier
-		  otra sentencia, devuelve OK al ESI (no hay comunicación con el planificador):
+		/* TEST: al primer GET devuelve key_blocked. En los siguientes GET y para cualquier
+		  otra sentencia, devuelve OK al ESI (no hay comunicación con el planificador):    */
 
-		test_sentence_result(sentence, socket, ise_id);   */
-
-		// TODO: Acciones a ejecutar ante tipo de sentencia
-
-		/* TODO: Descomentar cuando ya se tenga el resultado:*/
+		// test_sentence_result(sentence, socket, ise_id);
 
 		int execution_result = process_sentence(sentence, ise_id);
 		send_statement_result_to_ise(socket, ise_id, execution_result);
@@ -521,7 +517,7 @@ void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise,
 		} else {
 			result_to_ise = planifier_validation;
 		}
-		save_operation_log(sentence, ise);
+		save_operation_log(sentence, ise->id);
 	} else {
 		result_to_ise = planifier_validation;
 	}
@@ -573,14 +569,14 @@ int main(int argc, char* argv[]) {
 	exit_gracefully(EXIT_SUCCESS);
 }
 
-/* TEST
-void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
+/* TEST*/
+/*void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
 	if (sentence->operation_id == GET_SENTENCE && test_block) {
 		log_info(logger, "[TEST] Sending key_blocked result to esi %ld", ise_id);
-		send_statement_result_to_ise2(socket, ise_id, KEY_BLOCKED);
+		send_statement_result_to_ise(socket, ise_id, KEY_BLOCKED);
 		test_block = false;
 	} else {
 		log_info(logger, "[TEST] Sending ok result to esi %ld", ise_id);
-		send_statement_result_to_ise2(socket, ise_id, OK);
+		send_statement_result_to_ise(socket, ise_id, OK);
 	}
 }*/
