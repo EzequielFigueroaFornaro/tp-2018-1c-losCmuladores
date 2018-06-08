@@ -11,7 +11,7 @@
 #include "instance.h"
 #include "instance-test.h"
 #include "storage/file/file-system.h"
-
+#include "response_codes.h"
 #include <commons/log.h>
 #include <stdbool.h>
 
@@ -104,7 +104,7 @@ int process_sentence_set(t_sentence* sentence) {
 	char *value = sentence->value;
 	if (entry_table_can_put(entries_table, value)) {
 		return entry_table_put(entries_table, sentence->key, sentence->value);
-	} else if (entry_table_enough_free_entries(entries_table, value)) {
+	} else {
 
 	}
 }
@@ -226,9 +226,10 @@ int instance_run(int argc, char* argv[]) {
 	while(instance_running){
 		t_sentence* sentence = wait_for_statement(coordinator_socket);
 		if (NULL != sentence) {
-			process_sentence(sentence);
+			int sentence_result = process_sentence(sentence);
 			sentence_destroy(sentence);
-			send_result(coordinator_socket, 200);
+			int coordinator_result = sentence_result >= 0 ? OK : -1;
+			send_result(coordinator_socket, coordinator_result);
 			//TODO avisar al coordinador.
 		} else {
 			_exit_with_error("Error receiving sentence from coordinator. Maybe was disconnected");

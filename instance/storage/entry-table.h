@@ -11,11 +11,11 @@
 #include <commons/collections/dictionary.h>
 #include <stddef.h>
 
+#include "commons/collections/list.h"
 #include "availability.h"
 
 typedef struct {
-	int index;
-	int length;
+	char* key;
 } t_replacement_circular;
 
 typedef struct {
@@ -26,6 +26,7 @@ typedef struct {
 typedef struct {
 	t_dictionary *entries;
 	t_availability *availability;
+	t_list *replacement_circular;
 	char *data;
 	int max_entries;
 	size_t entry_size;
@@ -70,5 +71,11 @@ bool entry_table_can_put(t_entry_table* entry_table, char *value);
  * Usado para compactar
  */
 bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value);
+
+/**
+ * Determina si hay entradas atomicas
+ * Usado para reemplazar entradas
+ */
+bool entry_table_has_atomic_entries(t_entry_table* entry_table);
 
 #endif /* STORAGE_ENTRY_TABLE_H_ */
