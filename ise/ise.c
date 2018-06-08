@@ -75,14 +75,11 @@ void handle_execution_result(execution_result result) {
 	log_info(logger, "Received result from coordinator: %s", get_execution_result_description(result));
 	notify_planifier(result);
 	if (result == KEY_BLOCKED) {
-		log_info(logger, "Going to retry that last sentence later...");
+		log_info(logger, "Going to retry last sentence next...");
 		set_retry_current_sentence(true);
-		return;
-	} else if (result != OK) {
-		log_error(logger, "%s. Aborting", get_execution_result_description(result));
-		exit_with_error();
+	} else {
+		set_retry_current_sentence(false);
 	}
-	set_retry_current_sentence(false);
 }
 
 void wait_to_execute() {
@@ -94,18 +91,19 @@ void wait_to_execute() {
 			exit_with_error(); // TODO [Lu] Debería hacer esto?
 		}
 		if (msg == ISE_STOP) {
-			log_info(logger,
-					"Received stop signal from planifier. Waiting to continue...");
+			log_info(logger, "Received stop signal from planifier. Waiting to continue...");
+		} else if (msg == ISE_KILL) {
+			log_info(logger, "Received abort signal from planifier. Aborting");
+			exit_with_error();
 		} else {
-			log_error(logger,
-					"Received unknown signal from planifier. Will keep on waiting just in case...");
+			log_error(logger, "Received unknown signal from planifier. Will keep on waiting just in case...");
 		}
 	}
 	log_info(logger, "Received execute signal from planifier");
 }
 
 void notify_planifier(execution_result result) {
-	log_info(logger, "Notifying planifier of result: %s", get_execution_result_description(result));
+	log_info(logger, "Notifying sentence execution to planifier");
 	int message_size = sizeof(message_type) + sizeof(execution_result);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
