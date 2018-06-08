@@ -16,7 +16,9 @@ typedef enum {
 	KEY_UNREACHABLE,
 	KEY_LOCK_NOT_ACQUIRED,
 	KEY_BLOCKED,
-	PARSE_ERROR
+	PARSE_ERROR,
+	NEED_COMPACTION,
+	START_COMPACTION
 } execution_result;
 
 char* get_execution_result_description(int execution_result);

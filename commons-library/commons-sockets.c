@@ -93,7 +93,9 @@ int connect_to(char* ip, int port) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	getaddrinfo(ip, string_itoa(port), &hints, &server_info);
+	char *port_string = string_itoa(port);
+	getaddrinfo(ip, port_string, &hints, &server_info);
+	free(port_string);
 
 	int server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	if (server_socket < 0) {

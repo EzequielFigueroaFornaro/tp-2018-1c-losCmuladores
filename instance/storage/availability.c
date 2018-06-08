@@ -27,6 +27,7 @@ bool _availability_test_entry(t_availability *availability, int index) {
 t_availability *availability_create(int entries_count) {
 	int size = calculate_char_size(entries_count);
 	char *bitarray = (char *) malloc(sizeof(char) * size);
+	memset(bitarray, 0, size);
 	t_bitarray *t_bitarray = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
 
 	t_availability *availability = (t_availability *) malloc(sizeof(t_availability));
@@ -36,6 +37,8 @@ t_availability *availability_create(int entries_count) {
 }
 
 void availability_destroy(t_availability *availability) {
+	// bug de la commons, no libera
+	free(availability -> bitarray -> bitarray);
 	bitarray_destroy(availability -> bitarray);
 	free(availability);
 }

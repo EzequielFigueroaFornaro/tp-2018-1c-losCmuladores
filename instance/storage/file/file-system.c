@@ -5,11 +5,12 @@
  *      Author: utnso
  */
 
+#include <fcntl.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 int file_system_save(char* name, char* value) {
 	int file = open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -47,4 +48,13 @@ char* file_system_read(char* name) {
 	close(file);
 
 	return value;
+}
+
+int create_folder(char* folder) {
+	struct stat st;
+	if (stat(folder, &st) == -1) {
+	    return mkdir(folder, S_IRWXU | S_IRWXG | S_IRWXO);
+	} else {
+		return 0;
+	}
 }
