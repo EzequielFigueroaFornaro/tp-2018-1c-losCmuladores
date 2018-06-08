@@ -22,6 +22,6 @@ void stop_and_block_esi(long esi_id);
 
 void add_esi_bloqueada(long esi_id);
 
-bool is_valid_esi(long esi_id)
+bool is_valid_esi(long esi_id);
 
 #endif

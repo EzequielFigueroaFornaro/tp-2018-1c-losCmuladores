@@ -57,7 +57,7 @@ void add_esi(esi* esi){
 
 bool is_valid_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx);
-	bool result = dictionary_has_key(esi_map,string_key(esi_id)) || dictionary_is_empty(esi_map)
+	bool result = dictionary_has_key(esi_map,string_key(esi_id)) || dictionary_is_empty(esi_map);
 	pthread_mutex_unlock(&esi_map_mtx);
 	return result;
 }

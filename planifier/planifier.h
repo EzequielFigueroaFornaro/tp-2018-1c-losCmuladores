@@ -19,6 +19,7 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include "commons-sockets.h"
+#include <types.h>
 #include <commons/collections/queue.h>
 #include "commons/collections/list.h"
 #include "orchestrator.h"
@@ -60,6 +61,6 @@ pthread_t start_console();
 
 void exit_with_error(int socket, char* error_msg);
 
-void connection_handler(int socket);
+void esi_connection_handler(int socket);
 
 #endif /* PLANIFIER_H_ */

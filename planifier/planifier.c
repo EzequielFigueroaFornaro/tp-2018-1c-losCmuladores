@@ -35,7 +35,7 @@ long esi_id_generate(){
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
 }
-S
+
 long cpu_time_incrementate(){
 	pthread_mutex_trylock(&cpu_time_mtx);
 	int new_cpu_time = cpu_time ++;
@@ -68,10 +68,30 @@ int new_esi(int socket, long esi_size){
 //
 //	}else{
 //
-//S}
+//}
 //}
 //
-//ejecuta_vos(output)
+
+int send_message_to_esi(long esi_id, message_type message){
+	esi *esi_to_notify = malloc(sizeof(esi));
+	esi_to_notify = dictionary_get(&esi_map, string_key(esi_id));
+	int socket_id = esi_to_notify->socket_id;
+	return send(socket_id, message, sizeof(message_type), 0);
+}
+
+void send_esi_to_run(long esi_id){
+	if (send_message_to_esi(esi_id, ISE_EXECUTE) < 0){
+		log_error(logger, "Could not send ise %l to run", esi_id);
+		//todo que pasa si no le puedo mandar un mensaje?
+	}
+}
+
+void send_esi_to_stop(long esi_id){
+	if (send_message_to_esi(esi_id, ISE_STOP) < 0){
+		log_error(logger, "Could not send ise %l to run", esi_id);
+		//todo que pasa si no le puedo mandar un mensaje?
+	}
+}
 
 //che_esta_tomado_el_recurso(input_outpu)
 
@@ -175,13 +195,26 @@ void connect_to_coordinator() {
 }
 
 void connection_handler(int socket) {
-	if (recv_message(socket) == MODULE_CONNECTED) {
-		esi_connection_handler(socket);
-	}else{
-		log_info(logger, "Connection was received but the message type does not imply connection. Ignoring");
-		close(socket);
-		return;
-		//TODO MANDAR A OPERACIONES DEL COORDINADOR
+	switch (recv_message(socket) == MODULE_CONNECTED) {
+		case MODULE_CONNECTED:
+			esi_connection_handler(socket);
+			break;
+		case EXECUTION_RESULT:
+			//execution_result_handler();
+			break;
+		case GET_SENTENCE:
+			//esi_tomando_recurso_handler();
+			break;
+		case SET_SENTENCE:
+			//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
+			break;
+		case STORE_SENTENCE:
+			//liberar_recurso_handler();
+			break;
+		default:
+			log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
+			close(socket);
+			break;
 	}
 }
 
