@@ -214,10 +214,10 @@ void connect_to_coordinator() {
 
 void connection_handler(int socket) {
 	switch (recv_message(socket) == MODULE_CONNECTED) {
-		case MODULE_CONNECTED:
+		case /*MODULE_CONNECTED*/GET_SENTENCE:
 			esi_connection_handler(socket);
 			break;
-		case EXECUTION_RESULT:
+		case /*EXECUTION_RESULT*/GET_SENTENCE:
 			//execution_result_handler();
 			break;
 		default:

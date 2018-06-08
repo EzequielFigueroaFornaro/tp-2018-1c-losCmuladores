@@ -5,7 +5,7 @@
 #include "commons/collections/list.h"
 #include "esi_structure.h"
 
-void fifo_add_esi(t_list* ready_list, pthread_mutex_t* sem_ready_list, int esi);
+void fifo_add_esi(t_list* ready_list, pthread_mutex_t* sem_ready_list, long esi);
 
 void fifo_block_esi(t_list* BLOCKED_ESI_LIST, pthread_mutex_t* blocked_list_mtx,
 					t_list* READY_ESI_LIST, pthread_mutex_t* ready_list_mtx,
