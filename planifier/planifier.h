@@ -64,6 +64,7 @@ void exit_with_error(int socket, char* error_msg);
 
 void esi_connection_handler(int socket);
 
-bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource);
+//bool el_esi_puede_tomar_el_recurso(long* esi_id, char** resource);
+bool el_esi_puede_tomar_el_recurso();
 
 #endif /* PLANIFIER_H_ */

@@ -154,8 +154,8 @@ long esi_se_va_a_ejecutar(){
 	pthread_mutex_lock(&next_running_esi_mtx);
 	if(RUNNING_ESI == NEXT_RUNNING_ESI){
 		pthread_mutex_lock(&esi_map_mtx);
-		esi* esi = dictionary_get(esi_map, string_key(RUNNING_ESI))
-		esi -> instrucction_pointer = ((esi -> instrucction_pointer) +1)
+		esi* esi = dictionary_get(esi_map, string_key(RUNNING_ESI));
+		esi -> instrucction_pointer = ((esi -> instrucction_pointer) +1);
 		if((esi -> instrucction_pointer) == (esi -> cantidad_de_instrucciones)){
 			finish_esi(RUNNING_ESI);
 		}
@@ -169,7 +169,7 @@ long esi_se_va_a_ejecutar(){
 
 put_finish_esi(long esi_id){
 	pthread_mutex_lock(&finiched_list_mtx);
-	queue_put(FINISHED_ESI_LIST,esi_id);
+	queue_push(FINISHED_ESI_LIST,esi_id);
 	pthread_mutex_unlock(&finiched_list_mtx);
 }
 

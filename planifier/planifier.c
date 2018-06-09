@@ -175,14 +175,16 @@ void connect_to_coordinator() {
 
 		int operation;
 		while(recv_sentence_operation(coordinator_socket, &operation) > 0){//todo que condicion pongo aca?
-			char* resource = get_resource();
-			long esi_id = get_esi_id();
+			char** resource;
+			get_resource(&resource);
+			long* esi_id;
+			get_esi_id(&esi_id);
 			switch(operation){
 				case GET_SENTENCE:
 					try_to_block_resource(&resource, esi_id);
 					break;
 				case SET_SENTENCE:
-					if (el_esi_puede_tomar_el_recurso(esi_id, *resource)){
+					if (el_esi_puede_tomar_el_recurso(&esi_id, &resource)){
 						send(coordinator_socket, OK, sizeof(execution_result), 0);
 					}else{
 						send(coordinator_socket, KEY_LOCK_NOT_ACQUIRED, sizeof(execution_result), 0);
@@ -202,28 +204,22 @@ void connect_to_coordinator() {
 	}
 }
 
-char* get_resource(){
-	char** resource;
+void get_resource(char** resource){
 	if(recv_string(coordinator_socket, &resource) < 0){
 		log_info(logger, "Could not get the resource");
 		//TODO que hago si no lo pude recibir?
-		return NULL;
 	}
-	return &resource;
 }
 
-long get_esi_id(){
-	long esi_id;
+void get_esi_id(long* esi_id){
 	if(recv_long(coordinator_socket, &esi_id) < 0){
 		log_info(logger, "Could not get the esi id");
 		//TODO que hago si no lo pude recibir?
-		return NULL;
 	}
-	return &esi_id;
 }
 
 void send_execution_result_to_coordinator(execution_result result){
-	if(send(coordinator_socket, result, sizeof(execution_result), 0) <0){
+	if(send(coordinator_socket, &result, sizeof(execution_result), 0) <0){
 		log_info(logger, "Could not send response to coordinator");
 		//TODO que hago si no lo pude recibir?
 	}
@@ -234,16 +230,18 @@ void free_resource(char **resource){
 	send_execution_result_to_coordinator(OK);
 }
 
-bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource){
-	pthread_mutex_lock(&map_boqueados);
-	bool result = dictionary_has_key(recurso_tomado_por_esi,resource)
-					&& dictionary_get(recurso_tomado_por_esi, resource) == esi_id;
-	pthread_mutex_unlock(&map_boqueados);
-	return result;
+//bool el_esi_puede_tomar_el_recurso(long* esi_id, char **resource){
+bool el_esi_puede_tomar_el_recurso(){
+//	pthread_mutex_lock(&map_boqueados);
+//	bool result = dictionary_has_key(recurso_tomado_por_esi,&resource)
+//					&& dictionary_get(recurso_tomado_por_esi, &resource) == &esi_id;
+//	pthread_mutex_unlock(&map_boqueados);
+//	return result;
+	return false;
 	}
 
-void try_to_block_resource(char** resource, long esi_id){
-	if (bloquear_recurso(&resource, esi_id)){
+void try_to_block_resource(char** resource, long* esi_id){
+	if (bloquear_recurso(&resource, &esi_id)){
 		send_execution_result_to_coordinator(OK);
 	}else{
 		send_execution_result_to_coordinator(KEY_BLOCKED);

@@ -4,6 +4,7 @@
 
 #include <pthread.h>
 #include "commons/collections/list.h"
+#include "commons/collections/queue.h"
 #include "commons/collections/dictionary.h"
 #include "fifo.h"
 #include "planifier_structures.h"
