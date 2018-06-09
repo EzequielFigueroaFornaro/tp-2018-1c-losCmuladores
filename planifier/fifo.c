@@ -1,9 +1,9 @@
 #include "fifo.h"
 
 void fifo_add_esi(t_list* ready_list, pthread_mutex_t* sem_ready_list, long esi){
-	pthread_mutex_lock(&sem_ready_list);
+	pthread_mutex_lock(sem_ready_list);
 	list_add(ready_list, esi);
-	pthread_mutex_unlock(&sem_ready_list);
+	pthread_mutex_unlock(sem_ready_list);
 }
 
 void fifo_block_esi(t_list* BLOCKED_ESI_LIST, pthread_mutex_t* blocked_list_mtx,
@@ -43,9 +43,9 @@ void fifo_finish_esi(t_list* READY_ESI_LIST, pthread_mutex_t* ready_list_mtx,
 }
 
 void fifo_replan(t_list* READY_ESI_LIST, long* NEXT_RUNNING_ESI){
-	NEXT_RUNNING_ESI = list_remove(READY_ESI_LIST,0);
+	*NEXT_RUNNING_ESI = list_remove(READY_ESI_LIST,0);
 	if (NEXT_RUNNING_ESI == NULL){
-		&NEXT_RUNNING_ESI = -1;
+		*NEXT_RUNNING_ESI = -1;
 	}
 }
 
