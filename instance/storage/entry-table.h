@@ -15,10 +15,6 @@
 #include "availability.h"
 
 typedef struct {
-	char* key;
-} t_replacement_circular;
-
-typedef struct {
 	int index;
 	int length;
 } t_entry;

@@ -86,20 +86,18 @@ void test_entry_table_replace_atomic() {
 	size_t entry_size = 5;
 	t_entry_table *table = entry_table_create(max_entries, entry_size);
 
-	entry_table_put(table, "key1", "123456");
+	int put_result = entry_table_put(table, "key1", "123456");
 	CU_ASSERT_EQUAL(entry_table_has_atomic_entries(table), false);
-	entry_table_put(table, "key3", "654321");
+	CU_ASSERT_TRUE(put_result >= 0);
+	put_result = entry_table_put(table, "key2", "654321");
 	CU_ASSERT_EQUAL(entry_table_has_atomic_entries(table), false);
-	entry_table_put(table, "key2", "12345");
+	CU_ASSERT_TRUE(put_result >= 0);
+	put_result = entry_table_put(table, "key3", "12345");
 	CU_ASSERT_EQUAL(entry_table_has_atomic_entries(table), true);
+	CU_ASSERT_TRUE(put_result >= 0);
 
-	entry_table_put(table, "key1", "valuenotatomicvalue1");
-	has_atomic = entry_table_has_atomic_entries(table);
-	CU_ASSERT_EQUAL(has_atomic, false);
-	entry_table_put(table, "key2", "value2");
-	has_atomic = entry_table_has_atomic_entries(table);
-	CU_ASSERT_EQUAL(has_atomic, true);
-	entry_table_remove(table, "key2");
-	has_atomic = entry_table_has_atomic_entries(table);
-	CU_ASSERT_EQUAL(has_atomic, false);
+	int store_result = entry_table_store(table, mounting_path, "key2");
+	CU_ASSERT_TRUE(store_result >= 0);
+	char *stored_value = entry_table_get(table, "key2");
+	CU_ASSERT_PTR_NULL(stored_value);
 }
