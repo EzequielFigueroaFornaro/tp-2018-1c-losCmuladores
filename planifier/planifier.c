@@ -179,13 +179,13 @@ void connect_to_coordinator() {
 			long esi_id = get_esi_id();
 			switch(operation){
 				case GET_SENTENCE:
-					try_to_block_resource(&resource);
+					try_to_block_resource(&resource, esi_id);
 					break;
 				case SET_SENTENCE:
 					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
 					break;
 				case STORE_SENTENCE:
-					recv_and_free_resource();
+					free_resource(&resource);
 					break;
 				default:
 					log_info(logger, "Connection was received but the operation its not supported. Ignoring");
@@ -215,20 +215,24 @@ long get_esi_id(){
 	return &esi_id;
 }
 
-void recv_and_free_resource(){
-	char *resource = get_resource();
-	long esi_id = get_esi_id();
-	liberar_recurso(&resource);
-	//todo respondo al coordinador que se libero ok?
+void send_execution_result_to_coordinator(execution_result result){
+	if(send(coordinator_socket, result, sizeof(execution_result), 0) <0){
+		log_info(logger, "Could not send response to coordinator");
+		//TODO que hago si no lo pude recibir?
+	}
 }
 
-void try_to_block_resource(){
-	char** resource;
-		if(recv_string(coordinator_socket, &resource) < 0){
-			log_info(logger, "Could not get the resource to block");
-			//TODO que hago si no lo pude recibir?
-		}
-	bloquear_recurso(&resource)
+void free_resource(char **resource){
+	liberar_recurso(&resource);
+	send_execution_result_to_coordinator(OK);
+}
+
+void try_to_block_resource(char** resource, long esi_id){
+	if (bloquear_recurso(&resource, esi_id)){
+		send_execution_result_to_coordinator(OK);
+	}else{
+		send_execution_result_to_coordinator(KEY_BLOCKED);
+	}
 }
 
 void connection_handler(int socket) {
