@@ -7,6 +7,7 @@
 #include "commons/collections/dictionary.h"
 #include "esi_structure.h"
 #include "fifo.h"
+#include "commons/string.h"
 
 int ALGORITHM;
 

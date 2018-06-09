@@ -41,20 +41,12 @@ command parse_command(char* command_str) {
 	command command;
 	command.code_str = command_code_str;
 	command.args = args;
-	free(splitted_command);
-	free(command_code_str);
 	return command;
 }
 
 command_result base_command_result(command_result_code code) {
 	command_result result;
 	result.code = code;
-	return result;
-}
-
-command_result list_cmd(command command) {
-	// TODO
-	command_result result = base_command_result(COMMAND_OK);
 	return result;
 }
 

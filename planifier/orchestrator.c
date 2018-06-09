@@ -143,7 +143,7 @@ void free_esi(long esi_id){
 }
 
 char* string_key(long key){
-	return string_from_format("%l",key);
+	return string_from_format("%ld",key);
 }
 
 void add_esi_bloqueada(long esi_id){

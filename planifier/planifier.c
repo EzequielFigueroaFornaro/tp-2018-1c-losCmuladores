@@ -258,14 +258,13 @@ int main(int argc, char* argv[]) {
 	set_orchestrator(i);
 	configure_logger();
 	load_configuration(argv[1]);
-	connect_to_coordinator();
 	int server_started = start_server(server_port, server_max_connections, (void *) connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
 	}
 
 	pthread_t console_thread = start_console();
-
+	connect_to_coordinator();
 	pthread_join(console_thread, NULL);
 	return EXIT_SUCCESS;
 }

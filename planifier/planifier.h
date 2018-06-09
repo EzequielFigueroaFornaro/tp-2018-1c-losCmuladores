@@ -24,6 +24,7 @@
 #include "commons/collections/list.h"
 #include "orchestrator.h"
 #include "esi_structure.h"
+#include "data.h"
 
 #include "console/console.h"
 #include "console/console_log.h"
@@ -41,10 +42,6 @@ int coordinator_socket;
 
 //Global variables.
 t_log * logger;
-
-t_dictionary * esis_bloqueados_por_recurso;
-t_dictionary * recurso_tomado_por_esi;
-
 
 pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;

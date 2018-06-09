@@ -21,6 +21,7 @@
 #include "command.h"
 #include "command_config.h"
 #include "console_log.h"
+#include "list_cmd.h"
 
 pthread_t start_console();
 
