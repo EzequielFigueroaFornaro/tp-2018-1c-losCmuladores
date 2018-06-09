@@ -27,4 +27,8 @@ bool is_valid_esi(long esi_id);
 
 char* string_key(long key);
 
+long esi_se_va_a_ejecutar();
+
+void borado_de_finish();
+
 #endif

@@ -213,6 +213,8 @@ void connection_handler(int socket) {
 		log_info(logger, "Connection was received but the message type does not imply connection or any operation. Ignoring");
 		close(socket);
 	}
+
+
 }
 
 void esi_connection_handler(int socket){
@@ -251,41 +253,16 @@ void esi_connection_handler(int socket){
 
 void esi_execution_result_handler(){
 	execution_result *esi_execution_result;
+	cpu_time_incrementate();
 	int esi_execution_result_status = recv(socket, &esi_execution_result, sizeof(execution_result), MSG_WAITALL);
 	if (esi_execution_result_status <= 0) {
 		log_error(logger, "Error trying to receive the execution result");
 		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?
 	}
-	switch (esi_execution_result) {
-		case OK:
-			//TODO que pasa cuando me dice ok
-			break;
-		case KEY_TOO_LONG:
-			//idem ok
-			break;
-		case KEY_UNREACHABLE:
-			//idem ok
-			break;
-		case KEY_LOCK_NOT_ACQUIRED:
-			//idem ok
-			break;
-		case KEY_BLOCKED:
-			//idem ok
-			break;
-		case PARSE_ERROR:
-			//TODO no deberia venirme este problema
-			break;
-		case NEED_COMPACTION:
-			//TODO esto es propio del coord? yo que hago, lo bloqueo?
-			break;
-		case START_COMPACTION:
-			//TODO IDEM ARRIBA
-			break;
-		default:
-			log_info(logger, "Ignoring message because it was not an known execution result");
-			break;
-	}
+	send_esi_to_run(esi_se_va_a_ejecutar());
+	borado_de_finish();
 }
+
 
 void listen_for_commands() {
 	char *command;
