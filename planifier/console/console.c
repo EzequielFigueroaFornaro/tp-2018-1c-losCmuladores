@@ -7,15 +7,14 @@
 
 #include "console.h"
 
-static char* NEW_LINE = "\\n";
-
 void quit_console(char* msg, int code) {
 	if (code == EXIT_SUCCESS) {
-		print_ok(msg);
+		print_and_log(msg);
 	} else {
-		print_error(msg);
+		print_and_log_error(msg);
 	}
 	close(0);
+	destroy_command_config();
 	log_destroy(console_log);
 	exit(code);
 }
@@ -26,7 +25,7 @@ command_result execute_command(command command) {
 		result.code = INVALID_ARGS;
 		return result;
 	}
-	switch(to_code(command.code_str)) {
+	switch(get_command_code(command.code_str)) {
 	case LIST:
 		return list_cmd(command);
 	case PAUSE:
@@ -49,25 +48,26 @@ void listen_for_commands() {
 			continue;
 		}
 		if (!command_exists(command)) {
-			print_error("Invalid command '%s'", command.code_str);
+			print_and_log_error("Invalid command '%s'", command.code_str);
 			continue;
 		}
 		command_result result = execute_command(command);
 		switch(result.code) {
 		case COMMAND_OK:
-			print_ok("%s", result.content);
+			print_and_log("%s", result.content);
 			break;
 		case INVALID_ARGS:
-			print_error("Invalid arguments for command '%s'", command.code_str);
+			print_and_log_error("Invalid arguments for command '%s'", command.code_str);
 			break;
 		case COMMAND_ERROR:
-			print_error("Error trying to execute command '%s'", command.code_str);
+			print_and_log_error("Error trying to execute command '%s'", command.code_str);
 			break;
 		case INVALID_COMMAND:
-			print_error("Invalid command '%s'", command.code_str);
+			print_and_log_error("Invalid command '%s'", command.code_str);
 			break;
 		}
 	}
+	destroy_command(command);
 	quit_console("Exiting...", EXIT_SUCCESS);
 }
 

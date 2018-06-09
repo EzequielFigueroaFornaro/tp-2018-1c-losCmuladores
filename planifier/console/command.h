@@ -32,6 +32,8 @@ typedef struct {
 	t_list* args;
 } command;
 
+void destroy_command(command command);
+
 command parse_command(char* command_str);
 
 bool command_exists(command command);

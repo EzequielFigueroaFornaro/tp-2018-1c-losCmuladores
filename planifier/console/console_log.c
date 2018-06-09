@@ -16,14 +16,25 @@ void start_console_log() {
 void print_error(char* msg,...) {
 	va_list arguments;
 	va_start(arguments, msg);
+	char* message = string_from_vformat(msg, arguments);
+	printf("%s%s%s\n", RED, message, RESET);
+	va_end(arguments);
+	fflush(stdout);
+	free(message);
+}
+
+void print_and_log_error(char* msg,...) {
+	va_list arguments;
+	va_start(arguments, msg);
     char* message = string_from_vformat(msg, arguments);
 	log_error(console_log, message);
 	printf("%s%s%s\n", RED, message, RESET);
 	va_end(arguments);
 	fflush(stdout);
+	free(message);
 }
 
-void print_ok(char* msg,...) {
+void print_and_log(char* msg,...) {
 	va_list arguments;
 	va_start(arguments, msg);
     char* message = string_from_vformat(msg, arguments);
@@ -31,4 +42,5 @@ void print_ok(char* msg,...) {
 	printf("%s\n", message);
 	va_end(arguments);
 	fflush(stdout);
+	free(message);
 }

@@ -19,6 +19,8 @@ void start_console_log();
 
 void print_error(char* msg,...);
 
-void print_ok(char* msg,...);
+void print_and_log_error(char* msg,...);
+
+void print_and_log(char* msg,...);
 
 #endif /* CONSOLE_CONSOLE_LOG_H_ */

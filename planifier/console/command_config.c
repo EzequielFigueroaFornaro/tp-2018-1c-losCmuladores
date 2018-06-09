@@ -32,11 +32,15 @@ command_config* get_command_config(char* command_str) {
 	return dictionary_get(commands, command_str);
 }
 
-command_code to_code(char* command_str) {
+command_code get_command_code(char* command_str) {
 	command_config* command = get_command_config(command_str);
 	if (command != NULL) {
 		return command->code;
 	}
 	return UNKNOWN;
+}
+
+void destroy_command_config() {
+	dictionary_destroy(commands);
 }
 

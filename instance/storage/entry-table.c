@@ -79,11 +79,13 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char * value = entry_table_get(entry_table, key);
-	if (NULL == value) {
-		return -1;
-	} else {
-		return file_system_save(file_name, value);
+	int result = -1;
+	if (NULL != value) {
+		result = file_system_save(file_name, value);
 	}
+	free(file_name);
+	free(value);
+	return result;
 }
 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -91,6 +93,21 @@ int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *value = file_system_read(file_name);
 	return entry_table_put(entry_table, key, value);
 }
+
+bool entry_table_can_put(t_entry_table* entry_table, char *value) {
+	int count = _calculate_value_entries_count(entry_table, value);
+	return availability_has_free_countinuous_space(entry_table->availability, count);
+}
+
+bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value) {
+	int count_needed = _calculate_value_entries_count(entry_table, value);
+	int free_entries = availability_get_free_entries_count(entry_table->availability);
+	return free_entries >= count_needed;
+}
+
+
+
+
 
 char* _make_full_file_name(char *mount_path, char *key) {
 	char *file_name = string_duplicate(mount_path);
@@ -132,9 +149,7 @@ void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *valu
 	entry->index = index;
 	entry->length = strlen(value) + 1;
 
-	char* dup_key = strdup(key);
-
-	dictionary_put(table->entries, dup_key, (void*)entry);
+	dictionary_put(table->entries, key, (void*)entry);
 }
 
 

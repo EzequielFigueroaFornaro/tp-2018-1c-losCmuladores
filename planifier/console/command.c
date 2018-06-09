@@ -6,12 +6,18 @@
  */
 #include "command.h"
 
+void destroy_command(command command) {
+	if (command.args != NULL) {
+		list_destroy(command.args);
+	}
+}
+
 bool is_exit(command command) {
-	return EXIT == to_code(command.code_str);
+	return EXIT == get_command_code(command.code_str);
 }
 
 bool command_exists(command command) {
-	return UNKNOWN != to_code(command.code_str);
+	return UNKNOWN != get_command_code(command.code_str);
 }
 
 bool valid_args(command command) {
@@ -35,6 +41,8 @@ command parse_command(char* command_str) {
 	command command;
 	command.code_str = command_code_str;
 	command.args = args;
+	free(splitted_command);
+	free(command_code_str);
 	return command;
 }
 
@@ -45,20 +53,22 @@ command_result base_command_result(command_result_code code) {
 }
 
 command_result list_cmd(command command) {
+	// TODO
 	command_result result = base_command_result(COMMAND_OK);
-	result.content = "Respuesta de prueba1\nRespuesta de prueba2";
 	return result;
 }
 
 command_result pause_cmd(command command) {
-	// TODO system("pause");
+	// TODO
 	return base_command_result(COMMAND_OK);
 }
 
 command_result block_cmd(command command) {
+	// TODO
 	return base_command_result(COMMAND_OK);
 }
 
 command_result unblock_cmd(command command) {
+	// TODO
 	return base_command_result(COMMAND_OK);
 }

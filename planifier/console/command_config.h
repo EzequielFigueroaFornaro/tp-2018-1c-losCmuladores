@@ -32,6 +32,8 @@ void load_commands();
 
 command_config* get_command_config(char* command_str);
 
-command_code to_code(char* command_str);
+command_code get_command_code(char* command_str);
+
+void destroy_command_config();
 
 #endif /* CONSOLE_COMMAND_CONFIG_H_ */

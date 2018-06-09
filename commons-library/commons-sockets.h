@@ -1,8 +1,3 @@
-/*
- * commons_sockets.h
- *
- */
-
 #ifndef COMMONS_SOCKETS_H_
 #define COMMONS_SOCKETS_H_
 
