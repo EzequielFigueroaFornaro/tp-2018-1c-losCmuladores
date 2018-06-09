@@ -1,3 +1,4 @@
+sudo apt-get install zip unzip
 git clone https://github.com/sisoputnfrba/so-commons-library.git
 git clone https://github.com/mumuki/cspec.git
 cd cspec
