@@ -13,6 +13,7 @@ typedef struct {
 
 enum tipo_de_esi {
 	ESI_BLOQUEADO = -10
+
 };
 
 enum estados {

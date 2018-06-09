@@ -32,5 +32,8 @@ long esi_se_va_a_ejecutar();
 
 void borado_de_finish();
 
+bool es_caso_base(long esi_id);
+
+volver_caso_base();
 
 #endif

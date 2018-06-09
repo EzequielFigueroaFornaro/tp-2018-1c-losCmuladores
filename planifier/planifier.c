@@ -60,11 +60,12 @@ int send_message_to_esi(long esi_id, message_type message){
 	return send(socket_id, message, sizeof(message_type), 0);
 }
 
-void send_esi_to_run(long esi_id){
+bool send_esi_to_run(long esi_id){
 	if (send_message_to_esi(esi_id, ISE_EXECUTE) < 0){
 		log_error(logger, "Could not send ise %l to run", esi_id);
-		//todo que pasa si no le puedo mandar un mensaje?
+		return false;
 	}
+	return true;
 }
 
 void send_esi_to_stop(long esi_id){
@@ -297,6 +298,12 @@ void esi_connection_handler(int socket){
 			log_error(logger, "Error sending the id to the new esi. Client-Address %s",	get_client_address(socket));
 			close(socket);
 			return;
+		}
+		if(es_caso_base(new_esi_id)){
+			long execute_esi_id = esi_se_va_a_ejecutar();
+			if (send_esi_to_run(new_esi_id)){
+				volver_caso_base();
+			}
 		}
 	} else {
 		log_info(logger, "Ignoring connected client because it was not an ESI");

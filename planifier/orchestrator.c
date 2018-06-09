@@ -149,6 +149,25 @@ void add_esi_bloqueada(long esi_id){
 	//TODO no me acuerdo que hacia aca
 }
 
+bool es_caso_base(long esi_id){
+	pthread_mutex_lock(&running_esi_mtx);
+	pthread_mutex_lock(&next_running_esi_mtx);
+	bool resut = RUNNING_ESI == -1 && NEXT_RUNNING_ESI == 0;
+	NEXT_RUNNING_ESI = esi_id;
+	pthread_mutex_unlock(&next_running_esi_mtx);
+	pthread_mutex_unlock(&running_esi_mtx);
+	return resut;
+}
+
+volver_caso_base(){
+	pthread_mutex_lock(&running_esi_mtx);
+	pthread_mutex_lock(&next_running_esi_mtx);
+	RUNNING_ESI = -1;
+	NEXT_RUNNING_ESI = 0;
+	pthread_mutex_unlock(&next_running_esi_mtx);
+	pthread_mutex_unlock(&running_esi_mtx);
+}
+
 long esi_se_va_a_ejecutar(){
 	pthread_mutex_lock(&running_esi_mtx);
 	pthread_mutex_lock(&next_running_esi_mtx);
@@ -162,8 +181,8 @@ long esi_se_va_a_ejecutar(){
 		pthread_mutex_unlock(&esi_map_mtx);
 	}
 	RUNNING_ESI = NEXT_RUNNING_ESI;
-	pthread_mutex_unlock(&running_esi_mtx);
 	pthread_mutex_unlock(&next_running_esi_mtx);
+	pthread_mutex_unlock(&running_esi_mtx);
 	return RUNNING_ESI;
 }
 
