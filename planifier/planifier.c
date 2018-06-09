@@ -175,9 +175,11 @@ void connect_to_coordinator() {
 
 		int operation;
 		while(recv_sentence_operation(coordinator_socket, &operation) > 0){//todo que condicion pongo aca?
+			char *resource = get_resource();
+			long esi_id = get_esi_id();
 			switch(operation){
 				case GET_SENTENCE:
-					//esi_tomando_recurso_handler();
+					try_to_block_resource(&resource);
 					break;
 				case SET_SENTENCE:
 					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
@@ -193,15 +195,41 @@ void connect_to_coordinator() {
 	}
 }
 
-void recv_and_free_resource(){
+char* get_resource(){
 	char** resource;
 	if(recv_string(coordinator_socket, &resource) < 0){
-		log_info(logger, "Could not get the resource to free");
+		log_info(logger, "Could not get the resource");
 		//TODO que hago si no lo pude recibir?
+		return NULL;
 	}
-	liberar_recurso(&resource);
+	return &resource;
 }
 
+long get_esi_id(){
+	long esi_id;
+	if(recv_long(coordinator_socket, &esi_id) < 0){
+		log_info(logger, "Could not get the esi id");
+		//TODO que hago si no lo pude recibir?
+		return NULL;
+	}
+	return &esi_id;
+}
+
+void recv_and_free_resource(){
+	char *resource = get_resource();
+	long esi_id = get_esi_id();
+	liberar_recurso(&resource);
+	//todo respondo al coordinador que se libero ok?
+}
+
+void try_to_block_resource(){
+	char** resource;
+		if(recv_string(coordinator_socket, &resource) < 0){
+			log_info(logger, "Could not get the resource to block");
+			//TODO que hago si no lo pude recibir?
+		}
+	bloquear_recurso(&resource)
+}
 
 void connection_handler(int socket) {
 	message_type message_type_result = recv_message(socket);

@@ -21,6 +21,10 @@ typedef enum {
 	START_COMPACTION
 } execution_result;
 
+typedef enum {
+	NOT_ALLOW= 0, SUCCESS = 1
+} operation_result;
+
 char* get_execution_result_description(int execution_result);
 
 #endif /* RESPONSE_CODES_H_ */
