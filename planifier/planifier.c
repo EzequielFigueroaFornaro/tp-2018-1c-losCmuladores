@@ -175,17 +175,24 @@ void connect_to_coordinator() {
 
 		int operation;
 		while(recv_sentence_operation(coordinator_socket, &operation) > 0){//todo que condicion pongo aca?
-			char *resource = get_resource();
+			char* resource = get_resource();
 			long esi_id = get_esi_id();
 			switch(operation){
 				case GET_SENTENCE:
 					try_to_block_resource(&resource, esi_id);
 					break;
 				case SET_SENTENCE:
-					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
+					if (el_esi_puede_tomar_el_recurso(esi_id, *resource)){
+						send(coordinator_socket, OK, sizeof(execution_result), 0);
+					}else{
+						send(coordinator_socket, KEY_LOCK_NOT_ACQUIRED, sizeof(execution_result), 0);
+					}
 					break;
 				case STORE_SENTENCE:
 					free_resource(&resource);
+					break;
+				case KEY_UNREACHABLE:
+					send(coordinator_socket, OK, sizeof(execution_result), 0);
 					break;
 				default:
 					log_info(logger, "Connection was received but the operation its not supported. Ignoring");
@@ -227,11 +234,27 @@ void free_resource(char **resource){
 	send_execution_result_to_coordinator(OK);
 }
 
+bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource){
+	pthread_mutex_lock(&map_boqueados);
+	bool result = dictionary_has_key(recurso_tomado_por_esi,resource)
+					&& dictionary_get(recurso_tomado_por_esi, resource) == esi_id;
+	pthread_mutex_unlock(&map_boqueados);
+	return result;
+	}
+
 void try_to_block_resource(char** resource, long esi_id){
 	if (bloquear_recurso(&resource, esi_id)){
 		send_execution_result_to_coordinator(OK);
 	}else{
 		send_execution_result_to_coordinator(KEY_BLOCKED);
+	}
+}
+
+void could_use_resource(char** resource, long esi_id){
+	if (el_esi_puede_tomar_el_recurso(esi_id, *resource)){
+		send_execution_result_to_coordinator(OK);
+	}else{
+		send_execution_result_to_coordinator(KEY_LOCK_NOT_ACQUIRED);
 	}
 }
 
