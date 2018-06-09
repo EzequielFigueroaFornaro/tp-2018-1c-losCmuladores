@@ -59,7 +59,7 @@ void connect_to_coordinator() {
 void execute_script() {
 	t_ise_sentence current_sentence;
 	while(!(current_sentence = get_sentence_to_execute()).empty) {
-		wait_to_execute();
+		// wait_to_execute(); //temp fix
 
 		execution_result result;
 		if (current_sentence.operation.valido) {
