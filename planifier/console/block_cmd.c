@@ -20,9 +20,10 @@ void add_to_blocked_queue(char* resource, char* esi_id) {
 	if (!dictionary_has_key(esis_bloqueados_por_recurso, resource)) {
 		dictionary_put(esis_bloqueados_por_recurso, resource, queue_create());
 	}
-	t_queue* esis = dictionary_get(esis_bloqueados_por_recurso, resource);
+	t_queue* esis = (t_queue*) dictionary_get(esis_bloqueados_por_recurso, resource);
 	long id = to_long(esi_id);
 	queue_push(esis, &id);
+	dictionary_put(esis_bloqueados_por_recurso, resource, esis);
 	pthread_mutex_unlock(&map_boqueados);
 }
 

@@ -12,7 +12,8 @@
 
 long esi_id_generate(){
 	pthread_mutex_trylock(&id_mtx);
-	long new_id = ++id;
+	id++;
+	long new_id = id;
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
 }
