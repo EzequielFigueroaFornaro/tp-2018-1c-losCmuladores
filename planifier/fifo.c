@@ -23,6 +23,7 @@ void fifo_block_esi(t_list* BLOCKED_ESI_LIST, pthread_mutex_t* blocked_list_mtx,
 				  return block_esi_id == esi_id;
 			}
 		list_remove_by_condition(READY_ESI_LIST, equals_esi);
+		//TODO, caso base
 	}
 
 	pthread_mutex_unlock(ready_list_mtx);
@@ -43,5 +44,8 @@ void fifo_finish_esi(t_list* READY_ESI_LIST, pthread_mutex_t* ready_list_mtx,
 
 void fifo_replan(t_list* READY_ESI_LIST, long* NEXT_RUNNING_ESI){
 	NEXT_RUNNING_ESI = list_remove(READY_ESI_LIST,0);
+	if (NEXT_RUNNING_ESI == NULL){
+		&NEXT_RUNNING_ESI = -1;
+	}
 }
 

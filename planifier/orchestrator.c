@@ -13,10 +13,10 @@
 pthread_mutex_t esi_map_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t running_esi_mtx = PTHREAD_MUTEX_INITIALIZER;
-int RUNNING_ESI = -1;
+int RUNNING_ESI = 0;
 
 pthread_mutex_t next_running_esi_mtx = PTHREAD_MUTEX_INITIALIZER;
-int NEXT_RUNNING_ESI = 0;
+int NEXT_RUNNING_ESI = -1;
 
 pthread_mutex_t ready_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 t_list* READY_ESI_LIST;
@@ -152,7 +152,7 @@ void add_esi_bloqueada(long esi_id){
 bool es_caso_base(long esi_id){
 	pthread_mutex_lock(&running_esi_mtx);
 	pthread_mutex_lock(&next_running_esi_mtx);
-	bool resut = RUNNING_ESI == -1 && NEXT_RUNNING_ESI == 0;
+	bool resut = NEXT_RUNNING_ESI == -1;
 	NEXT_RUNNING_ESI = esi_id;
 	pthread_mutex_unlock(&next_running_esi_mtx);
 	pthread_mutex_unlock(&running_esi_mtx);
