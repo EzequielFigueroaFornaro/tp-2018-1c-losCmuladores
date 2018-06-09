@@ -1,5 +1,4 @@
 git clone https://github.com/sisoputnfrba/so-commons-library.git
-git clone https://github.com/sisoputnfrba/tp-2018-1c-losCmuladores.git
 git clone https://github.com/mumuki/cspec.git
 cd cspec
 make
