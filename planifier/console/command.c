@@ -55,11 +55,6 @@ command_result pause_cmd(command command) {
 	return base_command_result(COMMAND_OK);
 }
 
-command_result block_cmd(command command) {
-	// TODO
-	return base_command_result(COMMAND_OK);
-}
-
 command_result unblock_cmd(command command) {
 	// TODO
 	return base_command_result(COMMAND_OK);

@@ -28,4 +28,6 @@ bool is_valid_esi(long esi_id);
 
 char* string_key(long key);
 
+void block_esi(long esi_id);
+
 #endif

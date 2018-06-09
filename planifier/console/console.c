@@ -23,6 +23,7 @@ command_result execute_command(command command) {
 	command_result result;
 	if (!valid_args(command)) {
 		result.code = INVALID_ARGS;
+		result.content = string_from_format("Invalid arguments for command '%s'", command.code_str);
 		return result;
 	}
 	switch(get_command_code(command.code_str)) {
@@ -36,6 +37,7 @@ command_result execute_command(command command) {
 		return unblock_cmd(command);
 	default:
 		result.code = INVALID_COMMAND;
+		result.content = string_from_format("Invalid command '%s'", command.code_str);
 		return result;
 	}
 	return result;
@@ -52,19 +54,10 @@ void listen_for_commands() {
 			continue;
 		}
 		command_result result = execute_command(command);
-		switch(result.code) {
-		case COMMAND_OK:
+		if (result.code == COMMAND_OK) {
 			print_and_log("%s", result.content);
-			break;
-		case INVALID_ARGS:
-			print_and_log_error("Invalid arguments for command '%s'", command.code_str);
-			break;
-		case COMMAND_ERROR:
-			print_and_log_error("Error trying to execute command '%s'", command.code_str);
-			break;
-		case INVALID_COMMAND:
-			print_and_log_error("Invalid command '%s'", command.code_str);
-			break;
+		} else {
+			print_and_log_error("%s", result.content);
 		}
 	}
 	destroy_command(command);
