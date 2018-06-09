@@ -12,7 +12,7 @@
 
 long esi_id_generate(){
 	pthread_mutex_trylock(&id_mtx);
-	int new_id = id ++;
+	long new_id = ++id;
 	pthread_mutex_unlock(&id_mtx);
 	return new_id;
 }
@@ -24,7 +24,7 @@ long cpu_time_incrementate(){
 	return new_cpu_time;
 }
 
-int new_esi(int socket, long esi_size){
+long new_esi(int socket, long esi_size){
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = esi_id_generate();
 	new_esi -> estado = NUEVO;
@@ -62,14 +62,14 @@ int send_message_to_esi(long esi_id, message_type message){
 
 void send_esi_to_run(long esi_id){
 	if (send_message_to_esi(esi_id, ISE_EXECUTE) < 0){
-		log_error(logger, "Could not send ise %l to run", esi_id);
+		log_error(logger, "Could not send ise %ld to run", esi_id);
 		//todo que pasa si no le puedo mandar un mensaje?
 	}
 }
 
 void send_esi_to_stop(long esi_id){
 	if (send_message_to_esi(esi_id, ISE_STOP) < 0){
-		log_error(logger, "Could not send ise %l to run", esi_id);
+		log_error(logger, "Could not send ise %ld to run", esi_id);
 		//todo que pasa si no le puedo mandar un mensaje?
 	}
 }
@@ -271,7 +271,7 @@ void connection_handler(int socket) {
 }
 
 void esi_connection_handler(int socket){
-	module_type *module_type;
+	module_type module_type;
 	int result_module_type = recv(socket, &module_type, sizeof(module_type), MSG_WAITALL);
 	if (result_module_type <= 0) {
 		log_error(logger, "Error trying to receive module type. Closing connection");
@@ -279,7 +279,7 @@ void esi_connection_handler(int socket){
 		return;
 	}
 
-	if (*module_type == ISE) {
+	if (module_type == ISE) {
 		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
 
 		long esi_size;
@@ -291,8 +291,14 @@ void esi_connection_handler(int socket){
 			return;
 		}
 
-		int new_esi_id = add_esi(socket, esi_size);
-		int result_send_new_esi_id = send(socket, new_esi_id, sizeof(new_esi_id), 0);
+		long new_esi_id = new_esi(socket, esi_size);
+		int message_size = sizeof(message_type) + sizeof(long);
+		void* buffer = malloc(message_size);
+		void* offset = buffer;
+		concat_value(&offset, &CONNECTION_SUCCESS, sizeof(message_type));
+		concat_value(&offset, &new_esi_id, sizeof(long));
+		int result_send_new_esi_id = send(socket, buffer, message_size, 0);
+		free(buffer);
 		if (result_send_new_esi_id < 0) {
 			log_error(logger, "Error sending the id to the new esi. Client-Address %s",	get_client_address(socket));
 			close(socket);
@@ -330,7 +336,7 @@ void exit_with_error(int socket, char* error_msg) {
 }
 
 int main(int argc, char* argv[]) {
-
+	esi_map = dictionary_create();
 	esis_bloqueados_por_recurso = dictionary_create();
 	int i = 1;
 	set_orchestrator(i);
