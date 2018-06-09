@@ -8,6 +8,7 @@
 #include "commons/collections/dictionary.h"
 #include "fifo.h"
 #include "planifier_structures.h"
+#include "commons/string.h"
 
 int ALGORITHM;
 
@@ -32,5 +33,6 @@ long esi_se_va_a_ejecutar();
 
 void borado_de_finish();
 
+void block_esi(long esi_id);
 
 #endif
