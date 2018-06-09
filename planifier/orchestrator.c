@@ -150,18 +150,20 @@ void add_esi_bloqueada(long esi_id){
 }
 
 long esi_se_va_a_ejecutar(){
-	pthread_mutex_lock(&esi_map_mtx);
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&running_esi_mtx);
+	pthread_mutex_lock(&next_running_esi_mtx);
 	if(RUNNING_ESI == NEXT_RUNNING_ESI){
+		pthread_mutex_lock(&esi_map_mtx);
 		esi* esi = dictionary_get(esi_map, string_key(RUNNING_ESI))
 		esi -> instrucction_pointer = ((esi -> instrucction_pointer) +1)
 		if((esi -> instrucction_pointer) == (esi -> cantidad_de_instrucciones)){
 			finish_esi(RUNNING_ESI);
 		}
+		pthread_mutex_unlock(&esi_map_mtx);
 	}
 	RUNNING_ESI = NEXT_RUNNING_ESI;
-	pthread_mutex_unlock(&esi_map_mtx);
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&running_esi_mtx);
+	pthread_mutex_unlock(&next_running_esi_mtx);
 	return RUNNING_ESI;
 }
 
@@ -178,5 +180,7 @@ borado_de_finish(){
 	}
 	pthread_mutex_unlock(&finiched_list_mtx);
 }
+
+
 
 

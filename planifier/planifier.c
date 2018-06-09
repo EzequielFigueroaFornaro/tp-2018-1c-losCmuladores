@@ -175,7 +175,7 @@ void connect_to_coordinator() {
 
 		int operation;
 		while(recv_sentence_operation(coordinator_socket, &operation) > 0){//todo que condicion pongo aca?
-			char *resource = get_resource();
+			char* resource = get_resource();
 			long esi_id = get_esi_id();
 			switch(operation){
 				case GET_SENTENCE:
@@ -183,9 +183,17 @@ void connect_to_coordinator() {
 					break;
 				case SET_SENTENCE:
 					//esi_queriendo_otra_cosa_con_recurso_pero_debe_tenerlo_tomado_handler();
+					if (el_esi_puede_tomar_el_recurso(esi_id, *resource)){
+						send(coordinator_socket, OK, sizeof(execution_result), 0);
+					}else{
+						send(coordinator_socket, KEY_LOCK_NOT_ACQUIRED, sizeof(execution_result), 0);
+					}
 					break;
 				case STORE_SENTENCE:
 					recv_and_free_resource();
+					break;
+				case KEY_UNREACHABLE:
+					send(coordinator_socket, OK, sizeof(execution_result), 0);
 					break;
 				default:
 					log_info(logger, "Connection was received but the operation its not supported. Ignoring");
@@ -214,6 +222,14 @@ long get_esi_id(){
 	}
 	return &esi_id;
 }
+
+bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource){
+	pthread_mutex_lock(&map_boqueados);
+	bool result = dictionary_has_key(recurso_tomado_por_esi,resource)
+					&& dictionary_get(recurso_tomado_por_esi, resource) == esi_id;
+	pthread_mutex_unlock(&map_boqueados);
+	return result;
+	}
 
 void recv_and_free_resource(){
 	char *resource = get_resource();
