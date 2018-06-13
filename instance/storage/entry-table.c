@@ -91,6 +91,7 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 	char * value = entry_table_get(entry_table, key);
 	int result = -1;
 	if (NULL != value) {
+		entry_table_remove(entry_table, key);
 		result = file_system_save(file_name, value);
 	}
 	free(file_name);
