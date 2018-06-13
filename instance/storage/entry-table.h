@@ -20,9 +20,10 @@ typedef struct {
 } t_entry;
 
 typedef struct {
+	// t_entry dictionary
 	t_dictionary *entries;
 	t_availability *availability;
-	t_list *replacement_circular;
+	t_list *replacement_keys;
 	char *data;
 	int max_entries;
 	size_t entry_size;

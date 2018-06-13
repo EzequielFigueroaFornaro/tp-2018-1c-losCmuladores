@@ -28,11 +28,12 @@ t_entry_table *entry_table_create(int max_entries, size_t entry_size) {
 	t_dictionary *entries = dictionary_create();
 	t_availability *availability = availability_create(max_entries);
 	char *data = (char*) malloc(sizeof(char) * data_size);
+	t_list *replacement_keys = list_create();
 
 	t_entry_table *table = (t_entry_table*) malloc(sizeof(t_entry_table));
 	table->entries = entries;
 	table->availability = availability;
-	table->replacement_circular = list_create();
+	table->replacement_keys = list_create();
 	table->data = data;
 	table->max_entries = max_entries;
 	table->entry_size = entry_size;
@@ -44,7 +45,7 @@ void entry_table_destroy(t_entry_table* entry_table) {
 	if (NULL != entry_table) {
 		availability_destroy(entry_table->availability);
 		dictionary_destroy_and_destroy_elements(entry_table->entries, free);
-		list_destroy_and_destroy_elements(entry_table->replacement_circular, free);
+		list_destroy_and_destroy_elements(entry_table->replacement_keys, free);
 		free(entry_table->data);
 		free(entry_table);
 	}
@@ -57,7 +58,7 @@ int entry_table_put(t_entry_table * table, char *key, char *value) {
 		availability_take_space(table->availability, index, entries_needed);
 		_copy_value_in_data(table, value, index);
 		_add_entry_in_table_dictionary(table, key, value, index);
-		list_add(table->replacement_circular, key);
+		list_add(table->replacement_keys, key);
 		return index;
 	} else {
 		return -1;
@@ -83,7 +84,7 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 		return strcmp(key, list_key) == 0;
 	}
 
-	list_remove_by_condition(entry_table->replacement_circular, _key_equal);
+	list_remove_by_condition(entry_table->replacement_keys, _key_equal);
 }
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -122,7 +123,7 @@ bool entry_table_has_atomic_entries(t_entry_table* entry_table) {
 		return length <= entry_table->entry_size;
 	}
 
-	return list_any_satisfy(entry_table->replacement_circular, _is_atomic);
+	return list_any_satisfy(entry_table->replacement_keys, _is_atomic);
 }
 
 
