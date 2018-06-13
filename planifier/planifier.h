@@ -20,15 +20,20 @@
 #include <commons/log.h>
 #include "commons-sockets.h"
 #include <types.h>
+#include <response_codes.h>
 #include <commons/collections/queue.h>
 #include "commons/collections/list.h"
 #include "orchestrator.h"
-#include "esi_structure.h"
+#include "planifier_structures.h"
+#include "data.h"
+
+#include "console/console.h"
+#include "console/console_log.h"
 
 int server_port;
 int server_max_connections;
 int algorithm;
-int id = 0;
+long id = 0;
 int cpu_time = 0;
 
 int coordinator_port;
@@ -39,11 +44,6 @@ int coordinator_socket;
 //Global variables.
 t_log * logger;
 
-t_dictionary * esis_bloqueados_por_recurso;
-t_dictionary * recurso_tomado_por_esi;
-
-
-pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t running_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t blocked_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
@@ -62,5 +62,8 @@ pthread_t start_console();
 void exit_with_error(int socket, char* error_msg);
 
 void esi_connection_handler(int socket);
+
+//bool el_esi_puede_tomar_el_recurso(long* esi_id, char** resource);
+bool el_esi_puede_tomar_el_recurso();
 
 #endif /* PLANIFIER_H_ */

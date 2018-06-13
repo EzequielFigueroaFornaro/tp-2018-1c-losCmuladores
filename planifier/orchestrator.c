@@ -25,13 +25,13 @@ pthread_mutex_t blocked_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 t_list* BLOCKED_ESI_LIST;
 
 pthread_mutex_t finiched_list_mtx = PTHREAD_MUTEX_INITIALIZER;
-t_list* FINISHED_ESI_LIST;
+t_queue* FINISHED_ESI_LIST;
 
 void set_orchestrator(int algorithm){
 	ALGORITHM = algorithm;
 	READY_ESI_LIST = list_create();
 	BLOCKED_ESI_LIST = list_create();
-	FINISHED_ESI_LIST = list_create();
+	FINISHED_ESI_LIST = queue_create();
 
 };
 
@@ -63,7 +63,7 @@ bool is_valid_esi(long esi_id){
 
 
 
-void block_esi(int esi_id){
+void block_esi(long esi_id){
 	modificar_estado(esi_id, BLOQUEADO);
 	switch(ALGORITHM) {
 			case FIFO:
@@ -116,8 +116,6 @@ void finish_esi(long esi_id){
 		return esi_id == estado_actual;
 	}
 	pthread_mutex_unlock(&esi_map_mtx);
-
-
 	switch(estado_actual) {
 		case BLOQUEADO:
 			pthread_mutex_lock(&blocked_list_mtx);
@@ -133,6 +131,7 @@ void finish_esi(long esi_id){
 			pthread_mutex_unlock(&ready_list_mtx);
 			break;
 	}
+	put_finish_esi(esi_id);
 }
 
 void free_esi(long esi_id){
@@ -143,10 +142,45 @@ void free_esi(long esi_id){
 }
 
 char* string_key(long key){
-	return string_from_format("%l",key);
+	return string_from_format("%ld",key);
 }
 
 void add_esi_bloqueada(long esi_id){
 	//TODO no me acuerdo que hacia aca
 }
+
+long esi_se_va_a_ejecutar(){
+	pthread_mutex_lock(&running_esi_mtx);
+	pthread_mutex_lock(&next_running_esi_mtx);
+	if(RUNNING_ESI == NEXT_RUNNING_ESI){
+		pthread_mutex_lock(&esi_map_mtx);
+		esi* esi = dictionary_get(esi_map, string_key(RUNNING_ESI));
+		esi -> instrucction_pointer = ((esi -> instrucction_pointer) +1);
+		if((esi -> instrucction_pointer) == (esi -> cantidad_de_instrucciones)){
+			finish_esi(RUNNING_ESI);
+		}
+		pthread_mutex_unlock(&esi_map_mtx);
+	}
+	RUNNING_ESI = NEXT_RUNNING_ESI;
+	pthread_mutex_unlock(&running_esi_mtx);
+	pthread_mutex_unlock(&next_running_esi_mtx);
+	return RUNNING_ESI;
+}
+
+put_finish_esi(long esi_id){
+	pthread_mutex_lock(&finiched_list_mtx);
+	queue_push(FINISHED_ESI_LIST,esi_id);
+	pthread_mutex_unlock(&finiched_list_mtx);
+}
+
+borado_de_finish(){
+	pthread_mutex_lock(&finiched_list_mtx);
+	while(queue_is_empty(FINISHED_ESI_LIST)>0){
+		free_esi(queue_pop(FINISHED_ESI_LIST));
+	}
+	pthread_mutex_unlock(&finiched_list_mtx);
+}
+
+
+
 
