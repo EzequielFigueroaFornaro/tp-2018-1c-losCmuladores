@@ -70,4 +70,6 @@ char* get_operation_as_string(int operation_id);
 
 char* sentence_to_string(t_sentence* sentence);
 
+char* get_operation_as_string(int operation_id);
+
 #endif /* TYPES_H_ */
