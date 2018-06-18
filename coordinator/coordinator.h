@@ -26,6 +26,7 @@
 #include "response_codes.h"
 #include "types.h"
 #include "commons/txt.h"
+#include <math.h>
 
 #include "types.h"
 #include "response_codes.h"

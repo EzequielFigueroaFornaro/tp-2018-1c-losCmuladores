@@ -74,13 +74,42 @@ t_instance* select_instance_to_send_by_equitative_load(){
 	return selected;
 }
 
+//TODO
+/*t_instance select_instance_to_send_by_lsu(){
+	return NULL;
+}*/
+
+/*
+ * TODO:
+ * 1) Tomar solo las instancias que están online.
+ * Para esto se puede filtrar de las instancias las que estén online, y de ahí hacer todos los cálculos.
+ * */
+t_instance* select_instance_by_ke(char* key){
+
+	int ascii_base_limit = 97; //a
+	int ascii_final_limit = 122; //z
+	int letters_qty = ascii_final_limit - ascii_base_limit;
+
+	int instances_qty = instances_thread_list -> elements_count;
+
+	int ascii_key = tolower(key[0]);
+
+	int keys_per_instance = ceil(letters_qty / instances_qty);
+
+	int instance_index = floor((ascii_key - ascii_base_limit) / keys_per_instance);
+
+	t_instance* selected_instance = (t_instance*) list_get(instances_thread_list, instance_index);
+
+	return selected_instance;
+}
+
 //Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
 	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
-			case LSU: return NULL;//TODO
-			case KE: return NULL; //TODO
+			case LSU: return NULL;//return select_instance_to_send_by_lsu();
+			case KE: return select_instance_by_ke(sentence -> key);
 			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
 		}
 	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
@@ -387,11 +416,11 @@ int main(int argc, char* argv[]) {
 	operations_log_file_mtx = operations_log_file_mtx_aux;
 	OPERATIONS_LOG_PATH = "operations.log";
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/
-	/*while(instances_thread_list -> elements_count < 3);
+	while(instances_thread_list -> elements_count < 3);
 
 	t_ise* ise1 = malloc(sizeof(t_ise));
 	ise1 -> id = 1;
@@ -419,7 +448,7 @@ int main(int argc, char* argv[]) {
 	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 602);
 
 	sleep(6000);
-*/
+
 	exit_gracefully(EXIT_SUCCESS);
 }
 
