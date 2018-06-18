@@ -35,7 +35,7 @@ bool is_same_instance(t_instance *one, t_instance *another){
 t_instance* select_instance_to_send_by_equitative_load(){
 	t_instance* selected = NULL;
 
-	pthread_mutex_lock(&instances_mtx);
+	pthread_mutex_lock(&instances_list_mtx);
 
 	t_link_element *element = instances_thread_list -> head;
 
@@ -69,28 +69,26 @@ t_instance* select_instance_to_send_by_equitative_load(){
 	free(last_instance_selected);
 	last_instance_selected = malloc(sizeof(t_instance));
 	memcpy(last_instance_selected, selected, sizeof(t_instance));
-	pthread_mutex_unlock(&instances_mtx);
+	pthread_mutex_unlock(&instances_list_mtx);
 
 	return selected;
 }
 
-//TODO
-/*t_instance select_instance_to_send_by_lsu(){
-	return NULL;
-}*/
+bool is_instance_available(t_instance* instance){
+		return instance -> is_available == true;
+}
 
-/*
- * TODO:
- * 1) Tomar solo las instancias que están online.
- * Para esto se puede filtrar de las instancias las que estén online, y de ahí hacer todos los cálculos.
- * */
 t_instance* select_instance_by_ke(char* key){
 
 	int ascii_base_limit = 97; //a
 	int ascii_final_limit = 122; //z
 	int letters_qty = ascii_final_limit - ascii_base_limit;
 
-	int instances_qty = instances_thread_list -> elements_count;
+	pthread_mutex_lock(&instances_list_mtx);
+	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	pthread_mutex_unlock(&instances_list_mtx);
+
+	int instances_qty = available_instances -> elements_count;
 
 	int ascii_key = tolower(key[0]);
 
@@ -98,12 +96,18 @@ t_instance* select_instance_by_ke(char* key){
 
 	int instance_index = floor((ascii_key - ascii_base_limit) / keys_per_instance);
 
-	t_instance* selected_instance = (t_instance*) list_get(instances_thread_list, instance_index);
+	t_instance* selected_instance = (t_instance*) list_get(available_instances, instance_index);
+
+	list_destroy(available_instances);
 
 	return selected_instance;
 }
 
-//Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
+//TODO
+/*t_instance select_instance_to_send_by_lsu(){
+	return NULL;
+}*/
+
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
 	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
@@ -120,7 +124,6 @@ t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sen
 
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
-	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance %s", instance -> name);
 
 	t_buffer buffer = serialize_sentence(sentence);
@@ -141,7 +144,6 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 		return KEY_UNREACHABLE;
 	}
 
-	//Put key -> instance.
 	pthread_mutex_lock(&keys_mtx);
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
@@ -180,7 +182,6 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	log_info(logger, "Operations log successfully saved");
 }
 
-//5)
 void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
 	int message_size = sizeof(message_type) + sizeof(int);
 	void* buffer = malloc(message_size);
@@ -204,10 +205,10 @@ void exit_gracefully(int code) {
 	log_destroy(logger);
 	free(instance_configuration);
 
-	pthread_mutex_lock(&instances_mtx);
+	pthread_mutex_lock(&instances_list_mtx);
 	list_destroy(instances_thread_list);
-	pthread_mutex_unlock(&instances_mtx);
-	pthread_mutex_destroy(&instances_mtx);
+	pthread_mutex_unlock(&instances_list_mtx);
+	pthread_mutex_destroy(&instances_list_mtx);
 	pthread_mutex_destroy(&keys_mtx);
 	exit(code);
 }
@@ -409,7 +410,7 @@ int main(int argc, char* argv[]) {
 	load_configuration(argv[1]);
 
 	pthread_mutex_t instances_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
-	instances_mtx = instances_mtx_aux;
+	instances_list_mtx = instances_mtx_aux;
 	pthread_mutex_t keys_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
 	keys_mtx = keys_mtx_aux;
 	pthread_mutex_t operations_log_file_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
@@ -431,6 +432,7 @@ int main(int argc, char* argv[]) {
 	t_ise* ise3 = malloc(sizeof(t_ise));
 	ise3 -> id = 3;
 
+	//TODO empezar a usar el process_sentence para testear.
 	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
 	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 601);
 	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 602);

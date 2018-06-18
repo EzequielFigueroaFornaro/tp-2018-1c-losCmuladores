@@ -56,7 +56,7 @@ typedef enum { LSU, EL, KE } distributions;
 distributions distribution;
 
 //Semaphores
-pthread_mutex_t instances_mtx;
+pthread_mutex_t instances_list_mtx;
 pthread_mutex_t keys_mtx;
 pthread_mutex_t operations_log_file_mtx;
 

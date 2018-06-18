@@ -145,9 +145,9 @@ void planifier_connection_handler(int socket) {
 }
 
 void handle_instance_disconnection(t_instance* instance){
-	pthread_mutex_lock(&instances_mtx);
+	pthread_mutex_lock(&instances_list_mtx);
 	instance -> is_available = false;
-	pthread_mutex_unlock(&instances_mtx);
+	pthread_mutex_unlock(&instances_list_mtx);
 	last_instance_selected -> is_available = false; //TODO poner semaforo acá.
 	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
 }
