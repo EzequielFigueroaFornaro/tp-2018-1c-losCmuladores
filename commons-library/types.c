@@ -44,8 +44,10 @@ t_sentence* sentence_create() {
 t_sentence* sentence_create_with(int operation_id, char* key, char* value) {
 	t_sentence* sentence = sentence_create();
 	sentence -> operation_id = operation_id;
-	sentence -> key = key;
-	sentence -> value = value;
+	sentence -> key = malloc(strlen(key) + 1);
+	strcpy(sentence -> key, key);
+	sentence -> value = malloc(strlen(value) + 1);
+	strcpy(sentence -> value, value);
 	return sentence;
 }
 
