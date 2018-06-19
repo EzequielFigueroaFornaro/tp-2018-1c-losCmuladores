@@ -423,31 +423,33 @@ int main(int argc, char* argv[]) {
 	//**PARA TEST***/
 	while(instances_thread_list -> elements_count < 3);
 
-	t_ise* ise1 = malloc(sizeof(t_ise));
-	ise1 -> id = 1;
+	t_sentence* sentence1 = sentence_create_with(600, "barcelona:jugadores", "messi");
+	process_sentence(sentence1, 1);
+	t_sentence* sentence2 = sentence_create_with(601, "barcelona:jugadores", "messi");
+	process_sentence(sentence2, 1);
+	t_sentence* sentence3 = sentence_create_with(602, "barcelona:jugadores", "messi");
+	process_sentence(sentence3, 1);
 
-	t_ise* ise2 = malloc(sizeof(t_ise));
-	ise2 -> id = 2;
+	t_sentence* sentence4 = sentence_create_with(600, "independiente:jugadores", "meza");
+	process_sentence(sentence4, 3);
+	t_sentence* sentence5 = sentence_create_with(601, "independiente:jugadores", "meza");
+	process_sentence(sentence5, 3);
+	t_sentence* sentence6 = sentence_create_with(602, "independiente:jugadores", "meza");
+	process_sentence(sentence6, 3);
 
-	t_ise* ise3 = malloc(sizeof(t_ise));
-	ise3 -> id = 3;
+	t_sentence* sentence7 = sentence_create_with(600, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence7, 2);
+	t_sentence* sentence8 = sentence_create_with(601, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence8, 2);
+	t_sentence* sentence9 = sentence_create_with(602, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence9, 2);
 
-	//TODO empezar a usar el process_sentence para testear.
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 601);
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 602);
-
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 600);
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 601);
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 602);
-
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 600);
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 601);
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 602);
-
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 600);
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 601);
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 602);
+	t_sentence* sentence10 = sentence_create_with(600, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence10, 2);
+	t_sentence* sentence11 = sentence_create_with(601, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence11, 2);
+	t_sentence* sentence12 = sentence_create_with(602, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence12, 2);
 
 	sleep(6000);
 

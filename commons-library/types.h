@@ -48,6 +48,8 @@ extern message_type ISE_KILL;
 
 t_sentence* sentence_create();
 
+t_sentence* sentence_create_with(int operation_id, char* key, char* value);
+
 void sentence_destroy(t_sentence* sentence);
 
 bool is_valid_operation(int operation);

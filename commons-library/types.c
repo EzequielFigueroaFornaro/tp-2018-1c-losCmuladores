@@ -41,6 +41,14 @@ t_sentence* sentence_create() {
 	return sentence;
 }
 
+t_sentence* sentence_create_with(int operation_id, char* key, char* value) {
+	t_sentence* sentence = sentence_create();
+	sentence -> operation_id = operation_id;
+	sentence -> key = key;
+	sentence -> value = value;
+	return sentence;
+}
+
 void sentence_destroy(t_sentence* sentence) {
 	if (NULL != sentence) {
 		free(sentence->key);
