@@ -148,7 +148,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
-	return OK;
+	return result;
 }
 
 void save_operation_log(t_sentence* sentence, long ise_id){
@@ -261,6 +261,7 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
+//TODO llevar a los handlers.
 void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 	bool _is_same_instance_name(t_instance* instance){
 		return strcmp(instance -> name, instance_name) == 0;
@@ -345,62 +346,6 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id
 	return OK;
 }
 
-/*
- * case OK : return "Sentencia ejecutada"; 0
- * 	case KEY_TOO_LONG : return "Error de Tamano de Clave"; 1
- * 	case KEY_NOT_FOUND : return "Error de Clave no Identificada"; 2
- * 	case KEY_UNREACHABLE : return "Error de Clave Inaccesible"; 3
- * 	case KEY_LOCK_NOT_ACQUIRED : return "Error de Clave no Bloqueada"; 4
- * 	case KEY_BLOCKED : return "Clave bloqueada por otro proceso"; 5
- * 	case PARSE_ERROR : return "Error al intentar parsear sentencia"; 6
- * */
-
-void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise, int operation_id){
-	//*************************
-	//****ESTO ES DE PRUEBA;
-	char* key = forced_key;
-	char* value = forced_value;
-	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
-	t_sentence *sentence = malloc(size);
-	sentence -> operation_id = operation_id;
-	sentence -> key = key;
-	sentence -> value = value;
-
-	int result_to_ise;
-	t_instance* selected_instance;
-
-	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
-	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise -> id);
-
-	if(planifier_validation == OK){
-
-		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
-
-			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
-
-			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
-
-			if(send_to_instance_result == KEY_UNREACHABLE) {
-
-				//if(sentence -> operation_id == STORE_SENTENCE){
-					dictionary_remove(keys_location, sentence -> key);
-					notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise -> id);
-					result_to_ise = KEY_UNREACHABLE;
-				//}
-				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
-			}
-			dictionary_put(keys_location, &(sentence -> key), selected_instance);
-		} else {
-			result_to_ise = planifier_validation;
-		}
-		save_operation_log(sentence, ise->id);
-	} else {
-		result_to_ise = planifier_validation;
-	}
-
-	send_statement_result_to_ise(ise -> socket_id, ise -> id, result_to_ise);
-}
-
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	ise_thread_list = list_create();
@@ -423,32 +368,32 @@ int main(int argc, char* argv[]) {
 	//**PARA TEST***/
 	while(instances_thread_list -> elements_count < 3);
 
-	t_sentence* sentence1 = sentence_create_with(600, "barcelona:jugadores", "messi");
+	t_sentence* sentence1 = sentence_create_with(GET_SENTENCE, "barcelona:jugadores", "messi");
 	process_sentence(sentence1, 1);
-	t_sentence* sentence2 = sentence_create_with(601, "barcelona:jugadores", "messi");
+	t_sentence* sentence2 = sentence_create_with(SET_SENTENCE, "barcelona:jugadores", "messi");
 	process_sentence(sentence2, 1);
-	t_sentence* sentence3 = sentence_create_with(602, "barcelona:jugadores", "messi");
+	t_sentence* sentence3 = sentence_create_with(STORE_SENTENCE, "barcelona:jugadores", "messi");
 	process_sentence(sentence3, 1);
 
-	t_sentence* sentence4 = sentence_create_with(600, "independiente:jugadores", "meza");
+	t_sentence* sentence4 = sentence_create_with(GET_SENTENCE, "independiente:jugadores", "meza");
 	process_sentence(sentence4, 3);
-	t_sentence* sentence5 = sentence_create_with(601, "independiente:jugadores", "meza");
+	t_sentence* sentence5 = sentence_create_with(SET_SENTENCE, "independiente:jugadores", "meza");
 	process_sentence(sentence5, 3);
-	t_sentence* sentence6 = sentence_create_with(602, "independiente:jugadores", "meza");
+	t_sentence* sentence6 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "meza");
 	process_sentence(sentence6, 3);
 
-	t_sentence* sentence7 = sentence_create_with(600, "sanmartindetucuman:jugadores", "busse");
+	t_sentence* sentence7 = sentence_create_with(GET_SENTENCE, "sanmartindetucuman:jugadores", "busse");
 	process_sentence(sentence7, 2);
-	t_sentence* sentence8 = sentence_create_with(601, "sanmartindetucuman:jugadores", "busse");
+	t_sentence* sentence8 = sentence_create_with(SET_SENTENCE, "sanmartindetucuman:jugadores", "busse");
 	process_sentence(sentence8, 2);
-	t_sentence* sentence9 = sentence_create_with(602, "sanmartindetucuman:jugadores", "busse");
+	t_sentence* sentence9 = sentence_create_with(STORE_SENTENCE, "sanmartindetucuman:jugadores", "busse");
 	process_sentence(sentence9, 2);
 
-	t_sentence* sentence10 = sentence_create_with(600, "independiente:jugadores", "gigliotti");
+	t_sentence* sentence10 = sentence_create_with(GET_SENTENCE, "independiente:jugadores", "gigliotti");
 	process_sentence(sentence10, 2);
-	t_sentence* sentence11 = sentence_create_with(601, "independiente:jugadores", "gigliotti");
+	t_sentence* sentence11 = sentence_create_with(SET_SENTENCE, "independiente:jugadores", "gigliotti");
 	process_sentence(sentence11, 2);
-	t_sentence* sentence12 = sentence_create_with(602, "independiente:jugadores", "gigliotti");
+	t_sentence* sentence12 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "gigliotti");
 	process_sentence(sentence12, 2);
 
 	sleep(6000);
