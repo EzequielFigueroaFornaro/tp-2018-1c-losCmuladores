@@ -4,7 +4,6 @@ void fifo_add_esi(long esi) {
 	pthread_mutex_lock(&ready_list_mtx);
 	log_debug(logger, "Adding ESI%ld to ready queue", esi);
 	list_add(READY_ESI_LIST, &esi);
-	long* esi_added = list_get(READY_ESI_LIST, 0);
 	pthread_mutex_unlock(&ready_list_mtx);
 }
 

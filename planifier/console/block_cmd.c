@@ -49,7 +49,7 @@ command_result block_cmd(command command) {
 	pthread_t thread;
 	command_info* cmd_info = malloc(sizeof(command_info));
 	cmd_info->esi_id = esi_id;
-	cmd_info->resource = resource, strlen(resource);
+	cmd_info->resource = resource;
 	pthread_create(&thread, NULL, (void*) async_block, (void*) cmd_info);
 
 	result.code = COMMAND_OK;
