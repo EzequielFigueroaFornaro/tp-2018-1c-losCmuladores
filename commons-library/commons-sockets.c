@@ -180,7 +180,7 @@ message_type recv_message(int socket) {
 	message_type message_type;
 	int message_type_result = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
 	if (message_type_result <= 0) {
-		return -1;
+		return message_type_result;
 	}
 	return message_type;
 }
