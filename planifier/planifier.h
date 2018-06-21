@@ -10,23 +10,22 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
-#include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close
-#include <readline/readline.h> // Para usar readline
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include "commons-sockets.h"
-#include <types.h>
-#include <response_codes.h>
 #include <commons/collections/queue.h>
 #include "commons/collections/list.h"
+
+#include "commons-sockets.h"
+#include <types.h>
+#include "logging.h"
+#include <response_codes.h>
+
 #include "orchestrator.h"
 #include "planifier_structures.h"
-#include "data.h"
-
+#include "exit_handler.h"
 #include "console/console.h"
 #include "console/console_log.h"
 
@@ -44,10 +43,6 @@ int coordinator_socket;
 //Global variables.
 t_log * logger;
 
-pthread_mutex_t ready_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t running_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t blocked_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t finished_esi_sem_list = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t cpu_time_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -64,6 +59,16 @@ void exit_with_error(int socket, char* error_msg);
 void esi_connection_handler(int socket);
 
 //bool el_esi_puede_tomar_el_recurso(long* esi_id, char** resource);
-bool el_esi_puede_tomar_el_recurso();
+bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource);
+
+int get_resource(char** resource);
+
+int get_esi_id(long* esi_id);
+
+void try_to_block_resource(char* resource, long esi_id);
+
+void free_resource(char* resource);
+
+void esi_execution_result_handler(int socket);
 
 #endif /* PLANIFIER_H_ */

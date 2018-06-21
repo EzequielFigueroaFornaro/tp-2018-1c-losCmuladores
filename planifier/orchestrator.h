@@ -6,9 +6,12 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "commons/collections/dictionary.h"
+#include "commons/string.h"
+
 #include "fifo.h"
 #include "planifier_structures.h"
-#include "commons/string.h"
+#include "semaphores.h"
+#include "logging.h"
 
 int ALGORITHM;
 
@@ -18,6 +21,8 @@ t_dictionary * esi_map;
 enum algorithm {
 	FIFO = 1
 };
+
+void add_esi(esi* esi);
 
 void set_orchestrator(int algorithm);
 
@@ -36,5 +41,13 @@ void borado_de_finish();
 bool es_caso_base(long esi_id);
 
 void block_esi(long esi_id);
+
+void put_finish_esi(long esi_id);
+
+void finish_esi(long esi_id);
+
+void free_esi(long esi_id);
+
+void volver_caso_base();
 
 #endif
