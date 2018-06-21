@@ -5,27 +5,9 @@
  */
 #include "list_cmd.h"
 
-char* buffer;
-
-void add_to_buffer(long* esi_id) {
-	string_append_with_format(&buffer, "ESI%ld\n", *esi_id);
-}
-
-char* to_string(t_queue* queue) {
-	if (queue == NULL) {
-		return "";
-	}
-	buffer = string_new();
-	list_iterate(queue->elements, (void *)add_to_buffer);
-	return buffer;
-}
-
 command_result list_cmd(command command) {
 	char* resource = (char*) list_get(command.args, 0);
-	pthread_mutex_lock(&map_boqueados);
-	t_queue* blocked_esis = (t_queue*) dictionary_get(esis_bloqueados_por_recurso, resource);
-	pthread_mutex_unlock(&map_boqueados);
 	command_result result = base_command_result(COMMAND_OK);
-	result.content = to_string(blocked_esis);
+	result.content = blocked_queue_to_string(resource);
 	return result;
 }

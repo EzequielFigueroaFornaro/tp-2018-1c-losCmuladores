@@ -7,18 +7,6 @@
 
 #include "console.h"
 
-void quit_console(char* msg, int code) {
-	if (code == EXIT_SUCCESS) {
-		print_and_log(msg);
-	} else {
-		print_and_log_error(msg);
-	}
-	close(0);
-	destroy_command_config();
-	log_destroy(console_log);
-	exit(code);
-}
-
 command_result execute_command(command command) {
 	command_result result;
 	if (!valid_args(command)) {
@@ -65,6 +53,7 @@ void listen_for_commands() {
 }
 
 pthread_t start_console() {
+	start_signal_listener();
 	start_console_log();
 	load_commands();
 
