@@ -20,7 +20,11 @@ typedef enum {
 	BLOCK,
 	UNBLOCK,
 	LIST,
-	UNKNOWN
+	UNKNOWN,
+	// TEST
+	ADD,
+	LIST_ESIS
+
 } command_code;
 
 typedef struct {

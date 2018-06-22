@@ -23,6 +23,9 @@ void load_commands() {
 	add_command("block", BLOCK, 2);
 	add_command("unblock", UNBLOCK, 1);
 	add_command("list", LIST, 1);
+	//TEST
+	add_command("add", ADD, 1);
+	add_command("listEsis", LIST_ESIS, 0);
 }
 
 command_config* get_command_config(char* command_str) {

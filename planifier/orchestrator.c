@@ -175,17 +175,18 @@ long esi_se_va_a_ejecutar(){
 
 void put_finish_esi(long esi_id){
 	pthread_mutex_lock(&finished_list_mtx);
-	queue_push(FINISHED_ESI_LIST, &esi_id);
+	queue_push_id(FINISHED_ESI_LIST, esi_id);
 	pthread_mutex_unlock(&finished_list_mtx);
 }
 
 void borado_de_finish(){
-//	pthread_mutex_lock(&finished_list_mtx);
-//	while(!queue_is_empty(FINISHED_ESI_LIST)){
-//		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
-//		free_esi(*esi_to_be_freed);
-//	}
-//	pthread_mutex_unlock(&finished_list_mtx);
+	pthread_mutex_lock(&finished_list_mtx);
+	log_debug("Deleting finished ESIs");
+	while(!queue_is_empty(FINISHED_ESI_LIST)){
+		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
+		free_esi(esi_to_be_freed);
+	}
+	pthread_mutex_unlock(&finished_list_mtx);
 }
 
 

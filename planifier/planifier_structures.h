@@ -45,9 +45,15 @@ t_queue* FINISHED_ESI_LIST;
 t_dictionary * esis_bloqueados_por_recurso;
 t_dictionary * recurso_tomado_por_esi;
 
-void add_to_blocked_queue(char* resource, long esi_id);
+long id_as_long(char* esi_id);
 
-char* blocked_queue_to_string(char* resource);
+void queue_push_id(t_queue* queue, long id);
+
+void list_add_id(t_list* list, long id);
+
+void make_wait_for_resource(long esi_id, char* resource);
+
+char* get_all_waiting_for_resource_as_string(char* resource);
 
 #endif
 

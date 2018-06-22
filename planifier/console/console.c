@@ -23,6 +23,10 @@ command_result execute_command(command command) {
 		return block_cmd(command);
 	case UNBLOCK:
 		return unblock_cmd(command);
+	case ADD:
+		return add_cmd(command);
+	case LIST_ESIS:
+		return list_esis_cmd(command);
 	default:
 		result.code = INVALID_COMMAND;
 		result.content = string_from_format("Invalid command '%s'", command.code_str);

@@ -3,7 +3,7 @@
 void fifo_add_esi(long esi) {
 	pthread_mutex_lock(&ready_list_mtx);
 	log_debug(logger, "Adding ESI%ld to ready queue", esi);
-	list_add(READY_ESI_LIST, &esi);
+	list_add_id(READY_ESI_LIST, esi);
 	pthread_mutex_unlock(&ready_list_mtx);
 }
 
@@ -28,7 +28,7 @@ void fifo_block_esi(long block_esi_id){
 	pthread_mutex_unlock(&ready_list_mtx);
 	pthread_mutex_unlock(&running_esi_mtx);
 	pthread_mutex_unlock(&next_running_esi_mtx);
-	list_add(BLOCKED_ESI_LIST, &block_esi_id);
+	list_add_id(BLOCKED_ESI_LIST, block_esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx);
 }
 

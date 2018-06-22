@@ -4,7 +4,7 @@ void sjf_add_esi(long esi){
 	pthread_mutex_lock(&ready_list_mtx);
 	//TODO pasa el mapa de esis, hacer la cuenta , solo hay que pasar el que esta corriendo y el nuevo, si tiene mas prioridad
 	// el nuvo lo pongo a correr sino lo pongo en la lista, en un add no hace falta ver todos los que estan en la cola
-	list_add(READY_ESI_LIST, &esi);
+	list_add_id(READY_ESI_LIST, esi);
 	pthread_mutex_unlock(&ready_list_mtx);
 }
 
@@ -26,7 +26,7 @@ void sjf_block_esi(long block_esi_id){
 	pthread_mutex_unlock(&ready_list_mtx);
 	pthread_mutex_unlock(&running_esi_mtx);
 	pthread_mutex_unlock(&next_running_esi_mtx);
-	list_add(BLOCKED_ESI_LIST, &block_esi_id);
+	list_add_id(BLOCKED_ESI_LIST, block_esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx);
 }
 

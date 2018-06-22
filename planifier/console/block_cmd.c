@@ -11,13 +11,9 @@ typedef struct {
 	char* resource;
 } command_info;
 
-long to_long(char* esi_id) {
-	return atol(esi_id);
-}
-
 void try_block(command_info* command_info) {
-	add_to_blocked_queue(command_info->resource, to_long(command_info->esi_id));
-//	block_esi(to_long(command_info->esi_id));
+	make_wait_for_resource(id_as_long(command_info->esi_id), command_info->resource);
+	block_esi(id_as_long(command_info->esi_id));
 }
 
 void async_block(command_info* command_info) {

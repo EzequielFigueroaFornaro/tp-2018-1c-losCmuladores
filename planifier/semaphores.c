@@ -7,4 +7,4 @@ pthread_mutex_t ready_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t blocked_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t finished_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-pthread_mutex_t map_boqueados = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t blocked_by_resource_map_mtx = PTHREAD_MUTEX_INITIALIZER;
