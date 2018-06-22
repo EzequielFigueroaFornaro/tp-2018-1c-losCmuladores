@@ -114,7 +114,8 @@ void instance_connection_handler(int socket) {
 		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
 			close(socket);
 			log_error(logger, "Another instance with same name is connected.");
-			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+			pthread_exit(pthread_self);
+			//todo EXIT THREAD WITH ERROR.
 						//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
 
@@ -125,12 +126,12 @@ void instance_connection_handler(int socket) {
 
 		if(result != 0){
 			log_error(logger, "Error while connecting instance.");
-			return;
+			pthread_exit(pthread_self);
 		}
 
 		check_if_exists_or_create_new_instance(instance_name, socket);
 
-		log_info(logger, "Instance connected");
+		log_info(logger, "Instance connected: %s", instance_name);
 	}
 }
 

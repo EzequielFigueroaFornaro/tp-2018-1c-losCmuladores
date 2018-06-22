@@ -66,9 +66,9 @@ t_instance* select_instance_to_send_by_equitative_load(){
 		}
 	}
 
-	free(last_instance_selected);
+	/*free(last_instance_selected);
 	last_instance_selected = malloc(sizeof(t_instance));
-	memcpy(last_instance_selected, selected, sizeof(t_instance));
+	memcpy(last_instance_selected, selected, sizeof(t_instance));*/
 	pthread_mutex_unlock(&instances_list_mtx);
 
 	return selected;
@@ -272,6 +272,9 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 
 	if(instance != NULL){
 		instance -> is_available = true;
+		instance -> instance_thread = pthread_self();
+		instance -> socket_id = socket;
+		instance -> ip_port = get_client_address(socket);
 	} else {
 		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
 
@@ -290,18 +293,24 @@ int process_sentence(t_sentence* sentence, long ise_id){
 	int result_to_ise;
 	t_instance* selected_instance;
 
-	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
 	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
 
 	if(planifier_validation == OK){
 
-		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
+		if((sentence -> operation_id) != GET_SENTENCE) {
 
 			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
-			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			int send_to_instance_result;
 
-			if(send_to_instance_result == KEY_UNREACHABLE) {
+			if(selected_instance != NULL){
+				free(last_instance_selected);
+				last_instance_selected = malloc(sizeof(t_instance));
+				memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
+				send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			}
+
+			if(send_to_instance_result == KEY_UNREACHABLE || selected_instance == NULL) {
 
 				//if(sentence -> operation_id == STORE_SENTENCE){
 				dictionary_remove(keys_location, sentence -> key);
@@ -395,8 +404,6 @@ int main(int argc, char* argv[]) {
 	process_sentence(sentence11, 2);
 	t_sentence* sentence12 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "gigliotti");
 	process_sentence(sentence12, 2);
-
-	sleep(6000);
 
 	exit_gracefully(EXIT_SUCCESS);
 }
