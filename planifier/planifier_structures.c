@@ -10,6 +10,19 @@ long id_as_long(char* esi_id) {
 	return atol(esi_id);
 }
 
+char* list_join(t_list* list) {
+	char* buffer = string_new();
+	int size = list_size(list);
+	for(int i=0; i < size; i++) {
+		long* id = list_get(list, i);
+		if (i + 1 == size) {
+			break;
+		}
+		string_append_with_format(&buffer, "%ld", *id);
+	}
+	return buffer;
+}
+
 void queue_push_id(t_queue* queue, long id) {
 	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
 	*esi_id = id;

@@ -27,7 +27,7 @@ void set_orchestrator(int algorithm) {
 char* esis_to_string() {
 	char* buffer = string_new();
 	void to_string(char* esi_id, esi* esi) {
-		string_append_with_format(&buffer, "\nESI%s -> id: %ld, state: %d", esi_id, esi->id, esi->estado);
+		string_append_with_format(&buffer, "\n\t\t\t\t\t\tESI%ld -> status: %d", esi->id, esi->estado);
 	}
 	dictionary_iterator(esi_map, (void*)to_string);
 	return buffer;
@@ -36,7 +36,7 @@ char* esis_to_string() {
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx);
 	dictionary_put(esi_map,string_key(esi->id), esi);
-	log_debug(logger, "State of esi_map: %s", esis_to_string());
+	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx);
 	switch(ALGORITHM) {
 		case FIFO:
@@ -60,7 +60,7 @@ void modificar_estado(long esi_id, int nuevo_estado){
 	pthread_mutex_lock(&esi_map_mtx);
 	esi* esi = dictionary_get(esi_map, string_key(esi_id));
 	esi -> estado = nuevo_estado;
-	log_debug(logger, "State of esis map after modifying state of ESI%ld: %s", esi_id, esis_to_string());
+	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx);
 }
 
@@ -181,10 +181,10 @@ void put_finish_esi(long esi_id){
 
 void borado_de_finish(){
 	pthread_mutex_lock(&finished_list_mtx);
-	log_debug("Deleting finished ESIs");
+	log_debug(logger, "Deleting finished ESIs... Found %d (ids: %s)", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
 	while(!queue_is_empty(FINISHED_ESI_LIST)){
 		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
-		free_esi(esi_to_be_freed);
+		free_esi(*esi_to_be_freed);
 	}
 	pthread_mutex_unlock(&finished_list_mtx);
 }

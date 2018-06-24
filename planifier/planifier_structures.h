@@ -47,6 +47,8 @@ t_dictionary * recurso_tomado_por_esi;
 
 long id_as_long(char* esi_id);
 
+char* list_join(t_list* list);
+
 void queue_push_id(t_queue* queue, long id);
 
 void list_add_id(t_list* list, long id);
