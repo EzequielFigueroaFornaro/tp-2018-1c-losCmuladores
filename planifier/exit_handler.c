@@ -51,7 +51,7 @@ void exit_with_error(int socket, char* error_msg) {
 
 void quit_console(char* msg, int code) {
 	close_console(msg, code);
-	exit_gracefully(0);
+	exit_gracefully(code);
 }
 
 void signal_handler(int sig) {
