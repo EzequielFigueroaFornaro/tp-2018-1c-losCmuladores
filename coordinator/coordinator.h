@@ -68,6 +68,7 @@ typedef struct {
 	bool is_available;
 	char* ip_port;
 	char* name;
+	int entries_in_use;
 } t_instance;
 
 t_instance *last_instance_selected;

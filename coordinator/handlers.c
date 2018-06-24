@@ -7,6 +7,33 @@
 
 #include "handlers.h"
 
+void check_if_exists_or_create_new_instance(char* instance_name, int socket){
+	bool _is_same_instance_name(t_instance* instance){
+		return strcmp(instance -> name, instance_name) == 0;
+	}
+
+	t_instance* instance;
+	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
+
+	if(instance != NULL){
+		instance -> is_available = true;
+		instance -> instance_thread = pthread_self();
+		instance -> socket_id = socket;
+		instance -> ip_port = get_client_address(socket);
+		//TODO ver qué pasa con la cantidad de entradas libres, y refactorizar esto.
+	} else {
+		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
+
+		instance -> instance_thread = pthread_self();
+		instance -> socket_id = socket;
+		instance -> is_available = true;
+		instance -> ip_port = get_client_address(socket);
+		instance -> name = instance_name;
+		instance -> entries_in_use = 0;
+
+		list_add(instances_thread_list, instance);
+	}
+}
 
 void signal_handler(int sig){
     if (sig == SIGINT) {

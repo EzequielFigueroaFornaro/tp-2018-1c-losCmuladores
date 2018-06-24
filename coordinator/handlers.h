@@ -21,4 +21,6 @@ void signal_handler(int sig);
 
 void _exit_with_error(int socket, char* error_msg, void * buffer);
 
+void check_if_exists_or_create_new_instance(char* instance_name, int socket);
+
 #endif /* HANDLERS_H_ */

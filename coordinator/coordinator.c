@@ -10,10 +10,6 @@
 
 #include "coordinator.h"
 
-/* TEST */
-/*bool test_block = true;
-void test_sentence_result(t_sentence* sentence, int socket, long ise_id);*/
-
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
 	*sentence = malloc(sizeof(t_sentence));
 	int result;
@@ -66,9 +62,6 @@ t_instance* select_instance_to_send_by_equitative_load(){
 		}
 	}
 
-	/*free(last_instance_selected);
-	last_instance_selected = malloc(sizeof(t_instance));
-	memcpy(last_instance_selected, selected, sizeof(t_instance));*/
 	pthread_mutex_unlock(&instances_list_mtx);
 
 	return selected;
@@ -103,16 +96,43 @@ t_instance* select_instance_by_ke(char* key){
 	return selected_instance;
 }
 
-//TODO
-/*t_instance select_instance_to_send_by_lsu(){
-	return NULL;
-}*/
+t_instance* select_instance_to_send_by_lsu(){
+
+	bool _has_less_entries_used_than(t_instance* instance, t_instance* other_instance){
+		return (instance -> entries_in_use) < (other_instance -> entries_in_use);
+	}
+
+	//TODO es necesario tener semáforos para las instancias ? Si va a venir un ESI a la vez...
+	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	list_sort(available_instances, (void*) _has_less_entries_used_than);
+
+	t_instance* selected_instance = list_get(available_instances, 0);
+
+	int entries_qty = selected_instance -> entries_in_use;
+	bool _same_entries_used(t_instance* instance){
+			return instance -> entries_in_use == entries_qty;
+	}
+
+	t_list* instances_with_same_entries_than_selected_instance = list_filter(available_instances, (void*) _same_entries_used);
+
+	if(instances_with_same_entries_than_selected_instance -> elements_count > 1) {
+		selected_instance = (t_instance*) select_instance_to_send_by_equitative_load();
+	}
+
+	list_destroy(available_instances);
+	list_destroy(instances_with_same_entries_than_selected_instance);
+
+	//TODO ESTO ES DE PRUEBA.
+	//selected_instance -> entries_in_use = selected_instance -> entries_in_use + rand() % 15;
+
+	return selected_instance;
+}
 
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
 	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
-			case LSU: return NULL;//return select_instance_to_send_by_lsu();
+			case LSU: return select_instance_to_send_by_lsu();
 			case KE: return select_instance_by_ke(sentence -> key);
 			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
 		}
@@ -261,34 +281,6 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
-//TODO llevar a los handlers.
-void check_if_exists_or_create_new_instance(char* instance_name, int socket){
-	bool _is_same_instance_name(t_instance* instance){
-		return strcmp(instance -> name, instance_name) == 0;
-	}
-
-	t_instance* instance;
-	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
-
-	if(instance != NULL){
-		instance -> is_available = true;
-		instance -> instance_thread = pthread_self();
-		instance -> socket_id = socket;
-		instance -> ip_port = get_client_address(socket);
-	} else {
-		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
-
-		instance -> instance_thread = pthread_self();
-		instance -> socket_id = socket;
-		instance -> is_available = true;
-		instance -> ip_port = get_client_address(socket);
-		instance -> name = instance_name;
-
-		list_add(instances_thread_list, instance);
-	}
-
-}
-
 int process_sentence(t_sentence* sentence, long ise_id){
 	int result_to_ise;
 	t_instance* selected_instance;
@@ -377,6 +369,8 @@ int main(int argc, char* argv[]) {
 	//**PARA TEST***/
 	while(instances_thread_list -> elements_count < 3);
 
+	srand(time(NULL));
+
 	t_sentence* sentence1 = sentence_create_with(GET_SENTENCE, "barcelona:jugadores", "messi");
 	process_sentence(sentence1, 1);
 	t_sentence* sentence2 = sentence_create_with(SET_SENTENCE, "barcelona:jugadores", "messi");
@@ -404,6 +398,13 @@ int main(int argc, char* argv[]) {
 	process_sentence(sentence11, 2);
 	t_sentence* sentence12 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "gigliotti");
 	process_sentence(sentence12, 2);
+
+	t_sentence* sentence13 = sentence_create_with(GET_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence13, 2);
+	t_sentence* sentence14 = sentence_create_with(SET_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence14, 2);
+	t_sentence* sentence15 = sentence_create_with(STORE_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence15, 2);
 
 	exit_gracefully(EXIT_SUCCESS);
 }
