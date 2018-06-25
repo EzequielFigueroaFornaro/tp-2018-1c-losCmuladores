@@ -42,8 +42,6 @@ bool is_exit(command command);
 
 bool valid_args(command command);
 
-command_result pause_cmd(command command);
-
 command_result unblock_cmd(command command);
 
 command_result base_command_result(command_result_code code);

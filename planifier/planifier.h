@@ -31,9 +31,6 @@
 
 int server_port;
 int server_max_connections;
-int algorithm;
-long id = 0;
-int cpu_time = 0;
 
 int coordinator_port;
 char* coordinator_ip;
@@ -42,9 +39,6 @@ int coordinator_socket;
 
 //Global variables.
 t_log * logger;
-
-pthread_mutex_t id_mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t cpu_time_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 void configure_logger();
 
@@ -69,6 +63,6 @@ void try_to_block_resource(char* resource, long esi_id);
 
 void free_resource(char* resource);
 
-void esi_execution_result_handler(int socket);
+void wait_execution_result(int socket);
 
 #endif /* PLANIFIER_H_ */

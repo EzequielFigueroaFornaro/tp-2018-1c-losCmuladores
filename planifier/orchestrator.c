@@ -10,27 +10,78 @@
 
 #include "orchestrator.h"
 
+long id = 0;
+long cpu_time = 0;
+
 long RUNNING_ESI = 0;
 long NEXT_RUNNING_ESI = -1;
 
-void set_orchestrator(int algorithm) {
-	ALGORITHM = algorithm;
-	READY_ESI_LIST = list_create();
-	BLOCKED_ESI_LIST = list_create();
-	FINISHED_ESI_LIST = queue_create();
-}
 
 /*aca se pueden tener un par de funciones globales para todas las esis
  * ejemplo, podemos tener un mapa de esis por id y el puntero a la esi, desde ahi podemos modificarlas mas rapidametne
  * usando el puntero en el mapa, en vez de ir ala lista correspondinte a tener que buscarla */
 
-char* esis_to_string() {
-	char* buffer = string_new();
-	void to_string(char* esi_id, esi* esi) {
-		string_append_with_format(&buffer, "\n\t\t\t\t\t\tESI%ld -> status: %d", esi->id, esi->estado);
+void replan_by_algorithm() {
+	switch (algorithm) {
+	case FIFO:
+		fifo_replan();
+		break;
+	default:
+		fifo_replan();
+		break;
 	}
-	dictionary_iterator(esi_map, (void*)to_string);
-	return buffer;
+}
+
+void notify_dispatcher() {
+	if (RUNNING_ESI == 0) {
+		replan_by_algorithm();
+		pthread_mutex_unlock(&start_planification);
+	}
+}
+
+void dispatch() {
+	while(true) {
+		pthread_mutex_lock(&start_planification);
+		esi_se_va_a_ejecutar();
+		send_esi_to_run(RUNNING_ESI);
+		wait_execution_result(RUNNING_ESI);
+		cpu_time_incrementate();
+		borrado_de_finish();
+		pthread_mutex_unlock(&start_planification);
+	}
+}
+
+void set_orchestrator() {
+	esi_map = dictionary_create();
+	esis_bloqueados_por_recurso = dictionary_create();
+	READY_ESI_LIST = list_create();
+	BLOCKED_ESI_LIST = list_create();
+	FINISHED_ESI_LIST = queue_create();
+
+	pthread_mutex_lock(&start_planification);
+	pthread_t orchestrator;
+	if (pthread_create(&orchestrator, NULL, (void*) dispatch, NULL) < 0) {
+		log_error(logger, "Could not start dispatcher");
+		exit_gracefully(EXIT_FAILURE);
+	}
+}
+
+long increment_id() {
+	pthread_mutex_trylock(&id_mtx);
+	id++;
+	pthread_mutex_unlock(&id_mtx);
+	return id;
+}
+
+long cpu_time_incrementate(){
+	pthread_mutex_trylock(&cpu_time_mtx);
+	long new_cpu_time = cpu_time ++;
+	pthread_mutex_unlock(&cpu_time_mtx);
+	return new_cpu_time;
+}
+
+int get_current_time() {
+	return cpu_time;
 }
 
 void add_esi(esi* esi){
@@ -38,7 +89,7 @@ void add_esi(esi* esi){
 	dictionary_put(esi_map,string_key(esi->id), esi);
 	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx);
-	switch(ALGORITHM) {
+	switch(algorithm) {
 		case FIFO:
 			fifo_add_esi(esi->id);
 			break;
@@ -64,10 +115,9 @@ void modificar_estado(long esi_id, int nuevo_estado){
 	pthread_mutex_unlock(&esi_map_mtx);
 }
 
-
-
 void block_esi(long esi_id){
-	switch(ALGORITHM) {
+	modificar_estado(esi_id, BLOQUEADO);
+	switch(algorithm) {
 			case FIFO:
 				fifo_block_esi(esi_id);
 				break;
@@ -85,7 +135,7 @@ void unlock_esi(long esi_id){
 	modificar_estado(esi_id, DESBLOQUEADO);
 	list_remove_by_condition(BLOCKED_ESI_LIST, (void*) equals_esi);
 	pthread_mutex_unlock(&blocked_list_mtx);
-	switch(ALGORITHM) {
+	switch(algorithm) {
 			case FIFO:
 				fifo_add_esi(esi_id);
 				break;
@@ -179,9 +229,9 @@ void put_finish_esi(long esi_id){
 	pthread_mutex_unlock(&finished_list_mtx);
 }
 
-void borado_de_finish(){
+void borrado_de_finish(){
 	pthread_mutex_lock(&finished_list_mtx);
-	log_debug(logger, "Deleting finished ESIs... Found %d (ids: %s)", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
+	log_debug(logger, "Deleting finished ESIs... Found %d to delete: [%s]", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
 	while(!queue_is_empty(FINISHED_ESI_LIST)){
 		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
 		free_esi(*esi_to_be_freed);
@@ -189,6 +239,41 @@ void borado_de_finish(){
 	pthread_mutex_unlock(&finished_list_mtx);
 }
 
+t_queue* get_all_waiting_for_resource(char* resource) {
+	return dictionary_get(esis_bloqueados_por_recurso, resource);
+}
 
+void make_wait_for_resource(long esi_id, char* resource) {
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+
+	t_queue* blocked_esis = get_all_waiting_for_resource(resource);
+	if (blocked_esis == NULL) {
+		blocked_esis = queue_create();
+	}
+	queue_push_id(blocked_esis, esi_id);
+	dictionary_put(esis_bloqueados_por_recurso, resource, blocked_esis);
+
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+}
+
+char* get_all_waiting_for_resource_as_string(char* resource) {
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+
+	if (esis_bloqueados_por_recurso != NULL) {
+		t_queue* esis_blocked = get_all_waiting_for_resource(resource);
+		if (esis_blocked != NULL) {
+			char* buffer = string_new();
+
+			void to_string(long* esi_id) {
+				string_append_with_format(&buffer, "ESI%ld\n", *esi_id);
+			}
+			list_iterate(esis_blocked->elements, (void*) to_string);
+			pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+			return buffer;
+		}
+	}
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+	return "";
+}
 
 

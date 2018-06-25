@@ -36,39 +36,11 @@ void list_add_id(t_list* list, long id) {
 	list_add(list, esi_id);
 }
 
-t_queue* get_all_waiting_for_resource(char* resource) {
-	return dictionary_get(esis_bloqueados_por_recurso, resource);
-}
-
-void make_wait_for_resource(long esi_id, char* resource) {
-	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-
-	t_queue* blocked_esis = get_all_waiting_for_resource(resource);
-	if (blocked_esis == NULL) {
-		blocked_esis = queue_create();
+char* esis_to_string() {
+	char* buffer = string_new();
+	void to_string(char* esi_id, esi* esi) {
+		string_append_with_format(&buffer, "\n\t\t\t\t\t\tESI%ld -> status: %d", esi->id, esi->estado);
 	}
-	queue_push_id(blocked_esis, esi_id);
-	dictionary_put(esis_bloqueados_por_recurso, resource, blocked_esis);
-
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-}
-
-char* get_all_waiting_for_resource_as_string(char* resource) {
-	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-
-	if (esis_bloqueados_por_recurso != NULL) {
-		t_queue* esis_blocked = get_all_waiting_for_resource(resource);
-		if (esis_blocked != NULL) {
-			char* buffer = string_new();
-
-			void to_string(long* esi_id) {
-				string_append_with_format(&buffer, "ESI%ld\n", *esi_id);
-			}
-			list_iterate(esis_blocked->elements, (void*) to_string);
-			pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-			return buffer;
-		}
-	}
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-	return "";
+	dictionary_iterator(esi_map, (void*)to_string);
+	return buffer;
 }

@@ -10,36 +10,6 @@
 
 #include "planifier.h"
 
-long esi_id_generate(){
-	pthread_mutex_trylock(&id_mtx);
-	id++;
-	long new_id = id;
-	pthread_mutex_unlock(&id_mtx);
-	return new_id;
-}
-
-long cpu_time_incrementate(){
-	pthread_mutex_trylock(&cpu_time_mtx);
-	int new_cpu_time = cpu_time ++;
-	pthread_mutex_unlock(&cpu_time_mtx);
-	return new_cpu_time;
-}
-
-long new_esi(int socket, long esi_size){
-	esi* new_esi = malloc(sizeof(esi));
-	new_esi -> id = esi_id_generate();
-	new_esi -> estado = NUEVO;
-	new_esi -> tiempo_de_entrada = cpu_time;
-	new_esi -> socket_id = socket;
-	new_esi -> esi_thread = pthread_self();
-	pthread_mutex_unlock(&cpu_time_mtx);
-	new_esi -> cantidad_de_instrucciones = esi_size;
-	new_esi -> instrucction_pointer = 0;
-	pthread_mutex_unlock(&cpu_time_mtx);
-	add_esi(new_esi);
-	return (new_esi -> id);
-}
-
 //che_ejecute_esto(tiene input output){ //esi diciendo ejecute algo
 //bool hubo_replanificacion_con_cambio_de_esi
 ///*este bool lo tiene que tener por referencia los algoritmos
@@ -53,29 +23,6 @@ long new_esi(int socket, long esi_size){
 //}
 //}
 //
-
-int send_message_to_esi(long esi_id, message_type message){
-	esi* esi_to_notify = dictionary_get(esi_map, string_key(esi_id));
-	int socket_id = esi_to_notify->socket_id;
-	return send(socket_id, &message, sizeof(message_type), 0);
-}
-
-bool send_esi_to_run(){
-	long esi_id = esi_se_va_a_ejecutar();
-	if (send_message_to_esi(esi_id, ISE_EXECUTE) < 0){
-		log_error(logger, "Could not send ise %ld to run", esi_id);
-		return false;
-		//todo que pasa si no le puedo mandar un mensaje?
-	}
-	return true;
-}
-
-void send_esi_to_stop(long esi_id){
-	if (send_message_to_esi(esi_id, ISE_STOP) < 0){
-		log_error(logger, "Could not send ise %ld to run", esi_id);
-		//todo que pasa si no le puedo mandar un mensaje?
-	}
-}
 
 //che_esta_tomado_el_recurso(input_outpu)
 
@@ -260,87 +207,20 @@ void could_use_resource(char* resource, long esi_id) {
 	}
 }
 
-void esi_connection_handler(int socket){
-	message_type message_type_result = recv_message(socket);
-	if(message_type_result != MODULE_CONNECTED){
-		log_info(logger, "Connection was received but the message type does not imply connection. Ignoring");
-		close(socket);
-		return;
-	}
-
-	module_type module;
-	int result_module_type = recv(socket, &module, sizeof(module_type), MSG_WAITALL);
-	if (result_module_type <= 0) {
-		log_error(logger, "Error trying to receive module type. Closing connection");
-		close(socket);
-		return;
-	}
-	if (module == ISE) {
-		log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
-
-		long esi_size;
-		int result_esi_size = recv_long(socket, &esi_size);
-		if (result_esi_size <= 0) {
-			log_error(logger, "Error trying to receive message. Closing connection");
-			close(socket);
-			return;
-		}
-		long new_esi_id = new_esi(socket, esi_size);
-		log_info(logger, "New ESI created with id %ld was added to ready queue", new_esi_id);
-		int message_size = sizeof(message_type) + sizeof(long);
-		void* buffer = malloc(message_size);
-		void* offset = buffer;
-		concat_value(&offset, &CONNECTION_SUCCESS, sizeof(message_type));
-		concat_value(&offset, &new_esi_id, sizeof(long));
-		int result_send_new_esi_id = send(socket, buffer, message_size, 0);
-		free(buffer);
-		if (result_send_new_esi_id < 0) {
-			log_error(logger, "Error sending the id to the new esi. Client-Address %s",	get_client_address(socket));
-			close(socket);
-			return;
-		}
-
-		if (es_caso_base(new_esi_id)) {
-			if (send_esi_to_run()){
-				esi_execution_result_handler(socket);
-			} else {
-				volver_caso_base();
-			}
-		}
-	} else {
-		log_info(logger, "Ignoring connected client because it was not an ESI");
-	}
-
-}
-
-void esi_execution_result_handler(int socket){
-	execution_result esi_execution_result;
-
-	int esi_execution_result_status = recv(socket, &esi_execution_result, sizeof(execution_result), MSG_WAITALL);
-	if (esi_execution_result_status <= 0) {
-		log_error(logger, "Error trying to receive the execution result");
-		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?
-		return;
-	}
-	cpu_time_incrementate();
-	send_esi_to_run();
-	borado_de_finish();
-}
-
 int main(int argc, char* argv[]) {
-	esi_map = dictionary_create();
-	esis_bloqueados_por_recurso = dictionary_create();
-	int i = 1;
-	set_orchestrator(i);
 	init_logger();
 	load_configuration(argv[1]);
+
+	connect_to_coordinator();
+
+	set_orchestrator();
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
+		exit_gracefully(EXIT_FAILURE);
 	}
 
 	pthread_t console_thread = start_console();
-	connect_to_coordinator();
 	pthread_join(console_thread, NULL);
-	return EXIT_SUCCESS;
+	exit_gracefully(EXIT_SUCCESS);
 }

@@ -12,15 +12,32 @@
 #include "planifier_structures.h"
 #include "semaphores.h"
 #include "logging.h"
-
-int ALGORITHM;
+#include "exit_handler.h"
 
 t_dictionary * esi_map;
 
+extern long RUNNING_ESI;
+extern long NEXT_RUNNING_ESI;
+
+t_list* READY_ESI_LIST;
+t_list* BLOCKED_ESI_LIST;
+t_queue* FINISHED_ESI_LIST;
+
+t_dictionary * esis_bloqueados_por_recurso;
+t_dictionary * recurso_tomado_por_esi;
+
 //pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
-enum algorithm {
+typedef enum {
 	FIFO = 1
-};
+} planifier_algorithm;
+
+planifier_algorithm algorithm;
+
+long increment_id();
+
+long cpu_time_incrementate();
+
+int get_current_time();
 
 void add_esi(esi* esi);
 
@@ -36,7 +53,7 @@ char* string_key(long key);
 
 long esi_se_va_a_ejecutar();
 
-void borado_de_finish();
+void borrado_de_finish();
 
 bool es_caso_base(long esi_id);
 
@@ -49,5 +66,9 @@ void finish_esi(long esi_id);
 void free_esi(long esi_id);
 
 void volver_caso_base();
+
+void make_wait_for_resource(long esi_id, char* resource);
+
+char* get_all_waiting_for_resource_as_string(char* resource);
 
 #endif
