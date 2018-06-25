@@ -254,6 +254,7 @@ void load_configuration(char* config_file_path){
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
+	delay = config_get_int_value(config, "DELAY");
 
 	if(string_equals_ignore_case(distribution_str, "EL")){
 		distribution = EL;
@@ -281,9 +282,15 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
+void delay_execution(){
+	sleep(delay * 0.001);
+}
+
 int process_sentence(t_sentence* sentence, long ise_id){
 	int result_to_ise;
 	t_instance* selected_instance;
+
+	delay_execution();//Retardo por requerimiento.
 
 	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
 

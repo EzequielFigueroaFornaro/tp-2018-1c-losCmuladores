@@ -36,6 +36,7 @@ char* OPERATIONS_LOG_PATH;
 //#define PORT 8080
 int server_port;
 int server_max_connections;
+int delay;
 
 //planifier
 int planifier_socket;
