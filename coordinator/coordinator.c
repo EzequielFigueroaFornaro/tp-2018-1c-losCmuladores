@@ -370,11 +370,11 @@ int main(int argc, char* argv[]) {
 	operations_log_file_mtx = operations_log_file_mtx_aux;
 	OPERATIONS_LOG_PATH = "operations.log";
 
-	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, true, logger);
+	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/
-	while(instances_thread_list -> elements_count < 3);
+	/*while(instances_thread_list -> elements_count < 3);
 
 	srand(time(NULL));
 
@@ -411,19 +411,7 @@ int main(int argc, char* argv[]) {
 	t_sentence* sentence14 = sentence_create_with(SET_SENTENCE, "argentina:jugadores", "tagliafico");
 	process_sentence(sentence14, 2);
 	t_sentence* sentence15 = sentence_create_with(STORE_SENTENCE, "argentina:jugadores", "tagliafico");
-	process_sentence(sentence15, 2);
+	process_sentence(sentence15, 2);*/
 
 	exit_gracefully(EXIT_SUCCESS);
 }
-
-/* TEST*/
-/*void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
-	if (sentence->operation_id == GET_SENTENCE && test_block) {
-		log_info(logger, "[TEST] Sending key_blocked result to esi %ld", ise_id);
-		send_statement_result_to_ise(socket, ise_id, KEY_BLOCKED);
-		test_block = false;
-	} else {
-		log_info(logger, "[TEST] Sending ok result to esi %ld", ise_id);
-		send_statement_result_to_ise(socket, ise_id, OK);
-	}
-}*/
