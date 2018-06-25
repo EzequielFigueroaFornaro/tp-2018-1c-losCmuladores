@@ -26,14 +26,17 @@
 #include "response_codes.h"
 #include "types.h"
 #include "commons/txt.h"
+#include <math.h>
 
 #include "types.h"
 #include "response_codes.h"
+#include "handlers.h"
 
-char* OPERATIONS_LOG_PATH = "operations.log";
+char* OPERATIONS_LOG_PATH;
 //#define PORT 8080
 int server_port;
 int server_max_connections;
+int delay;
 
 //planifier
 int planifier_socket;
@@ -54,14 +57,9 @@ typedef enum { LSU, EL, KE } distributions;
 distributions distribution;
 
 //Semaphores
-pthread_mutex_t instances_mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t keys_mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t operations_log_file_mtx = PTHREAD_MUTEX_INITIALIZER;
-
-typedef struct  {
-  int operation_id;
-  //TODO lo que sea necesario.
-} __attribute__((packed)) t_new_instance_header;
+pthread_mutex_t instances_list_mtx;
+pthread_mutex_t keys_mtx;
+pthread_mutex_t operations_log_file_mtx;
 
 t_instance_configuration *instance_configuration;
 
@@ -71,6 +69,7 @@ typedef struct {
 	bool is_available;
 	char* ip_port;
 	char* name;
+	int entries_in_use;
 } t_instance;
 
 t_instance *last_instance_selected;
@@ -80,7 +79,5 @@ typedef struct {
 	int socket_id;
 	long id;
 } __attribute__((packed)) t_ise;
-
-void _exit_with_error(int socket,char* error_msg, void * buffer);
 
 #endif /* COORDINATOR_H_ */

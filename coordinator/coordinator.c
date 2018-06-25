@@ -10,10 +10,6 @@
 
 #include "coordinator.h"
 
-/* TEST */
-/*bool test_block = true;
-void test_sentence_result(t_sentence* sentence, int socket, long ise_id);*/
-
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
 	*sentence = malloc(sizeof(t_sentence));
 	int result;
@@ -35,7 +31,7 @@ bool is_same_instance(t_instance *one, t_instance *another){
 t_instance* select_instance_to_send_by_equitative_load(){
 	t_instance* selected = NULL;
 
-	pthread_mutex_lock(&instances_mtx);
+	pthread_mutex_lock(&instances_list_mtx);
 
 	t_link_element *element = instances_thread_list -> head;
 
@@ -66,21 +62,78 @@ t_instance* select_instance_to_send_by_equitative_load(){
 		}
 	}
 
-	free(last_instance_selected);
-	last_instance_selected = malloc(sizeof(t_instance));
-	memcpy(last_instance_selected, selected, sizeof(t_instance));
-	pthread_mutex_unlock(&instances_mtx);
+	pthread_mutex_unlock(&instances_list_mtx);
 
 	return selected;
 }
 
-//Antes de hacer esto hay que verificar que se pueda realizar la operación, sino devolver error al planificador.
+bool is_instance_available(t_instance* instance){
+		return instance -> is_available == true;
+}
+
+t_instance* select_instance_by_ke(char* key){
+
+	int ascii_base_limit = 97; //a
+	int ascii_final_limit = 122; //z
+	int letters_qty = ascii_final_limit - ascii_base_limit;
+
+	pthread_mutex_lock(&instances_list_mtx);
+	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	pthread_mutex_unlock(&instances_list_mtx);
+
+	int instances_qty = available_instances -> elements_count;
+
+	int ascii_key = tolower(key[0]);
+
+	int keys_per_instance = ceil(letters_qty / instances_qty);
+
+	int instance_index = floor((ascii_key - ascii_base_limit) / keys_per_instance);
+
+	t_instance* selected_instance = (t_instance*) list_get(available_instances, instance_index);
+
+	list_destroy(available_instances);
+
+	return selected_instance;
+}
+
+t_instance* select_instance_to_send_by_lsu(){
+
+	bool _has_less_entries_used_than(t_instance* instance, t_instance* other_instance){
+		return (instance -> entries_in_use) < (other_instance -> entries_in_use);
+	}
+
+	//TODO es necesario tener semáforos para las instancias ? Si va a venir un ESI a la vez...
+	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	list_sort(available_instances, (void*) _has_less_entries_used_than);
+
+	t_instance* selected_instance = list_get(available_instances, 0);
+
+	int entries_qty = selected_instance -> entries_in_use;
+	bool _same_entries_used(t_instance* instance){
+			return instance -> entries_in_use == entries_qty;
+	}
+
+	t_list* instances_with_same_entries_than_selected_instance = list_filter(available_instances, (void*) _same_entries_used);
+
+	if(instances_with_same_entries_than_selected_instance -> elements_count > 1) {
+		selected_instance = (t_instance*) select_instance_to_send_by_equitative_load();
+	}
+
+	list_destroy(available_instances);
+	list_destroy(instances_with_same_entries_than_selected_instance);
+
+	//TODO ESTO ES DE PRUEBA.
+	//selected_instance -> entries_in_use = selected_instance -> entries_in_use + rand() % 15;
+
+	return selected_instance;
+}
+
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
 	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
-			case LSU: return NULL;//TODO
-			case KE: return NULL; //TODO
+			case LSU: return select_instance_to_send_by_lsu();
+			case KE: return select_instance_by_ke(sentence -> key);
 			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
 		}
 	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
@@ -89,18 +142,8 @@ t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sen
 	}
 }
 
-
-void handle_instance_disconnection(t_instance* instance){
-	pthread_mutex_lock(&instances_mtx);
-	instance -> is_available = false;
-	pthread_mutex_unlock(&instances_mtx);
-	last_instance_selected -> is_available = false; //TODO poner semaforo acá.
-	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
-}
-
 //TODO Hacer los free correspondientes!!!
 int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sentence *sentence){
-	//Antes de hacer esto, guardar en la tabla correspondiente en qué instancia quedó esta key...
 	log_info(logger, "Sending sentence to instance %s", instance -> name);
 
 	t_buffer buffer = serialize_sentence(sentence);
@@ -121,22 +164,11 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 		return KEY_UNREACHABLE;
 	}
 
-	//Put key -> instance.
 	pthread_mutex_lock(&keys_mtx);
 	dictionary_put(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
-	return OK;
-}
-
-//TODO llevar a commons.
-char* get_operation_as_string(int operation_id){
-	switch(operation_id) {
-		case GET_SENTENCE: return "GET";
-		case SET_SENTENCE: return "SET";
-		case STORE_SENTENCE: return "STORE";
-		default: return NULL;
-	}
+	return result;
 }
 
 void save_operation_log(t_sentence* sentence, long ise_id){
@@ -170,7 +202,6 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	log_info(logger, "Operations log successfully saved");
 }
 
-//5)
 void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
 	int message_size = sizeof(message_type) + sizeof(int);
 	void* buffer = malloc(message_size);
@@ -194,10 +225,10 @@ void exit_gracefully(int code) {
 	log_destroy(logger);
 	free(instance_configuration);
 
-	pthread_mutex_lock(&instances_mtx);
+	pthread_mutex_lock(&instances_list_mtx);
 	list_destroy(instances_thread_list);
-	pthread_mutex_unlock(&instances_mtx);
-	pthread_mutex_destroy(&instances_mtx);
+	pthread_mutex_unlock(&instances_list_mtx);
+	pthread_mutex_destroy(&instances_list_mtx);
 	pthread_mutex_destroy(&keys_mtx);
 	exit(code);
 }
@@ -223,6 +254,7 @@ void load_configuration(char* config_file_path){
 	instance_configuration -> entries_quantity = config_get_int_value(config, "ENTRIES_QUANTITY");
 	instance_configuration -> entries_size = config_get_int_value(config, "ENTRIES_SIZE");
 	char* distribution_str = config_get_string_value(config, "DISTRIBUTION");
+	delay = config_get_int_value(config, "DELAY");
 
 	if(string_equals_ignore_case(distribution_str, "EL")){
 		distribution = EL;
@@ -250,100 +282,34 @@ int send_instance_configuration(int client_sock){
 	return 0;
 }
 
-void check_if_exists_or_create_new_instance(char* instance_name, int socket){
-	bool _is_same_instance_name(t_instance* instance){
-		return strcmp(instance -> name, instance_name) == 0;
-	}
-
-	t_instance* instance;
-	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
-
-	if(instance != NULL){
-		instance -> is_available = true;
-	} else {
-		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
-
-		instance -> instance_thread = pthread_self();
-		instance -> socket_id = socket;
-		instance -> is_available = true;
-		instance -> ip_port = get_client_address(socket);
-		instance -> name = instance_name;
-
-		list_add(instances_thread_list, instance);
-	}
-
-}
-
-void instance_connection_handler(int socket) {
-	char* instance_name;
-
-	bool _is_existent_instance_connected(t_instance* instance){
-		return strcmp(instance -> name, instance_name) == 0 && instance -> is_available == true;
-	}
-
-	//TODO ver qué info necesito, guardar en el struct de la instancia, y hacer free de todo lo necesario.
-	if (send_connection_success(socket) < 0) {
-		_exit_with_error(socket, "Error sending instance connection success", NULL);
-	} else {
-
-		int instance_name_result = recv_string(socket, &instance_name);
-
-		if(instance_name_result <= 0){
-			close(socket);
-			log_error(logger, "Could not receive instance name");
-			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
-			//_exit_with_error(socket, "Could not receive instance name", NULL);
-		}
-
-		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
-			close(socket);
-			log_error(logger, "Another instance with same name is connected.");
-			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
-						//_exit_with_error(socket, "Could not receive instance name", NULL);
-		}
-
-		int r = 1;
-		int send_confirmation_result = send(socket, &r, sizeof(int), 0);
-
-		int result = send_instance_configuration(socket);
-
-		if(result != 0){
-			log_error(logger, "Error while connecting instance.");
-			return;
-		}
-
-		check_if_exists_or_create_new_instance(instance_name, socket);
-
-		log_info(logger, "Instance connected");
-	}
-}
-
-void planifier_connection_handler(int socket) {
-	planifier_socket = socket;
-
-	if (send_connection_success(socket) < 0) {
-		_exit_with_error(socket, "Error sending planifier connection success", NULL);
-	} else {
-		log_info(logger, "Planifier connected");
-	}
+void delay_execution(){
+	sleep(delay * 0.001);
 }
 
 int process_sentence(t_sentence* sentence, long ise_id){
 	int result_to_ise;
 	t_instance* selected_instance;
 
-	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
+	delay_execution();//Retardo por requerimiento.
+
 	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
 
 	if(planifier_validation == OK){
 
-		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
+		if((sentence -> operation_id) != GET_SENTENCE) {
 
 			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
 
-			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			int send_to_instance_result;
 
-			if(send_to_instance_result == KEY_UNREACHABLE) {
+			if(selected_instance != NULL){
+				free(last_instance_selected);
+				last_instance_selected = malloc(sizeof(t_instance));
+				memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
+				send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+			}
+
+			if(send_to_instance_result == KEY_UNREACHABLE || selected_instance == NULL) {
 
 				//if(sentence -> operation_id == STORE_SENTENCE){
 				dictionary_remove(keys_location, sentence -> key);
@@ -361,87 +327,6 @@ int process_sentence(t_sentence* sentence, long ise_id){
 	}
 
 	return result_to_ise;
-}
-
-void ise_connection_handler(int socket) {
-	long ise_id;
-	log_info(logger, "Socket del ESI: %d", socket);
-	if (recv_long(socket, &ise_id) <= 0) {
-		log_error(logger, "Could not receive ESI id");
-		return;
-	}
-
-	if (send_connection_success(socket) < 0) {
-		log_error(logger, "Error sending connection success to ESI %ld", ise_id);
-		return;
-	}
-
-	log_info(logger, "ESI %ld connected", ise_id);
-
-	log_info(logger, "Waiting for first statement...");
-	t_sentence* sentence;
-	int sentence_received;
-	while ((sentence_received = receive_sentence_execution_request(socket, &sentence))) {
-		if (sentence_received == MODULE_DISCONNECTED) {
-			log_error(logger, "ESI %ld disconnected", ise_id);
-			return;
-		}
-		if (sentence_received < 0) {
-			log_error(logger, "Could not receive sentence from ESI %ld", ise_id);
-			return;
-		}
-
-		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
-		save_operation_log(sentence, ise_id);
-
-		/* TEST: al primer GET devuelve key_blocked. En los siguientes GET y para cualquier
-		  otra sentencia, devuelve OK al ESI (no hay comunicación con el planificador):    */
-
-		// test_sentence_result(sentence, socket, ise_id);
-
-		int execution_result = process_sentence(sentence, ise_id);
-		send_statement_result_to_ise(socket, ise_id, execution_result);
-
-		free(sentence);
-	}
-}
-
-void connection_handler(int socket) {
-	message_type message_type;
-	int result_connected_message = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
-	if (result_connected_message <= 0 || message_type != MODULE_CONNECTED) {
-		log_error(logger, "Error receiving connect message");
-	} else {
-		module_type module_type;
-		int result_module = recv(socket, &module_type, sizeof(module_type), MSG_WAITALL);
-		if (result_module <= 0) {
-			log_error(logger, "Error receiving module type connected");
-		} else if (module_type == INSTANCE) {
-			instance_connection_handler(socket);
-		} else if (module_type == PLANIFIER) {
-			planifier_connection_handler(socket);
-		} else if (module_type == ISE) {
-			ise_connection_handler(socket);
-		}
-	}
-}
-
-//TODO cerrar TODOS los sockets (planificador, el parametrizado, y el de todas las instancias conectadas)
-void _exit_with_error(int socket, char* error_msg, void * buffer){
-	if (buffer != NULL) {
-		free(buffer);
-	}
-	log_error(logger, error_msg);
-	close(socket);
-	close(planifier_socket);
-	exit_gracefully(1);
-}
-
-void signal_handler(int sig){
-    if (sig == SIGINT) {
-    	log_info(logger,"Caught signal for Ctrl+C\n");
-    	exit_gracefully(0);
-    }
 }
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
@@ -469,62 +354,6 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id
 	return OK;
 }
 
-/*
- * case OK : return "Sentencia ejecutada"; 0
- * 	case KEY_TOO_LONG : return "Error de Tamano de Clave"; 1
- * 	case KEY_NOT_FOUND : return "Error de Clave no Identificada"; 2
- * 	case KEY_UNREACHABLE : return "Error de Clave Inaccesible"; 3
- * 	case KEY_LOCK_NOT_ACQUIRED : return "Error de Clave no Bloqueada"; 4
- * 	case KEY_BLOCKED : return "Clave bloqueada por otro proceso"; 5
- * 	case PARSE_ERROR : return "Error al intentar parsear sentencia"; 6
- * */
-
-void send_instruction_for_test(char* forced_key, char* forced_value, t_ise* ise, int operation_id){
-	//*************************
-	//****ESTO ES DE PRUEBA;
-	char* key = forced_key;
-	char* value = forced_value;
-	int size = sizeof(operation_id) + strlen(key) + 1 + strlen(value) + 1;
-	t_sentence *sentence = malloc(size);
-	sentence -> operation_id = operation_id;
-	sentence -> key = key;
-	sentence -> value = value;
-
-	int result_to_ise;
-	t_instance* selected_instance;
-
-	//TODO si es un GET, y existe la key...sino no hay que hacer esto.
-	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise -> id);
-
-	if(planifier_validation == OK){
-
-		if((sentence -> operation_id) != GET_SENTENCE) { //OK.
-
-			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
-
-			int send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
-
-			if(send_to_instance_result == KEY_UNREACHABLE) {
-
-				//if(sentence -> operation_id == STORE_SENTENCE){
-					dictionary_remove(keys_location, sentence -> key);
-					notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise -> id);
-					result_to_ise = KEY_UNREACHABLE;
-				//}
-				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
-			}
-			dictionary_put(keys_location, &(sentence -> key), selected_instance);
-		} else {
-			result_to_ise = planifier_validation;
-		}
-		save_operation_log(sentence, ise->id);
-	} else {
-		result_to_ise = planifier_validation;
-	}
-
-	send_statement_result_to_ise(ise -> socket_id, ise -> id, result_to_ise);
-}
-
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	ise_thread_list = list_create();
@@ -533,50 +362,56 @@ int main(int argc, char* argv[]) {
 	log_info(logger, "Initializing...");
 	load_configuration(argv[1]);
 
+	pthread_mutex_t instances_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
+	instances_list_mtx = instances_mtx_aux;
+	pthread_mutex_t keys_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
+	keys_mtx = keys_mtx_aux;
+	pthread_mutex_t operations_log_file_mtx_aux = PTHREAD_MUTEX_INITIALIZER;
+	operations_log_file_mtx = operations_log_file_mtx_aux;
+	OPERATIONS_LOG_PATH = "operations.log";
+
 	int server_socket = start_server(server_port, server_max_connections, (void *)connection_handler, false, logger);
 	check_server_startup(server_socket); //TODO llevar esto adentro del start_server ?
 
 	//**PARA TEST***/
 	/*while(instances_thread_list -> elements_count < 3);
 
-	t_ise* ise1 = malloc(sizeof(t_ise));
-	ise1 -> id = 1;
+	srand(time(NULL));
 
-	t_ise* ise2 = malloc(sizeof(t_ise));
-	ise2 -> id = 2;
+	t_sentence* sentence1 = sentence_create_with(GET_SENTENCE, "barcelona:jugadores", "messi");
+	process_sentence(sentence1, 1);
+	t_sentence* sentence2 = sentence_create_with(SET_SENTENCE, "barcelona:jugadores", "messi");
+	process_sentence(sentence2, 1);
+	t_sentence* sentence3 = sentence_create_with(STORE_SENTENCE, "barcelona:jugadores", "messi");
+	process_sentence(sentence3, 1);
 
-	t_ise* ise3 = malloc(sizeof(t_ise));
-	ise3 -> id = 3;
+	t_sentence* sentence4 = sentence_create_with(GET_SENTENCE, "independiente:jugadores", "meza");
+	process_sentence(sentence4, 3);
+	t_sentence* sentence5 = sentence_create_with(SET_SENTENCE, "independiente:jugadores", "meza");
+	process_sentence(sentence5, 3);
+	t_sentence* sentence6 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "meza");
+	process_sentence(sentence6, 3);
 
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 600);
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 601);
-	send_instruction_for_test("barcelona:jugadores", "messi", ise1, 602);
+	t_sentence* sentence7 = sentence_create_with(GET_SENTENCE, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence7, 2);
+	t_sentence* sentence8 = sentence_create_with(SET_SENTENCE, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence8, 2);
+	t_sentence* sentence9 = sentence_create_with(STORE_SENTENCE, "sanmartindetucuman:jugadores", "busse");
+	process_sentence(sentence9, 2);
 
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 600);
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 601);
-	send_instruction_for_test("independiente:jugadores", "meza", ise3, 602);
+	t_sentence* sentence10 = sentence_create_with(GET_SENTENCE, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence10, 2);
+	t_sentence* sentence11 = sentence_create_with(SET_SENTENCE, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence11, 2);
+	t_sentence* sentence12 = sentence_create_with(STORE_SENTENCE, "independiente:jugadores", "gigliotti");
+	process_sentence(sentence12, 2);
 
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 600);
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 601);
-	send_instruction_for_test("sanmartindetucuman:jugadores", "busse", ise2, 602);
+	t_sentence* sentence13 = sentence_create_with(GET_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence13, 2);
+	t_sentence* sentence14 = sentence_create_with(SET_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence14, 2);
+	t_sentence* sentence15 = sentence_create_with(STORE_SENTENCE, "argentina:jugadores", "tagliafico");
+	process_sentence(sentence15, 2);*/
 
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 600);
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 601);
-	send_instruction_for_test("independiente:jugadores", "gigliotti", ise2, 602);
-
-	sleep(6000);
-*/
 	exit_gracefully(EXIT_SUCCESS);
 }
-
-/* TEST*/
-/*void test_sentence_result(t_sentence* sentence, int socket, long ise_id) {
-	if (sentence->operation_id == GET_SENTENCE && test_block) {
-		log_info(logger, "[TEST] Sending key_blocked result to esi %ld", ise_id);
-		send_statement_result_to_ise(socket, ise_id, KEY_BLOCKED);
-		test_block = false;
-	} else {
-		log_info(logger, "[TEST] Sending ok result to esi %ld", ise_id);
-		send_statement_result_to_ise(socket, ise_id, OK);
-	}
-}*/
