@@ -18,6 +18,7 @@
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
+void _replacement_algorithm_to_enum(char *replacement);
 
 void configure_logger() {
 	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
@@ -37,7 +38,7 @@ t_instance_config* instance_config_create() {
 	instance_config->coordinator_ip = NULL;
 	instance_config->instance_name = NULL;
 	instance_config->mount_path = NULL;
-	instance_config->replacement_algorithm = NULL;
+	instance_config->replacement_algorithm = CIRCULAR;
 	return instance_config;
 }
 
@@ -45,7 +46,6 @@ void instance_config_destroy(t_instance_config *instance_config) {
 	free(instance_config->coordinator_ip);
 	free(instance_config->instance_name);
 	free(instance_config->mount_path);
-	free(instance_config->replacement_algorithm);
 	free(instance_config);
 }
 
@@ -59,22 +59,14 @@ t_instance_config* load_configuration(char* config_file_path){
 	instance_config->coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 	instance_config->instance_name = string_duplicate(config_get_string_value(config, "NAME"));
 	instance_config->mount_path = string_duplicate(config_get_string_value(config, "MOUNT_PATH"));
-	instance_config->replacement_algorithm = string_duplicate(config_get_string_value(config, "REPLACEMENT_ALGORITHM"));
+
+	char *replacement_algorithm_str = config_get_string_value(config, "REPLACEMENT_ALGORITHM");
+	instance_config->replacement_algorithm = _replacement_algorithm_to_enum(replacement_algorithm_str);
 
 	config_destroy(config);
 
 	log_info(logger, "Instance configuration loaded OK");
 	return instance_config;
-}
-
-void _exit_with_error(char *error_msg, ...) {
-	va_list arguments;
-	va_start(arguments, error_msg);
-	char *formatted_message = string_from_vformat(error_msg, arguments);
-	va_end(arguments);
-	log_error(logger, formatted_message);
-	free(formatted_message);
-	exit_gracefully(1);
 }
 
 t_instance_configuration *receive_instance_configuration(int socket){
@@ -268,3 +260,27 @@ int connect_to_coordinator(char *coordinator_ip, int coordinator_port) {
 	}
 	return coordinator_socket;
 }
+
+t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement) {
+	if (strcmp(replacement, "CIRC") == 0) {
+		return CIRCULAR;
+	} else if (strcmp(replacement, "LRU") == 0) {
+		return LRU;
+	} else if (strcmp(replacement, "BSU") == 0) {
+		return BSU;
+	} else {
+		_exit_with_error("El algoritmo de reemplazo %s es invalido", replacement);
+		return NULL;
+	}
+}
+
+void _exit_with_error(char *error_msg, ...) {
+	va_list arguments;
+	va_start(arguments, error_msg);
+	char *formatted_message = string_from_vformat(error_msg, arguments);
+	va_end(arguments);
+	log_error(logger, formatted_message);
+	free(formatted_message);
+	exit_gracefully(1);
+}
+

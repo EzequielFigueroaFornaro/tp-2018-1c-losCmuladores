@@ -18,6 +18,7 @@
 #include "commons-sockets.h"
 #include "types.h"
 #include "storage/entry-table.h"
+#include "replacement/replacement.h"
 #include "commons/collections/dictionary.h"
 #include <signal.h>
 #include <string.h>
@@ -27,7 +28,7 @@ typedef struct {
 	char *coordinator_ip;
 	char *instance_name;
 	char *mount_path;
-	char *replacement_algorithm;
+	t_replacement_algorithm replacement_algorithm;
 } t_instance_config;
 
 int connect_to_coordinator(char *coordinator_ip, int coordinator_port);

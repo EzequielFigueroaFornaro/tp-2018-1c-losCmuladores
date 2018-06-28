@@ -23,13 +23,13 @@ typedef struct {
 	// t_entry dictionary
 	t_dictionary *entries;
 	t_availability *availability;
-	t_list *replacement_keys;
+	t_replacement *replacement;
 	char *data;
 	int max_entries;
 	size_t entry_size;
 } t_entry_table;
 
-t_entry_table *entry_table_create(int max_entries, size_t entry_size);
+t_entry_table *entry_table_create(int max_entries, size_t entry_size, char *replacement_algorithm);
 
 void entry_table_destroy(t_entry_table* entry_table);
 
