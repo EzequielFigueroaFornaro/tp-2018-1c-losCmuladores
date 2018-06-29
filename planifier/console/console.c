@@ -51,8 +51,8 @@ void listen_for_commands() {
 		} else {
 			print_and_log_error("%s", result.content);
 		}
+		destroy_command(command);
 	}
-	destroy_command(command);
 	quit_console("Exiting...", EXIT_SUCCESS);
 }
 

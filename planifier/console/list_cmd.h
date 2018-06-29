@@ -14,7 +14,7 @@
 #include <commons/collections/queue.h>
 
 #include "command.h"
-#include "../planifier_structures.h"
+#include "../orchestrator.h"
 #include "../semaphores.h"
 #include "logging.h"
 

@@ -10,6 +10,9 @@ void destroy_command(command command) {
 	if (command.args != NULL) {
 		list_destroy(command.args);
 	}
+	if (command.code_str != NULL) {
+		free(command.code_str);
+	}
 }
 
 bool is_exit(command command) {
@@ -47,6 +50,7 @@ command parse_command(char* command_str) {
 command_result base_command_result(command_result_code code) {
 	command_result result;
 	result.code = code;
+	result.content = "";
 	return result;
 }
 
