@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-pthread_mutex_t start_planification;
+extern pthread_mutex_t dispatcher_manager;
+extern pthread_cond_t resume_planification;
+extern pthread_cond_t paused_planification;
+extern pthread_mutex_t pause_cmd_manager;
 
 extern pthread_mutex_t esi_map_mtx;
 extern pthread_mutex_t running_esi_mtx;

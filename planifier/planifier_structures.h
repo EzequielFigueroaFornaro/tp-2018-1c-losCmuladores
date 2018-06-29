@@ -9,8 +9,6 @@
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include "semaphores.h"
-#include "orchestrator.h"
-#include "logging.h"
 
 typedef struct {
 	long id;
@@ -35,6 +33,18 @@ enum estados {
 	FINALIZADO = 5
 };
 
+t_dictionary * esi_map;
+
+extern long RUNNING_ESI;
+extern long NEXT_RUNNING_ESI;
+
+t_list* READY_ESI_LIST;
+t_list* BLOCKED_ESI_LIST;
+t_queue* FINISHED_ESI_LIST;
+
+t_dictionary * esis_bloqueados_por_recurso;
+t_dictionary * recurso_tomado_por_esi;
+
 long id_as_long(char* esi_id);
 
 char* list_join(t_list* list);
@@ -44,6 +54,8 @@ void queue_push_id(t_queue* queue, long id);
 void list_add_id(t_list* list, long id);
 
 char* esis_to_string();
+
+void list_remove_esi(t_list* list, esi* esi);
 
 #endif
 

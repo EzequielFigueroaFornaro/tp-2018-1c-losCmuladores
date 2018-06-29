@@ -73,7 +73,11 @@ void load_configuration(char *config_file_path) {
 	log_info(logger, "Loading planifier configuration file...");
 	t_config* config = config_create(config_file_path);
 
-	algorithm = config_get_int_value(config, "ALGORITHM");
+	t_dictionary* algorithms = dictionary_create();
+	dictionary_put(algorithms, "FIFO", string_from_format("%d", FIFO));
+
+	char* algorithm_code = config_get_string_value(config, "ALGORITHM");
+	algorithm = atoi(dictionary_get(algorithms, algorithm_code));
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,
@@ -83,6 +87,7 @@ void load_configuration(char *config_file_path) {
 	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 
 	config_destroy(config);
+	dictionary_destroy(algorithms);
 
 	log_info(logger, "Planifier configuration file loaded");
 }
@@ -211,16 +216,16 @@ int main(int argc, char* argv[]) {
 	init_logger();
 	load_configuration(argv[1]);
 
-	connect_to_coordinator();
-
 	set_orchestrator();
+	init_dispatcher();
+
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
 	if (server_started < 0) {
 		log_error(logger, "Server not started");
 		exit_gracefully(EXIT_FAILURE);
 	}
-
 	pthread_t console_thread = start_console();
+	connect_to_coordinator();
 	pthread_join(console_thread, NULL);
 	exit_gracefully(EXIT_SUCCESS);
 }

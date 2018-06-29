@@ -32,38 +32,12 @@ void replan_by_algorithm() {
 	}
 }
 
-void notify_dispatcher() {
-	if (RUNNING_ESI == 0) {
-		replan_by_algorithm();
-		pthread_mutex_unlock(&start_planification);
-	}
-}
-
-void dispatch() {
-	while(true) {
-		pthread_mutex_lock(&start_planification);
-		esi_se_va_a_ejecutar();
-		send_esi_to_run(RUNNING_ESI);
-		wait_execution_result(RUNNING_ESI);
-		cpu_time_incrementate();
-		borrado_de_finish();
-		pthread_mutex_unlock(&start_planification);
-	}
-}
-
 void set_orchestrator() {
 	esi_map = dictionary_create();
 	esis_bloqueados_por_recurso = dictionary_create();
 	READY_ESI_LIST = list_create();
 	BLOCKED_ESI_LIST = list_create();
 	FINISHED_ESI_LIST = queue_create();
-
-	pthread_mutex_lock(&start_planification);
-	pthread_t orchestrator;
-	if (pthread_create(&orchestrator, NULL, (void*) dispatch, NULL) < 0) {
-		log_error(logger, "Could not start dispatcher");
-		exit_gracefully(EXIT_FAILURE);
-	}
 }
 
 long increment_id() {
@@ -80,8 +54,11 @@ long cpu_time_incrementate(){
 	return new_cpu_time;
 }
 
-int get_current_time() {
-	return cpu_time;
+long get_current_time() {
+	pthread_mutex_lock(&cpu_time_mtx);
+	long time = cpu_time;
+	pthread_mutex_unlock(&cpu_time_mtx);
+	return time;
 }
 
 void add_esi(esi* esi){
@@ -148,15 +125,12 @@ void unlock_esi(long esi_id){
 void finish_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx);
 	esi* esi = dictionary_get(esi_map, string_key(esi_id));
-	int estado_actual = esi -> estado;
-	bool equals_esi (int esi_id) {
-		return esi_id == estado_actual;
-	}
 	pthread_mutex_unlock(&esi_map_mtx);
-	switch(estado_actual) {
+
+	switch(esi->estado) {
 		case BLOQUEADO:
 			pthread_mutex_lock(&blocked_list_mtx);
-			list_remove_by_condition(BLOCKED_ESI_LIST, (void*) equals_esi);
+			list_remove_esi(BLOCKED_ESI_LIST, esi);
 			pthread_mutex_unlock(&blocked_list_mtx);
 			break;
 		case CORRIENDO:
@@ -164,7 +138,7 @@ void finish_esi(long esi_id){
 			break;
 		default:
 			pthread_mutex_lock(&ready_list_mtx);
-			list_remove_by_condition(READY_ESI_LIST, (void*) equals_esi);
+			list_remove_esi(READY_ESI_LIST, esi);
 			pthread_mutex_unlock(&ready_list_mtx);
 			break;
 	}
@@ -205,22 +179,26 @@ void volver_caso_base(){
 	pthread_mutex_unlock(&running_esi_mtx);
 }
 
-long esi_se_va_a_ejecutar(){
+esi* esi_se_va_a_ejecutar(){
+	esi* esi;
 	pthread_mutex_lock(&running_esi_mtx);
 	pthread_mutex_lock(&next_running_esi_mtx);
-	if(RUNNING_ESI == NEXT_RUNNING_ESI){
+	if (RUNNING_ESI == NEXT_RUNNING_ESI) {
 		pthread_mutex_lock(&esi_map_mtx);
-		esi* esi = dictionary_get(esi_map, string_key(RUNNING_ESI));
-		esi -> instrucction_pointer = ((esi -> instrucction_pointer) +1);
-		if((esi -> instrucction_pointer) == (esi -> cantidad_de_instrucciones)){
-			pthread_mutex_unlock(&esi_map_mtx);
-			finish_esi(RUNNING_ESI);
-		}
+		esi = dictionary_get(esi_map, string_key(RUNNING_ESI));
+		esi->instrucction_pointer++;
+		pthread_mutex_unlock(&esi_map_mtx);
+		return esi;
+	} else {
+		RUNNING_ESI = NEXT_RUNNING_ESI;
+		modificar_estado(RUNNING_ESI, CORRIENDO);
+		pthread_mutex_lock(&esi_map_mtx);
+		esi = dictionary_get(esi_map, string_key(RUNNING_ESI));
+		pthread_mutex_unlock(&esi_map_mtx);
 	}
-	RUNNING_ESI = NEXT_RUNNING_ESI;
 	pthread_mutex_unlock(&next_running_esi_mtx);
 	pthread_mutex_unlock(&running_esi_mtx);
-	return RUNNING_ESI;
+	return esi;
 }
 
 void put_finish_esi(long esi_id){

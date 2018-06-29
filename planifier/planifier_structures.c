@@ -44,3 +44,13 @@ char* esis_to_string() {
 	dictionary_iterator(esi_map, (void*)to_string);
 	return buffer;
 }
+
+void list_remove_esi(t_list* list, esi* esi) {
+	pthread_mutex_lock(&esi_map_mtx);
+
+	bool equals_esi(long* esi_id) {
+		return *esi_id == esi->id;
+	}
+	list_remove_by_condition(list, (void*) equals_esi);
+	pthread_mutex_unlock(&esi_map_mtx);
+}

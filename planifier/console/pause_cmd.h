@@ -11,8 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "logging.h"
 #include "command.h"
 #include "../semaphores.h"
+#include "../dispatcher.h"
 
 command_result pause_cmd(command command);
 

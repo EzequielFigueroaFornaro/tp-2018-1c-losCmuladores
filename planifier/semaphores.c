@@ -1,6 +1,9 @@
 #include "semaphores.h"
 
-pthread_mutex_t start_planification = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t dispatcher_manager = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t resume_planification = PTHREAD_COND_INITIALIZER;
+pthread_cond_t paused_planification = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t pause_cmd_manager = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t esi_map_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t running_esi_mtx = PTHREAD_MUTEX_INITIALIZER;

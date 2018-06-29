@@ -49,7 +49,7 @@ void fifo_replan() {
 	if (next_esi == NULL) {
 		log_debug(logger, "No more ESIs to execute");
 		NEXT_RUNNING_ESI = -1;
-		pthread_mutex_lock(&start_planification);
+		// TODO ?? pthread_mutex_lock(&dispatcher_manager);
 	} else {
 		NEXT_RUNNING_ESI = *next_esi;
 		log_debug(logger, "Next ESI to run is ESI%ld", NEXT_RUNNING_ESI);

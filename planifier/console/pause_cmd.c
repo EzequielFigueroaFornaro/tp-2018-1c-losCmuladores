@@ -8,10 +8,18 @@
 #include "pause_cmd.h"
 
 command_result pause_cmd(command command) {
-	pthread_mutex_lock(&start_planification);
+	pause_dispatcher();
+	pthread_mutex_lock(&pause_cmd_manager);
+	pthread_cond_wait(&paused_planification, &pause_cmd_manager);
 	log_info(logger, "Planification paused");
-	system("pause");
-	pthread_mutex_unlock(&start_planification);
+	printf("Press ENTER to resume planification... ");
+	getchar();
+	resume_dispatcher();
+	pthread_cond_signal(&resume_planification);
+	pthread_mutex_unlock(&pause_cmd_manager);
 	log_info(logger, "Planification resumed");
-	return base_command_result(COMMAND_OK);
+
+	command_result result = base_command_result(COMMAND_OK);
+	result.content = "Planification resumed!";
+	return result;
 }

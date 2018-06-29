@@ -5,12 +5,13 @@
  *      Author: utnso
  */
 
-#include "esi_connection_handler.h"
+#include "esi_connector.h"
 
 long new_esi(int socket, long esi_size);
 module_type recv_module(int socket);
 long recv_esi_size(int socket);
 int send_id_to_esi(int socket, long esi_id);
+void notify_dispatcher();
 
 void esi_connection_handler(int socket) {
 	if (recv_message(socket) != MODULE_CONNECTED) {
@@ -38,6 +39,13 @@ void esi_connection_handler(int socket) {
 	}
 
 	notify_dispatcher();
+}
+
+void notify_dispatcher() {
+	if (RUNNING_ESI == 0) {
+		replan_by_algorithm();
+		pthread_mutex_unlock(&dispatcher_manager);
+	}
 }
 
 
@@ -97,20 +105,28 @@ int send_id_to_esi(int socket, long esi_id) {
 	return result_send_new_esi_id;
 }
 
-void wait_execution_result(long esi_id){
+bool wait_execution_result(long esi_id) {
 	esi* esi_to_get_result_from = dictionary_get(esi_map, string_key(esi_id));
 	int socket = esi_to_get_result_from->socket_id;
+
+	if (recv_message(socket) != EXECUTION_RESULT) {
+		return false;
+	}
+
 	execution_result esi_execution_result;
 	int esi_execution_result_status = recv(socket, &esi_execution_result, sizeof(execution_result), MSG_WAITALL);
 	if (esi_execution_result_status <= 0) {
 		log_error(logger, "Error trying to receive the execution result");
 		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?
-		return;
+		return false;
 	}
+	return true;
 }
 
-int send_message_to_esi(long esi_id, message_type message){
+int send_message_to_esi(long esi_id, message_type message) {
+	pthread_mutex_lock(&esi_map_mtx);
 	esi* esi_to_notify = dictionary_get(esi_map, string_key(esi_id));
+	pthread_mutex_unlock(&esi_map_mtx);
 	int socket_id = esi_to_notify->socket_id;
 	return send(socket_id, &message, sizeof(message_type), 0);
 }

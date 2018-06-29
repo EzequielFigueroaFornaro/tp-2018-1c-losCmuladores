@@ -28,6 +28,7 @@
 #include "exit_handler.h"
 #include "console/console.h"
 #include "console/console_log.h"
+#include "dispatcher.h"
 
 int server_port;
 int server_max_connections;
@@ -36,11 +37,6 @@ int coordinator_port;
 char* coordinator_ip;
 
 int coordinator_socket;
-
-//Global variables.
-t_log * logger;
-
-void configure_logger();
 
 void load_configuration(char *config_file_path);
 
@@ -62,7 +58,5 @@ int get_esi_id(long* esi_id);
 void try_to_block_resource(char* resource, long esi_id);
 
 void free_resource(char* resource);
-
-void wait_execution_result(int socket);
 
 #endif /* PLANIFIER_H_ */

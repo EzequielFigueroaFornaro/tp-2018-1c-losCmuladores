@@ -13,18 +13,7 @@
 #include "semaphores.h"
 #include "logging.h"
 #include "exit_handler.h"
-
-t_dictionary * esi_map;
-
-extern long RUNNING_ESI;
-extern long NEXT_RUNNING_ESI;
-
-t_list* READY_ESI_LIST;
-t_list* BLOCKED_ESI_LIST;
-t_queue* FINISHED_ESI_LIST;
-
-t_dictionary * esis_bloqueados_por_recurso;
-t_dictionary * recurso_tomado_por_esi;
+#include "esi_connector.h"
 
 //pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
 typedef enum {
@@ -33,15 +22,9 @@ typedef enum {
 
 planifier_algorithm algorithm;
 
-long increment_id();
-
-long cpu_time_incrementate();
-
-int get_current_time();
-
 void add_esi(esi* esi);
 
-void set_orchestrator(int algorithm);
+void set_orchestrator();
 
 void stop_and_block_esi(long esi_id);
 
@@ -51,7 +34,7 @@ bool is_valid_esi(long esi_id);
 
 char* string_key(long key);
 
-long esi_se_va_a_ejecutar();
+esi* esi_se_va_a_ejecutar();
 
 void borrado_de_finish();
 
@@ -70,5 +53,13 @@ void volver_caso_base();
 void make_wait_for_resource(long esi_id, char* resource);
 
 char* get_all_waiting_for_resource_as_string(char* resource);
+
+void replan_by_algorithm();
+
+long increment_id();
+
+long cpu_time_incrementate();
+
+long get_current_time();
 
 #endif
