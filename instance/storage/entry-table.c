@@ -20,9 +20,10 @@ char* _calculate_data_address(t_entry_table * table, int index);
 void _copy_value_in_data(t_entry_table * table, char *value, int index_data);
 char* _get_value_from_data(t_entry_table * table, int index_data);
 void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *value, int index);
+bool _is_atomic(t_entry_table *entry_table, char *key);
 
 
-t_entry_table *entry_table_create(int max_entries, size_t entry_size) {
+t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm algorithm) {
 	size_t data_size = max_entries * entry_size;
 
 	t_dictionary *entries = dictionary_create();
@@ -33,7 +34,7 @@ t_entry_table *entry_table_create(int max_entries, size_t entry_size) {
 	t_entry_table *table = (t_entry_table*) malloc(sizeof(t_entry_table));
 	table->entries = entries;
 	table->availability = availability;
-	table->replacement_keys = list_create();
+	table->replacement = replacement_create(algorithm);
 	table->data = data;
 	table->max_entries = max_entries;
 	table->entry_size = entry_size;
@@ -45,7 +46,7 @@ void entry_table_destroy(t_entry_table* entry_table) {
 	if (NULL != entry_table) {
 		availability_destroy(entry_table->availability);
 		dictionary_destroy_and_destroy_elements(entry_table->entries, free);
-		list_destroy_and_destroy_elements(entry_table->replacement_keys, free);
+		replacement_destroy(entry_table->replacement);
 		free(entry_table->data);
 		free(entry_table);
 	}
@@ -58,7 +59,9 @@ int entry_table_put(t_entry_table * table, char *key, char *value) {
 		availability_take_space(table->availability, index, entries_needed);
 		_copy_value_in_data(table, value, index);
 		_add_entry_in_table_dictionary(table, key, value, index);
-		list_add(table->replacement_keys, key);
+		if (_is_atomic(table, key)) {
+			replacement_add(table->replacement, key, strlen(value));
+		}
 		return index;
 	} else {
 		return -1;
@@ -80,11 +83,7 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 	int entries_count = _calculate_value_length_entries_count(entry_table, entry->length);
 	availability_free_space(entry_table->availability, entry->index, entries_count);
 
-	bool _key_equal(char *list_key) {
-		return strcmp(key, list_key) == 0;
-	}
-
-	list_remove_by_condition(entry_table->replacement_keys, _key_equal);
+	replacement_remove(entry_table->replacement, key);
 }
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -118,12 +117,7 @@ bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value) {
 }
 
 bool entry_table_has_atomic_entries(t_entry_table* entry_table) {
-	bool _is_atomic(char *key) {
-		int length = ((t_entry *)dictionary_get(entry_table->entries, key))->length;
-		return length <= entry_table->entry_size;
-	}
-
-	return list_any_satisfy(entry_table->replacement_keys, _is_atomic);
+	return !replacement_is_empty(entry_table->replacement);
 }
 
 
@@ -173,6 +167,9 @@ void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *valu
 	dictionary_put(table->entries, key, (void*)entry);
 }
 
-
+bool _is_atomic(t_entry_table *entry_table, char *key) {
+	int length = ((t_entry *)dictionary_get(entry_table->entries, key))->length;
+	return length <= entry_table->entry_size;
+}
 
 

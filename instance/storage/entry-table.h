@@ -12,6 +12,7 @@
 #include <stddef.h>
 
 #include "commons/collections/list.h"
+#include "replacement/replacement.h"
 #include "availability.h"
 
 typedef struct {
@@ -29,7 +30,7 @@ typedef struct {
 	size_t entry_size;
 } t_entry_table;
 
-t_entry_table *entry_table_create(int max_entries, size_t entry_size, char *replacement_algorithm);
+t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm replacement_algorithm);
 
 void entry_table_destroy(t_entry_table* entry_table);
 

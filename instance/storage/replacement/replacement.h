@@ -27,6 +27,10 @@ void replacement_destroy(t_replacement *replacement);
 
 void replacement_add(t_replacement *replacement, char *key, int size);
 
-void replacement_take(t_replacement *replacement);
+void replacement_remove(t_replacement *replacement, char *key);
+
+char *replacement_take(t_replacement *replacement);
+
+bool replacement_is_empty(t_replacement *replacement);
 
 #endif /* STORAGE_REPLACEMENT_REPLACEMENT_H_ */

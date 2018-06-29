@@ -18,7 +18,7 @@
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
-void _replacement_algorithm_to_enum(char *replacement);
+t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
 
 void configure_logger() {
 	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
@@ -210,7 +210,7 @@ int instance_run(int argc, char* argv[]) {
 	send_instance_name(coordinator_socket, instance_config->instance_name);
 
 	t_instance_configuration *configuration = receive_instance_configuration(coordinator_socket);
-	entries_table = entry_table_create(configuration->entries_quantity, configuration->entries_size);
+	entries_table = entry_table_create(configuration->entries_quantity, configuration->entries_size, instance_config->replacement_algorithm);
 	free(configuration);
 
 	log_info(logger, "Initializing instance... OK");
@@ -270,7 +270,7 @@ t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement) {
 		return BSU;
 	} else {
 		_exit_with_error("El algoritmo de reemplazo %s es invalido", replacement);
-		return NULL;
+		return -1;
 	}
 }
 

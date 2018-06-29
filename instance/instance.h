@@ -18,7 +18,7 @@
 #include "commons-sockets.h"
 #include "types.h"
 #include "storage/entry-table.h"
-#include "replacement/replacement.h"
+#include "storage/replacement/replacement.h"
 #include "commons/collections/dictionary.h"
 #include <signal.h>
 #include <string.h>
