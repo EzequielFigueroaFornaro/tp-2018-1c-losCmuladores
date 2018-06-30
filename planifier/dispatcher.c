@@ -33,7 +33,6 @@ void dispatch() {
 		manage_flow();
 
 		log_debug(logger, "Started/resumed planification");
-		sleep(10);
 		esi* esi = esi_se_va_a_ejecutar();
 		if (esi->instrucction_pointer == esi->cantidad_de_instrucciones) {
 			log_debug(logger, "Reached end of ESI%ld", esi->id);
