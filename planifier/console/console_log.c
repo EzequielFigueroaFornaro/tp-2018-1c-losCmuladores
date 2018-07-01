@@ -44,3 +44,13 @@ void print_and_log(char* msg,...) {
 	fflush(stdout);
 	free(message);
 }
+
+void log_on_both(char* msg,...) {
+	va_list arguments;
+	va_start(arguments, msg);
+	char* message = string_from_vformat(msg, arguments);
+	va_end(arguments);
+	log_info(console_log, message);
+	log_info(logger, message);
+	free(message);
+}

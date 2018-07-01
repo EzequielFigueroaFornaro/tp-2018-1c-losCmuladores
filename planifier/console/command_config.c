@@ -23,6 +23,9 @@ void load_commands() {
 	add_command("block", BLOCK, 2);
 	add_command("unblock", UNBLOCK, 1);
 	add_command("list", LIST, 1);
+	add_command("status", STATUS, 1);
+	add_command("kill", KILL, 1);
+	add_command("deadlock", DEADLOCK, 0);
 	//TEST
 	add_command("add", ADD, 1);
 	add_command("listEsis", LIST_ESIS, 0);

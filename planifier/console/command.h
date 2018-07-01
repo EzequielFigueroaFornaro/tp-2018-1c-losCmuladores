@@ -42,8 +42,12 @@ bool is_exit(command command);
 
 bool valid_args(command command);
 
-command_result unblock_cmd(command command);
-
 command_result base_command_result(command_result_code code);
+
+command_result status_cmd(command command);
+
+command_result kill_cmd(command command);
+
+command_result deadlock_cmd(command command);
 
 #endif /* CONSOLE_COMMAND_H_ */

@@ -23,6 +23,12 @@ command_result execute_command(command command) {
 		return block_cmd(command);
 	case UNBLOCK:
 		return unblock_cmd(command);
+	case STATUS:
+		return status_cmd(command);
+	case KILL:
+		return kill_cmd(command);
+	case DEADLOCK:
+		return deadlock_cmd(command);
 	case ADD:
 		return add_cmd(command);
 	case LIST_ESIS:

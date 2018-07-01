@@ -26,6 +26,7 @@
 // Commands
 #include "list_cmd.h"
 #include "block_cmd.h"
+#include "unblock_cmd.h"
 #include "pause_cmd.h"
 
 #include "test_cmds.h"

@@ -20,6 +20,9 @@ typedef enum {
 	BLOCK,
 	UNBLOCK,
 	LIST,
+	STATUS,
+	KILL,
+	DEADLOCK,
 	UNKNOWN,
 	// TEST
 	ADD,
