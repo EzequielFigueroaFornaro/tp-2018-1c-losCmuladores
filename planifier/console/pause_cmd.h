@@ -13,6 +13,7 @@
 
 #include "logging.h"
 #include "command.h"
+#include "console_log.h"
 #include "../semaphores.h"
 #include "../dispatcher.h"
 

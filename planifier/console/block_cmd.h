@@ -13,12 +13,13 @@
 #include <commons/string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
+#include "logging.h"
 
 #include "command.h"
 #include "../orchestrator.h"
+#include "../dispatcher.h"
 #include "../planifier_structures.h"
 #include "../semaphores.h"
-#include "logging.h"
 
 command_result block_cmd(command command);
 

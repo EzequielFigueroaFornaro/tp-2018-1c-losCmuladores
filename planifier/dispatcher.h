@@ -23,4 +23,8 @@ void pause_dispatcher();
 
 void resume_dispatcher();
 
+void acquire_permission_to_block();
+
+void release_permission_to_block();
+
 #endif /* DISPATCHER_H_ */
