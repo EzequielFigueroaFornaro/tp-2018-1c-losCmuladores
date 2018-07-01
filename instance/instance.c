@@ -93,12 +93,7 @@ void check_if_connection_was_ok(int server_socket){
 }
 
 int process_sentence_set(t_sentence* sentence) {
-	char *value = sentence->value;
-	if (entry_table_can_put(entries_table, value)) {
-		return entry_table_put(entries_table, sentence->key, sentence->value);
-	} else {
-
-	}
+	return entry_table_put(entries_table, sentence->key, sentence->value);
 }
 
 int process_sentence(t_sentence* sentence) {

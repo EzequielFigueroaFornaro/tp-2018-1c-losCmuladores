@@ -7,7 +7,7 @@
 
 #include "instance-test.h"
 #include <CUnit/Basic.h>
-#include "storage/availability.h"
+#include "storage/availability/availability.h"
 #include "storage/entry-table.h"
 
 char *key = "key";

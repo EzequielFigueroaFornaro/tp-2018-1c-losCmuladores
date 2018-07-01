@@ -13,7 +13,7 @@
 
 #include "commons/collections/list.h"
 #include "replacement/replacement.h"
-#include "availability.h"
+#include "availability/availability.h"
 
 typedef struct {
 	int index;

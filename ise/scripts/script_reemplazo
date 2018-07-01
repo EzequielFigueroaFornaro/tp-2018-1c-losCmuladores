@@ -1,0 +1,19 @@
+GET deportes:futbol:messi
+SET deportes:futbol:messi Messi
+
+GET deportes:basquet:ginobili
+SET deportes:basquet:ginobili Emanuel Ginobili
+
+GET deportes:futbol:aguero
+SET deportes:futbol:aguero KunAguero
+
+GET deportes:futbol:messi
+SET deportes:futbol:messi Messi2
+
+GET deportes:futbol:armani
+SET deportes:futbol:armani Franco Armani
+
+STORE deportes:futbol:messi
+STORE deportes:basquet:ginobili
+STORE deportes:futbol:aguero
+STORE deportes:futbol:armani

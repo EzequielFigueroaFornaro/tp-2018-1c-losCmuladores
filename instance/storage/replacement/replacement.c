@@ -17,8 +17,9 @@ typedef struct {
 } t_replacement_entry;
 
 t_replacement_entry* _replacement_entry_create(char *key, int size);
-void _replacement_entry_destroy(t_replacement_entry *entry);
+void _replacement_entry_destroy(void *entry);
 int _find_index_to_insert_bsu(t_replacement *replacement, int size);
+int _replacement_size(t_replacement *replacement);
 
 t_replacement* replacement_create(t_replacement_algorithm algorithm) {
 	t_replacement *replacement = (t_replacement *)malloc(sizeof(t_replacement));
@@ -39,18 +40,20 @@ void replacement_add(t_replacement *replacement, char *key, int size) {
 		list_add(replacement -> replacement_entries, (void *)entry);
 		break;
 	case LRU:
-		list_add_in_index(replacement -> replacement_entries, 0, (void *)entry);
+		; int lru_index = list_size(replacement -> replacement_entries);
+		list_add_in_index(replacement -> replacement_entries, lru_index, (void *)entry);
 		break;
 	case BSU:
-		; int index = _find_index_to_insert_bsu(replacement, size);
-		list_add_in_index(replacement -> replacement_entries, index, (void *)entry);
+		; int bsu_index = _find_index_to_insert_bsu(replacement, size);
+		list_add_in_index(replacement -> replacement_entries, bsu_index, (void *)entry);
 		break;
 	}
 }
 
 void replacement_remove(t_replacement *replacement, char *key) {
-	bool _equals_key(t_replacement_entry *entry) {
-		return strcmp(key, entry -> key) == 0;
+	bool _equals_key(void *entry) {
+		t_replacement_entry *item = (t_replacement_entry *)entry;
+		return strcmp(key, item -> key) == 0;
 	}
 
 	list_remove_and_destroy_by_condition(replacement -> replacement_entries, _equals_key, _replacement_entry_destroy);
@@ -62,9 +65,7 @@ char* replacement_take(t_replacement *replacement) {
 		return NULL;
 	} else {
 		t_replacement_entry* entry = (t_replacement_entry *)list_get(list, 0);
-		char *key = strdup(entry -> key);
-		list_remove_and_destroy_element(list, 0, _replacement_entry_destroy);
-		return key;
+		return strdup(entry -> key);
 	}
 }
 
@@ -82,13 +83,14 @@ t_replacement_entry* _replacement_entry_create(char *key, int size) {
 	return replacement_entry;
 }
 
-void _replacement_entry_destroy(t_replacement_entry *entry) {
-	free(entry -> key);
-	free(entry);
+void _replacement_entry_destroy(void *entry) {
+	t_replacement_entry *element = (t_replacement_entry*) entry;
+	free(element -> key);
+	free(element);
 }
 
 int _find_index_to_insert_bsu(t_replacement *replacement, int size) {
-	int index = 0, index_aux = 0;
+	int index = _replacement_size(replacement), index_aux = 0;
 	bool found = false;
 	void _find_index_bsu(void *entry) {
 		t_replacement_entry *replacement_entry = (t_replacement_entry *)entry;
@@ -100,6 +102,10 @@ int _find_index_to_insert_bsu(t_replacement *replacement, int size) {
 	}
 	list_iterate(replacement -> replacement_entries, _find_index_bsu);
 	return index;
+}
+
+int _replacement_size(t_replacement *replacement) {
+	return list_size(replacement -> replacement_entries);
 }
 
 
