@@ -17,12 +17,8 @@ void fifo_block_esi(long block_esi_id){
 	if(RUNNING_ESI == block_esi_id){
 		fifo_replan();
 	}else{
-		bool equals_esi (long esi_id) {
-				  return block_esi_id == esi_id;
-			}
 		log_debug(logger, "Removing ESI%ld from ready queue", block_esi_id);
-		list_remove_by_condition(READY_ESI_LIST, (void*) equals_esi);
-		//TODO, caso base
+		list_remove_esi(READY_ESI_LIST, block_esi_id);
 	}
 
 	pthread_mutex_unlock(&ready_list_mtx);
@@ -31,6 +27,7 @@ void fifo_block_esi(long block_esi_id){
 	list_add_id(BLOCKED_ESI_LIST, block_esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx);
 }
+
 
 void fifo_finish_esi() {
 	pthread_mutex_lock(&ready_list_mtx);

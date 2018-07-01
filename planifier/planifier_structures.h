@@ -47,7 +47,7 @@ t_dictionary * recurso_tomado_por_esi;
 
 long id_as_long(char* id);
 
-char* string_key(long id);
+char* id_to_string(long id);
 
 char* list_join(t_list* list);
 

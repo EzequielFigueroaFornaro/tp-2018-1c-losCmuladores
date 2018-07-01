@@ -96,7 +96,7 @@ int send_id_to_esi(int socket, long esi_id) {
 }
 
 bool wait_execution_result(long esi_id) {
-	esi* esi_to_get_result_from = dictionary_get(esi_map, string_key(esi_id));
+	esi* esi_to_get_result_from = dictionary_get(esi_map, id_to_string(esi_id));
 	int socket = esi_to_get_result_from->socket_id;
 
 	if (recv_message(socket) != EXECUTION_RESULT) {
@@ -115,7 +115,7 @@ bool wait_execution_result(long esi_id) {
 
 int send_message_to_esi(long esi_id, message_type message) {
 	pthread_mutex_lock(&esi_map_mtx);
-	esi* esi_to_notify = dictionary_get(esi_map, string_key(esi_id));
+	esi* esi_to_notify = dictionary_get(esi_map, id_to_string(esi_id));
 	pthread_mutex_unlock(&esi_map_mtx);
 	int socket_id = esi_to_notify->socket_id;
 	return send(socket_id, &message, sizeof(message_type), 0);

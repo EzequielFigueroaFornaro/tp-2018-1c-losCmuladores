@@ -10,7 +10,7 @@ long id_as_long(char* id) {
 	return atol(id);
 }
 
-char* string_key(long id) {
+char* id_to_string(long id) {
 	return string_from_format("%ld", id);
 }
 
