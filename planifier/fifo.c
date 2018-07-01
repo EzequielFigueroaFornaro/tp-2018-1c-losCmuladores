@@ -43,13 +43,10 @@ void fifo_finish_esi() {
 void fifo_replan() {
 	log_debug(logger, "Replaning...");
 
-	long* esi_to_remove = list_get(READY_ESI_LIST, 0);
-	log_debug(logger, "Getting ESI%ld from ready queue", *esi_to_remove);
 	long* next_esi = list_remove(READY_ESI_LIST, 0);
 	if (next_esi == NULL) {
-		log_debug(logger, "No more ESIs to execute");
-		NEXT_RUNNING_ESI = -1;
-		// TODO ?? pthread_mutex_lock(&dispatcher_manager);
+		NEXT_RUNNING_ESI = 0;
+		READY_ESI_LIST = list_create();
 	} else {
 		NEXT_RUNNING_ESI = *next_esi;
 		log_debug(logger, "Next ESI to run is ESI%ld", NEXT_RUNNING_ESI);

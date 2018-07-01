@@ -6,8 +6,12 @@
  */
 #include "planifier_structures.h"
 
-long id_as_long(char* esi_id) {
-	return atol(esi_id);
+long id_as_long(char* id) {
+	return atol(id);
+}
+
+char* string_key(long id) {
+	return string_from_format("%ld", id);
 }
 
 char* list_join(t_list* list) {
@@ -45,12 +49,9 @@ char* esis_to_string() {
 	return buffer;
 }
 
-void list_remove_esi(t_list* list, esi* esi) {
-	pthread_mutex_lock(&esi_map_mtx);
-
+void list_remove_esi(t_list* list, long id) {
 	bool equals_esi(long* esi_id) {
-		return *esi_id == esi->id;
+		return *esi_id == id;
 	}
 	list_remove_by_condition(list, (void*) equals_esi);
-	pthread_mutex_unlock(&esi_map_mtx);
 }

@@ -179,7 +179,7 @@ void free_resource(char* resource){
 		esi_id = queue_pop(esi_queue);
 	}
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-	add_esi_bloqueada(*esi_id);
+//	add_esi_bloqueada(*esi_id); TODO ?????
 	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
 
 	send_execution_result_to_coordinator(OK);

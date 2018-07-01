@@ -15,7 +15,7 @@ typedef struct {
 	int estado;
 	long tiempo_de_entrada;
 	long cantidad_de_instrucciones;
-	int instrucction_pointer;
+	int instruction_pointer;
 	pthread_t esi_thread;
 	int socket_id;
 } esi;
@@ -45,7 +45,9 @@ t_queue* FINISHED_ESI_LIST;
 t_dictionary * esis_bloqueados_por_recurso;
 t_dictionary * recurso_tomado_por_esi;
 
-long id_as_long(char* esi_id);
+long id_as_long(char* id);
+
+char* string_key(long id);
 
 char* list_join(t_list* list);
 
@@ -55,7 +57,7 @@ void list_add_id(t_list* list, long id);
 
 char* esis_to_string();
 
-void list_remove_esi(t_list* list, esi* esi);
+void list_remove_esi(t_list* list, long esi_id);
 
 #endif
 

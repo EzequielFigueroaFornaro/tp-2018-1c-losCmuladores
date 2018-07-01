@@ -11,7 +11,6 @@ long new_esi(int socket, long esi_size);
 module_type recv_module(int socket);
 long recv_esi_size(int socket);
 int send_id_to_esi(int socket, long esi_id);
-void notify_dispatcher();
 
 void esi_connection_handler(int socket) {
 	if (recv_message(socket) != MODULE_CONNECTED) {
@@ -37,17 +36,8 @@ void esi_connection_handler(int socket) {
 		log_error(logger, "Error sending the id to the new ESI. Client-Address %s", get_client_address(socket));
 		return;
 	}
-
-	notify_dispatcher();
+	notify_orchestrator();
 }
-
-void notify_dispatcher() {
-	if (RUNNING_ESI == 0) {
-		replan_by_algorithm();
-		pthread_mutex_unlock(&dispatcher_manager);
-	}
-}
-
 
 long new_esi(int socket, long esi_size){
 	esi* new_esi = malloc(sizeof(esi));
@@ -58,7 +48,7 @@ long new_esi(int socket, long esi_size){
 	new_esi -> esi_thread = pthread_self();
 	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> cantidad_de_instrucciones = esi_size;
-	new_esi -> instrucction_pointer = 0;
+	new_esi -> instruction_pointer = 0;
 	pthread_mutex_unlock(&cpu_time_mtx);
 	add_esi(new_esi);
 	return new_esi -> id;
