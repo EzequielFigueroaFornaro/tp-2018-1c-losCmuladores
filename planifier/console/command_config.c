@@ -10,7 +10,7 @@
 t_dictionary* commands;
 
 void add_command(char* command_str, command_code code, int args) {
-	command_config* command = malloc(sizeof(command));
+	command_config* command = malloc(sizeof(command_config));
 	command->code = code;
 	command->args_count = args;
 	dictionary_put(commands, command_str, command);
@@ -23,6 +23,12 @@ void load_commands() {
 	add_command("block", BLOCK, 2);
 	add_command("unblock", UNBLOCK, 1);
 	add_command("list", LIST, 1);
+	add_command("status", STATUS, 1);
+	add_command("kill", KILL, 1);
+	add_command("deadlock", DEADLOCK, 0);
+	//TEST
+	add_command("add", ADD, 1);
+	add_command("listEsis", LIST_ESIS, 0);
 }
 
 command_config* get_command_config(char* command_str) {

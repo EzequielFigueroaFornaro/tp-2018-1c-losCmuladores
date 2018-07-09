@@ -14,7 +14,9 @@
 #include <commons/collections/queue.h>
 
 #include "command.h"
-#include "../data.h"
+#include "../orchestrator.h"
+#include "../semaphores.h"
+#include "logging.h"
 
 command_result list_cmd(command command);
 

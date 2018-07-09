@@ -7,18 +7,6 @@
 
 #include "console.h"
 
-void quit_console(char* msg, int code) {
-	if (code == EXIT_SUCCESS) {
-		print_and_log(msg);
-	} else {
-		print_and_log_error(msg);
-	}
-	close(0);
-	destroy_command_config();
-	log_destroy(console_log);
-	exit(code);
-}
-
 command_result execute_command(command command) {
 	command_result result;
 	if (!valid_args(command)) {
@@ -35,6 +23,16 @@ command_result execute_command(command command) {
 		return block_cmd(command);
 	case UNBLOCK:
 		return unblock_cmd(command);
+	case STATUS:
+		return status_cmd(command);
+	case KILL:
+		return kill_cmd(command);
+	case DEADLOCK:
+		return deadlock_cmd(command);
+	case ADD:
+		return add_cmd(command);
+	case LIST_ESIS:
+		return list_esis_cmd(command);
 	default:
 		result.code = INVALID_COMMAND;
 		result.content = string_from_format("Invalid command '%s'", command.code_str);
@@ -59,12 +57,13 @@ void listen_for_commands() {
 		} else {
 			print_and_log_error("%s", result.content);
 		}
+		destroy_command(command);
 	}
-	destroy_command(command);
 	quit_console("Exiting...", EXIT_SUCCESS);
 }
 
 pthread_t start_console() {
+	start_signal_listener();
 	start_console_log();
 	load_commands();
 
