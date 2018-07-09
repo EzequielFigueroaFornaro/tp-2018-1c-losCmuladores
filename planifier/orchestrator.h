@@ -6,33 +6,57 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "commons/collections/dictionary.h"
-#include "fifo.h"
-#include "planifier_structures.h"
 #include "commons/string.h"
 
-int ALGORITHM;
+#include "fifo.h"
+#include "planifier_structures.h"
+#include "semaphores.h"
+#include "logging.h"
+#include "exit_handler.h"
+#include "esi_connector.h"
 
-t_dictionary * esi_map;
-
-//pthread_mutex_t tiempo_cpu_sem = PTHREAD_MUTEX_INITIALIZER;
-enum algorithm {
+typedef enum {
 	FIFO = 1
-};
+} planifier_algorithm;
 
-void set_orchestrator(int algorithm);
+planifier_algorithm algorithm;
 
-void stop_and_block_esi(long esi_id);
+void add_esi(esi* esi);
 
-void add_esi_bloqueada(long esi_id);
+void set_orchestrator();
 
 bool is_valid_esi(long esi_id);
 
-char* string_key(long key);
+bool esi_exists(long esi_id);
 
 long esi_se_va_a_ejecutar();
 
-void borado_de_finish();
+void borrado_de_finish();
 
 void block_esi(long esi_id);
+
+void unblock_esi(long esi_id);
+
+void finish_esi(long esi_id);
+
+bool bloquear_recurso(char* recurso, long esi_id);
+
+t_queue* get_all_waiting_for_resource(char* resource);
+
+char* get_all_waiting_for_resource_as_string(char* resource, char* separator);
+
+void replan_by_algorithm();
+
+long increment_id();
+
+long cpu_time_incrementate();
+
+long get_current_time();
+
+void notify_dispatcher();
+
+char* get_resource_taken_by_esi(long esi_id);
+
+bool resource_taken(char* resource);
 
 #endif

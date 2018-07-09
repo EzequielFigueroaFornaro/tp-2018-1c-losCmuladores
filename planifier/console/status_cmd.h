@@ -1,11 +1,12 @@
 /*
- * block_cmd.h
+ * status_cmd.h
  *
- *  Created on: 9 jun. 2018
+ *  Created on: 7 jul. 2018
+ *      Author: utnso
  */
 
-#ifndef CONSOLE_BLOCK_CMD_H_
-#define CONSOLE_BLOCK_CMD_H_
+#ifndef CONSOLE_STATUS_CMD_H_
+#define CONSOLE_STATUS_CMD_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,14 +14,12 @@
 #include <commons/string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
-#include "logging.h"
-
+#include "../key_info.h"
 #include "command.h"
 #include "../orchestrator.h"
-#include "../dispatcher.h"
 #include "../planifier_structures.h"
-#include "../semaphores.h"
+#include "logging.h"
 
-command_result block_cmd(command command);
+command_result status_cmd(command command);
 
-#endif /* CONSOLE_BLOCK_CMD_H_ */
+#endif /* CONSOLE_STATUS_CMD_H_ */

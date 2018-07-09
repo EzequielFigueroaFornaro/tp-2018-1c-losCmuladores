@@ -59,7 +59,7 @@ void connect_to_coordinator() {
 void execute_script() {
 	t_ise_sentence current_sentence;
 	while(!(current_sentence = get_sentence_to_execute()).empty) {
-		// wait_to_execute(); //temp fix
+		 wait_to_execute();
 
 		execution_result result;
 		if (current_sentence.operation.valido) {
@@ -86,13 +86,12 @@ void wait_to_execute() {
 	message_type msg;
 	int socket = get_socket(PLANIFIER);
 	while ((msg = recv_message(socket)) != ISE_EXECUTE) {
-		if (msg <= 0) {
+		if (msg == 0) {
 			log_error(logger, "Lost connection with planifier! Aborting");
-			exit_with_error(); // TODO [Lu] Debería hacer esto?
+			exit_with_error();
 		}
-		if (msg == ISE_STOP) {
-			log_info(logger, "Received stop signal from planifier. Waiting to continue...");
-		} else if (msg == ISE_KILL) {
+
+		if (msg == ISE_KILL) {
 			log_info(logger, "Received abort signal from planifier. Aborting");
 			exit_with_error();
 		} else {
@@ -128,8 +127,9 @@ execution_result send_sentence_to_coordinator(t_esi_operacion operation) {
 		log_error(logger, "Could not send operation.");
 		exit_with_error();
 	}
-	if (recv_message(socket) != EXECUTION_RESULT) {
-		log_error(logger, "Unexpected message received when waiting for sentence execution result");
+	int message = recv_message(socket);
+	if (message != EXECUTION_RESULT) {
+		log_error(logger, "%s", message == 0 ? "Lost connection with coordinator!" : "Could not receive EXECUTION_RESULT message");
 		exit_with_error();
 	}
 

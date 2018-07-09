@@ -1,11 +1,12 @@
 /*
- * block_cmd.h
+ * unblock_cmd.h
  *
- *  Created on: 9 jun. 2018
+ *  Created on: 30 jun. 2018
+ *      Author: utnso
  */
 
-#ifndef CONSOLE_BLOCK_CMD_H_
-#define CONSOLE_BLOCK_CMD_H_
+#ifndef CONSOLE_UNBLOCK_CMD_H_
+#define CONSOLE_UNBLOCK_CMD_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,14 +14,13 @@
 #include <commons/string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
-#include "logging.h"
 
 #include "command.h"
 #include "../orchestrator.h"
-#include "../dispatcher.h"
 #include "../planifier_structures.h"
 #include "../semaphores.h"
+#include "logging.h"
 
-command_result block_cmd(command command);
+command_result unblock_cmd(command command);
 
-#endif /* CONSOLE_BLOCK_CMD_H_ */
+#endif /* CONSOLE_UNBLOCK_CMD_H_ */

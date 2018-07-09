@@ -21,7 +21,18 @@
 #include "command.h"
 #include "command_config.h"
 #include "console_log.h"
+#include "../exit_handler.h"
+
+// Commands
 #include "list_cmd.h"
+#include "block_cmd.h"
+#include "unblock_cmd.h"
+#include "pause_cmd.h"
+#include "status_cmd.h"
+#include "kill_cmd.h"
+#include "deadlock_cmd.h"
+
+#include "test_cmds.h"
 
 pthread_t start_console();
 

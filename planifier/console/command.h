@@ -16,10 +16,10 @@
 #include "command_config.h"
 
 typedef enum {
-	COMMAND_OK,
-	COMMAND_ERROR,
-	INVALID_ARGS,
-	INVALID_COMMAND
+	COMMAND_OK = 1,
+	COMMAND_ERROR = 2,
+	INVALID_ARGS = 3,
+	INVALID_COMMAND = 4
 } command_result_code;
 
 typedef struct {
@@ -41,12 +41,6 @@ bool command_exists(command command);
 bool is_exit(command command);
 
 bool valid_args(command command);
-
-command_result pause_cmd(command command);
-
-command_result block_cmd(command command);
-
-command_result unblock_cmd(command command);
 
 command_result base_command_result(command_result_code code);
 
