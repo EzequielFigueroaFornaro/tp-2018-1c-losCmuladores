@@ -78,7 +78,7 @@ t_instance* select_instance_by_ke(char* key){
 	int letters_qty = ascii_final_limit - ascii_base_limit;
 
 	pthread_mutex_lock(&instances_list_mtx);
-	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	t_list* available_instances = list_filter(instances_thread_list, (void*)is_instance_available);
 	pthread_mutex_unlock(&instances_list_mtx);
 
 	int instances_qty = available_instances -> elements_count;
@@ -103,7 +103,7 @@ t_instance* select_instance_to_send_by_lsu(){
 	}
 
 	//TODO es necesario tener semáforos para las instancias ? Si va a venir un ESI a la vez...
-	t_list* available_instances = list_filter(instances_thread_list, is_instance_available);
+	t_list* available_instances = list_filter(instances_thread_list, (void*)is_instance_available);
 	list_sort(available_instances, (void*) _has_less_entries_used_than);
 
 	t_instance* selected_instance = list_get(available_instances, 0);
@@ -128,18 +128,29 @@ t_instance* select_instance_to_send_by_lsu(){
 	return selected_instance;
 }
 
-t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence){
+t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence) {
 	if(sentence -> operation_id == SET_SENTENCE){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
 			case LSU: return select_instance_to_send_by_lsu();
 			case KE: return select_instance_by_ke(sentence -> key);
-			default: _exit_with_error(NULL, "Invalid distribution strategy.", NULL);
+			default: _exit_with_error(-1, "Invalid distribution strategy.", NULL);
+			return NULL;
 		}
 	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
+		pthread_mutex_lock(&keys_mtx);
 		t_instance* instance = (t_instance*) dictionary_get(keys_location, sentence -> key);
+		pthread_mutex_unlock(&keys_mtx);
 		return instance;
 	}
+}
+
+void handle_instance_disconnection(t_instance* instance){
+	pthread_mutex_lock(&instances_list_mtx);
+	instance -> is_available = false;
+	pthread_mutex_unlock(&instances_list_mtx);
+	last_instance_selected -> is_available = false; //TODO poner semaforo acá.
+	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
 }
 
 //TODO Hacer los free correspondientes!!!
@@ -191,6 +202,7 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	operations_log_file = txt_open_for_append(OPERATIONS_LOG_PATH);
 	if (operations_log_file == NULL) {
 		log_error(logger, "Error saving operation.");
+		pthread_mutex_unlock(&operations_log_file_mtx);
 		return;
 	}
 
@@ -309,6 +321,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 				send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
 			}
 
+			pthread_mutex_lock(&keys_mtx);
 			if(send_to_instance_result == KEY_UNREACHABLE || selected_instance == NULL) {
 
 				//if(sentence -> operation_id == STORE_SENTENCE){
@@ -318,7 +331,8 @@ int process_sentence(t_sentence* sentence, long ise_id){
 				//}
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
-			dictionary_put(keys_location, &(sentence -> key), selected_instance);
+			dictionary_put(keys_location, sentence -> key, selected_instance);
+			pthread_mutex_unlock(&keys_mtx);
 		} else {
 			result_to_ise = planifier_validation;
 		}

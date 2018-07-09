@@ -13,9 +13,11 @@ message_type EXECUTION_RESULT = 200;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 message_type ISE_KILL = 302;
-message_type GET_INSTANCE = 400;
-message_type GET_KEY_VALUE = 401;
-message_type CALCULATE_INSTANCE = 402;
+message_type KEY_INFO_REQUEST = 400;
+message_type GET_INSTANCE = 401;
+message_type GET_KEY_VALUE = 402;
+message_type CALCULATE_INSTANCE = 403;
+message_type KEY_INFO_REQUEST_FINISHED = 404;
 
 
 t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){

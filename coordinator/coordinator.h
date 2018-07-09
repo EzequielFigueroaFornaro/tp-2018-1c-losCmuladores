@@ -80,4 +80,20 @@ typedef struct {
 	long id;
 } __attribute__((packed)) t_ise;
 
+t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence);
+
+int send_instance_configuration(int client_sock);
+
+int receive_sentence_execution_request(int ise_socket, t_sentence** sentence);
+
+int process_sentence(t_sentence* sentence, long ise_id);
+
+void send_statement_result_to_ise(int socket, long ise_id, execution_result result);
+
+void save_operation_log(t_sentence* sentence, long ise_id);
+
+void exit_gracefully(int code);
+
+int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id);
+
 #endif /* COORDINATOR_H_ */
