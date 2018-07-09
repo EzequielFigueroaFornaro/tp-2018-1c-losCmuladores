@@ -23,11 +23,10 @@ command_result status_cmd(command command) {
 	char* key = (char*) list_get(command.args, 0);
 	buffer = string_new();
 
-//	append("value", get_key_param(value, key));
+	append("value", get_key_param(value, key));
 	char* instance_name = get_key_param(instance, key);
 	append("instance", instance_name);
 	append("calculated_instance", is_empty(instance_name)? get_key_param(calculated_instance, key) : "");
-//	append("calculated_instance", get_key_param(calculated_instance, key));
 	append("waiting", get_all_waiting_for_resource_as_string(key, ", "));
 
 	command_result result;
