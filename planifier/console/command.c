@@ -53,18 +53,3 @@ command_result base_command_result(command_result_code code) {
 	result.content = "";
 	return result;
 }
-
-command_result status_cmd(command command) {
-	//TODO
-	return base_command_result(COMMAND_OK);
-}
-
-command_result kill_cmd(command command) {
-	//TODO
-	return base_command_result(COMMAND_OK);
-}
-
-command_result deadlock_cmd(command command) {
-	//TODO
-	return base_command_result(COMMAND_OK);
-}

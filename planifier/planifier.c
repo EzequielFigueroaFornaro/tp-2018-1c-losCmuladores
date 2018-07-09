@@ -24,24 +24,6 @@
 //}
 //
 
-//che_esta_tomado_el_recurso(input_outpu)
-
-bool bloquear_recurso(char* recurso, long esi_id){
-	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-	if(!dictionary_has_key(recurso_tomado_por_esi,recurso)){
-		dictionary_put(recurso_tomado_por_esi, recurso, queue_create());
-		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-		return true;
-	}
-	t_queue* cola_de_esis = dictionary_get(recurso_tomado_por_esi,recurso);
-	esi *running_esi = malloc(sizeof(esi));
-//	running_esi = get_esi_running();
-//	queue_push(cola_de_esis,(running_esi->id));
-//	stop_and_block_esi(running_esi -> id);
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-	return false;
-}
-
 bool deshabilitar_recurso(char*/*no se que es esto*/ recurso, long esi_id_desabilitado){
 	// TODO [Lu] revisar &blocked_esi_type
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
@@ -94,6 +76,7 @@ void load_configuration(char *config_file_path) {
 
 void connect_to_coordinator() {
 	coordinator_socket = connect_to(coordinator_ip, coordinator_port);
+	set_coordinator_socket(coordinator_socket);
 
 	if (coordinator_socket < 0) {
 		exit_with_error(coordinator_socket, "No se pudo conectar al coordinador");

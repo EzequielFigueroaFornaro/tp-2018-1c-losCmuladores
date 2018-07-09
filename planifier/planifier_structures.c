@@ -40,6 +40,12 @@ void list_add_id(t_list* list, long id) {
 	list_add(list, esi_id);
 }
 
+void dictionary_put_id(t_dictionary* map, char* key, long id) {
+	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	*esi_id = id;
+	dictionary_put(map, key, esi_id);
+}
+
 char* esis_to_string() {
 	char* buffer = string_new();
 	void to_string(char* esi_id, esi* esi) {
@@ -54,4 +60,12 @@ void list_remove_esi(t_list* list, long id) {
 		return *esi_id == id;
 	}
 	list_remove_by_condition(list, (void*) equals_esi);
+}
+
+esi* get_esi_by_id(long esi_id) {
+	esi* esi;
+	pthread_mutex_lock(&esi_map_mtx);
+	esi = dictionary_get(esi_map, id_to_string(esi_id));
+	pthread_mutex_unlock(&esi_map_mtx);
+	return esi;
 }

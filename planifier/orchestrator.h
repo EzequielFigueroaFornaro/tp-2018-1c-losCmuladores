@@ -25,9 +25,9 @@ void add_esi(esi* esi);
 
 void set_orchestrator();
 
-void stop_and_block_esi(long esi_id);
-
 bool is_valid_esi(long esi_id);
+
+bool esi_exists(long esi_id);
 
 long esi_se_va_a_ejecutar();
 
@@ -35,11 +35,15 @@ void borrado_de_finish();
 
 void block_esi(long esi_id);
 
+void unblock_esi(long esi_id);
+
 void finish_esi(long esi_id);
 
-void block_esi_by_resource(long esi_id, char* resource);
+bool bloquear_recurso(char* recurso, long esi_id);
 
-char* get_all_waiting_for_resource_as_string(char* resource);
+t_queue* get_all_waiting_for_resource(char* resource);
+
+char* get_all_waiting_for_resource_as_string(char* resource, char* separator);
 
 void replan_by_algorithm();
 
@@ -49,6 +53,10 @@ long cpu_time_incrementate();
 
 long get_current_time();
 
-void notify_orchestrator();
+void notify_dispatcher();
+
+char* get_resource_taken_by_esi(long esi_id);
+
+bool resource_taken(char* resource);
 
 #endif

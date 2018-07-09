@@ -25,13 +25,12 @@ enum tipo_de_esi {
 
 };
 
-enum estados {
-	NUEVO = 1,
+typedef enum {
+	LISTO = 1,
 	BLOQUEADO = 2,
-	DESBLOQUEADO = 3,
-	CORRIENDO = 4,
-	FINALIZADO = 5
-};
+	CORRIENDO = 3,
+	FINALIZADO = 4
+} estado;
 
 t_dictionary * esi_map;
 
@@ -55,9 +54,13 @@ void queue_push_id(t_queue* queue, long id);
 
 void list_add_id(t_list* list, long id);
 
+void dictionary_put_id(t_dictionary* map, char* key, long id);
+
 char* esis_to_string();
 
 void list_remove_esi(t_list* list, long esi_id);
+
+esi* get_esi_by_id(long esi_id);
 
 #endif
 

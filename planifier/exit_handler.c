@@ -27,6 +27,7 @@ void close_console(char* msg, int code) {
 
 void exit_gracefully(int return_nr) {
 	if (esis_bloqueados_por_recurso != NULL) dictionary_destroy(esis_bloqueados_por_recurso);
+	if (recurso_tomado_por_esi != NULL) dictionary_destroy(recurso_tomado_por_esi);
 	if (esi_map != NULL) {
 		void close_esi_connection(char* esi_id, esi* esi) {
 			close(esi->socket_id);

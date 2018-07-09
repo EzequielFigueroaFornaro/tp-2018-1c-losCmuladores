@@ -14,11 +14,11 @@ void fifo_block_esi(long block_esi_id){
 	pthread_mutex_lock(&blocked_list_mtx);
 	pthread_mutex_lock(&ready_list_mtx);
 
+	log_debug(logger, "Removing ESI%ld from ready queue", block_esi_id);
+	list_remove_esi(READY_ESI_LIST, block_esi_id);
+
 	if(RUNNING_ESI == block_esi_id){
 		fifo_replan();
-	}else{
-		log_debug(logger, "Removing ESI%ld from ready queue", block_esi_id);
-		list_remove_esi(READY_ESI_LIST, block_esi_id);
 	}
 
 	pthread_mutex_unlock(&ready_list_mtx);
