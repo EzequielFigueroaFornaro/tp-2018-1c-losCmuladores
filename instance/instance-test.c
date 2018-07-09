@@ -9,6 +9,8 @@
 #include <CUnit/Basic.h>
 #include "storage/availability/availability.h"
 #include "storage/entry-table.h"
+#include <commons/log.h>
+#include "logging.h"
 
 char *key = "key";
 char *value = "value";
@@ -27,6 +29,8 @@ int instance_run_test() {
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();
+
+	log_destroy(logger);
 
 	return CU_get_error();
 }

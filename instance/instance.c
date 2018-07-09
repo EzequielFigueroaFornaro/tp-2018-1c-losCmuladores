@@ -14,13 +14,14 @@
 #include "response_codes.h"
 #include <commons/log.h>
 #include <stdbool.h>
+#include "logging.h"
 
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
 
-void configure_logger() {
+void init_logger() {
 	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
 }
 
@@ -193,7 +194,7 @@ void create_mount_path(char* mounting_path) {
 }
 
 int instance_run(int argc, char* argv[]) {
-	configure_logger();
+	init_logger();
 	log_info(logger, "Initializing instance...");
     signal(SIGINT,signal_handler);
 
@@ -226,6 +227,7 @@ int instance_run(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+	init_logger();
 	if (argc > 2 && string_equals_ignore_case(argv[2], "--test")) {
 		return instance_run_test();
 	} else {

@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "file/file-system.h"
+#include "logging.h"
 
 char* _make_full_file_name(char *mount_path, char *key);
 int _calculate_value_length(char *value);

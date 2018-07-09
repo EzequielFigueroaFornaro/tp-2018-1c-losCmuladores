@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "logging.h"
 
 typedef struct {
 	char *key;
@@ -34,6 +35,7 @@ void replacement_destroy(t_replacement *replacement) {
 }
 
 void replacement_add(t_replacement *replacement, char *key, int size) {
+	log_info(logger, "Adding key '%s' to replacement list", key);
 	t_replacement_entry* entry = _replacement_entry_create(key, size);
 	switch (replacement -> algorithm) {
 	case CIRCULAR:

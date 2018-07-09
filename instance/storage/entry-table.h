@@ -9,9 +9,9 @@
 #define STORAGE_ENTRY_TABLE_H_
 
 #include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
 #include <stddef.h>
 
-#include "commons/collections/list.h"
 #include "replacement/replacement.h"
 #include "availability/availability.h"
 

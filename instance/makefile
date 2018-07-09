@@ -35,8 +35,8 @@ all: default
 # y HEADERS, para incluir los headers que definamos.
 # Nota: wildcard implica que seleccione todos los que cumplen con la regex (osea todos los que terminen con .h)
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c **/*.c **/**/*.c))
-HEADERS = $(wildcard *.h **/*.h **/**/*.h)
+OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+HEADERS = $(wildcard *.h)
 
 # Las variables que le pasamos a la tarea, le decimos que use todos los .c y todos los .h
 # Creamos los objects sin linkear

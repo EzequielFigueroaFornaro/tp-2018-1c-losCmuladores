@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "logging.h"
 
 int calculate_char_size(int entries_count) {
 	int size = entries_count / CHAR_BIT;
