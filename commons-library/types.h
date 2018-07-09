@@ -48,6 +48,8 @@ extern message_type ISE_KILL;
 
 t_sentence* sentence_create();
 
+t_sentence* sentence_create_with(int operation_id, char* key, char* value);
+
 void sentence_destroy(t_sentence* sentence);
 
 bool is_valid_operation(int operation);
@@ -69,5 +71,7 @@ void concat_string(void** mem_address, void* string, int string_length);
 char* get_operation_as_string(int operation_id);
 
 char* sentence_to_string(t_sentence* sentence);
+
+char* get_operation_as_string(int operation_id);
 
 #endif /* TYPES_H_ */
