@@ -25,6 +25,7 @@ void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *valu
 bool _is_atomic(t_entry_table *entry_table, char *key);
 int _entry_table_try_put(t_entry_table * table, char *key, char *value);
 bool _entry_table_has_key(t_entry_table * table, char *key);
+int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value);
 
 
 t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm algorithm) {
@@ -60,20 +61,23 @@ int entry_table_put(t_entry_table * table, char *key, char *value) {
 	int result = -1;
 	do {
 		if (_entry_table_has_key(table, key)) {
-			entry_table_remove(table, key);
-		}
-		int try_put_result = _entry_table_try_put(table, key, value);
-		if (try_put_result < 0) {
-			char *key_to_replace = replacement_take(table->replacement);
-			if (key_to_replace == NULL) {
-				result = -1;
-				retry = false;
-			} else {
-				entry_table_remove(table, key_to_replace);
-			}
-		} else {
-			result = try_put_result;
+			result = _entry_table_update(table, key, value);
 			retry = false;
+		} else {
+			int try_put_result = _entry_table_try_put(table, key, value);
+			if (try_put_result < 0) {
+				char *key_to_replace = replacement_take(table->replacement);
+				if (key_to_replace == NULL) {
+					result = -1;
+					retry = false;
+				} else {
+					log_info(logger, "Replacing '%s' key for '%s'", key_to_replace, key);
+					entry_table_remove(table, key_to_replace);
+				}
+			} else {
+				result = try_put_result;
+				retry = false;
+			}
 		}
 	} while(retry);
 	return result;
@@ -103,7 +107,6 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 	char * value = entry_table_get(entry_table, key);
 	int result = -1;
 	if (NULL != value) {
-		entry_table_remove(entry_table, key);
 		result = file_system_save(file_name, value);
 	}
 	free(file_name);
@@ -188,6 +191,31 @@ bool _is_atomic(t_entry_table *entry_table, char *key) {
 	return length <= entry_table->entry_size;
 }
 
+int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) {
+	char *old_value = entry_table_get(entry_table, key);
+	int entries_old_value = _calculate_value_entries_count(entry_table, old_value);
+	int entries_new_value = _calculate_value_entries_count(entry_table, new_value);
+
+	int result = -1;
+	// Requisito: https://sisoputnfrba.gitbook.io/re-distinto/anexo-i-lenguaje-operaciones#aclaraciones-importantes-sobre-las-operaciones
+	if (entries_new_value > entries_old_value) {
+		log_error(logger, "Can not set key '%s' with value '%s' because is bigger than older value '%s'", key, new_value, old_value);
+	} else {
+		t_entry *entry = dictionary_get(entry_table ->entries, key);
+
+		int index = entry->index;
+		int start_index_to_free = index + entries_new_value;
+		int entries_to_free = entries_old_value - entries_new_value;
+		availability_free_space(entry_table->availability, start_index_to_free, entries_to_free);
+		_copy_value_in_data(entry_table, new_value, index);
+		entry->length = _calculate_value_length(new_value);
+
+		result = entries_to_free;
+	}
+	free(old_value);
+	return result;
+}
+
 int _entry_table_try_put(t_entry_table * table, char *key, char *value) {
 	int entries_needed = _calculate_value_entries_count(table, value);
 	int index = availability_find_free_countinuous_index(table->availability, entries_needed);
@@ -207,4 +235,7 @@ int _entry_table_try_put(t_entry_table * table, char *key, char *value) {
 bool _entry_table_has_key(t_entry_table * table, char *key) {
 	return dictionary_has_key(table->entries, key);
 }
+
+
+
 

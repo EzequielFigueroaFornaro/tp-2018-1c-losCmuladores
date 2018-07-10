@@ -10,6 +10,7 @@
 
 #include "instance.h"
 #include "instance-test.h"
+#include "storage/entry-table.h"
 #include "storage/file/file-system.h"
 #include "response_codes.h"
 #include <commons/log.h>

@@ -38,6 +38,7 @@ t_instance_config* instance_config_create();
 void instance_config_destroy(t_instance_config *instance_config);
 
 //Global variables.
+t_log * logger = NULL;
 t_instance_config *instance_config = NULL;
 t_entry_table* entries_table = NULL;
 int coordinator_socket;
