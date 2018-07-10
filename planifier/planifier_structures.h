@@ -16,6 +16,7 @@ typedef struct {
 	long tiempo_de_entrada;
 	long cantidad_de_instrucciones;
 	int instruction_pointer;
+	char* blocking_resource;
 	pthread_t esi_thread;
 	int socket_id;
 } esi;

@@ -10,19 +10,6 @@
 
 #include "planifier.h"
 
-//che_ejecute_esto(tiene input output){ //esi diciendo ejecute algo
-//bool hubo_replanificacion_con_cambio_de_esi
-///*este bool lo tiene que tener por referencia los algoritmos
-// * y poder modificarlo cada vez que hay replanificacion usando semaforos*/
-//che_ejecute_esto(int esi_id){
-/*me da algo, tendria que ser el id del esi, y me podria decir que es la ultima instruccion*/
-//	if(hubo_replanificacion_con_cambio_de_esi){
-//
-//	}else{
-//
-//}
-//}
-//
 
 bool deshabilitar_recurso(char*/*no se que es esto*/ recurso, long esi_id_desabilitado){
 	// TODO [Lu] revisar &blocked_esi_type
@@ -45,10 +32,6 @@ bool deshabilitar_recurso(char*/*no se que es esto*/ recurso, long esi_id_desabi
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 }
 
-
-//esi* get_esi_running(){
-//	return list_get(RUNNING_ESI_LIST, 0);
-//}
 
 //-------------------
 void load_configuration(char *config_file_path) {
