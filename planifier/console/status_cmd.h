@@ -14,7 +14,7 @@
 #include <commons/string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
-#include "../key_info.h"
+#include "key_info.h"
 #include "command.h"
 #include "../orchestrator.h"
 #include "../planifier_structures.h"

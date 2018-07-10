@@ -17,9 +17,12 @@
 #include "types.h"
 #include "response_codes.h"
 #include "logging.h"
-#include "semaphores.h"
-#include "planifier_structures.h"
-#include "orchestrator.h"
+
+#include "../semaphores.h"
+#include "../planifier_structures.h"
+#include "../orchestrator.h"
+
+#include "console_log.h"
 
 typedef enum {
 	value,
@@ -29,6 +32,6 @@ typedef enum {
 
 char* get_key_param(key_param param, char* key);
 
-void set_coordinator_socket(int socket);
+void set_coordinator_connection_params(char* ip, int port);
 
 #endif /* KEY_INFO_H_ */

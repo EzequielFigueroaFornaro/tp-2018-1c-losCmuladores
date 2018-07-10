@@ -13,7 +13,7 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 	}
 
 	t_instance* instance;
-	instance = (t_instance*) list_find(instances_thread_list, _is_same_instance_name);
+	instance = (t_instance*) list_find(instances_thread_list, (void*)_is_same_instance_name);
 
 	if(instance != NULL){
 		instance -> is_available = true;
@@ -48,18 +48,140 @@ void _exit_with_error(int socket, char* error_msg, void * buffer){
 		free(buffer);
 	}
 	log_error(logger, error_msg);
-	close(socket);
+	if (socket >= 0) {
+		close(socket);
+	}
 	close(planifier_socket);
 	exit_gracefully(1);
+}
+
+void send_key_info_response(int socket, execution_result response_code, char* response) {
+	if (!string_is_empty(response)) {
+		int content_size = strlen(response) + 1;
+		int response_size = sizeof(execution_result) + sizeof(int) + content_size;
+		void* response_buffer = malloc(response_size);
+		void* offset = response_buffer;
+		concat_value(&offset, &response_code, sizeof(execution_result));
+		concat_string(&offset, response, content_size);
+
+		if (send(socket, response_buffer, response_size, 0) < 0) {
+			log_error(logger, "[KeyInfoRequest] Error while trying to send instance name");
+			return;
+		}
+	} else {
+		if (send(socket, &response_code, sizeof(execution_result), 0) < 0) {
+			log_error(logger, "[KeyInfoRequest] Error while trying to send key not found");
+			return;
+		}
+	}
+	log_info(logger,
+			"[KeyInfoRequest] Response: description=%s, content=%s, sent to planifier",
+			get_execution_result_description(response_code), response);
+}
+
+char* get_key_value_from_instance(char* key) {
+	if (dictionary_has_key(keys_location, key)) {
+		t_instance* instance = dictionary_get(keys_location, key);
+
+		int key_size = strlen(key) + 1;
+		int request_size = sizeof(message_type) + sizeof(int) + key_size;
+		void* request = malloc(request_size);
+		void* offset = request;
+		concat_value(&offset, &GET_KEY_VALUE, sizeof(message_type));
+		concat_string(&offset, key, key_size);
+
+		if (send(instance->socket_id, request, request_size, 0) < 0) {
+			log_error(logger,
+					"[KeyInfoRequest] Could not send request to instance");
+			return "";
+		}
+
+		int result;
+		if (recv_int(instance->socket_id, &result) <= 0) {
+			log_error(logger,
+					"[KeyInfoRequest] Could not receive response code from instance");
+			return "";
+		}
+
+		if (result == KEY_VALUE_FOUND) {
+			char* value;
+			if (recv_string(instance->socket_id, &value) <= 0) {
+				log_error(logger,
+						"[KeyInfoRequest] Could not receive value from instance");
+				return "";
+			}
+			return value;
+		}
+	}
+	return "";
+}
+
+void key_info_request_handler(int socket) {
+	message_type request = recv_message(socket);
+
+	if (request != GET_INSTANCE && request != CALCULATE_INSTANCE && request != GET_KEY_VALUE) {
+		log_error(logger, "[KeyInfoRequest] Invalid request '%d'", request);
+		close(socket);
+		return;
+	}
+
+	char* key;
+	if (recv_string(socket, &key) <= 0) {
+		log_error(logger, "[KeyInfoRequest] Error while trying to receive key");
+		close(socket);
+		return;
+	}
+
+	if (request == GET_INSTANCE) {
+		pthread_mutex_lock(&keys_mtx);
+		if (dictionary_has_key(keys_location, key)) {
+			t_instance* instance = dictionary_get(keys_location, key);
+			pthread_mutex_unlock(&keys_mtx);
+			send_key_info_response(socket, KEY_FOUND, instance->name);
+		} else {
+			pthread_mutex_unlock(&keys_mtx);
+			send_key_info_response(socket, KEY_NOT_FOUND, "");
+		}
+	} else if (request == CALCULATE_INSTANCE) {
+		t_sentence* sentence = malloc(sizeof(t_sentence));
+		sentence->key = key;
+		sentence->operation_id = SET_SENTENCE;
+		t_instance* instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
+		free(sentence);
+
+		if (instance != NULL) {
+			send_key_info_response(socket, INSTANCE_AVAILABLE_FOR_KEY, instance->name);
+		} else {
+			send_key_info_response(socket, NO_INSTANCE_AVAILABLE_FOR_KEY, "");
+		}
+	} else if (request == GET_KEY_VALUE) {
+		pthread_mutex_lock(&keys_mtx);
+		char* value = get_key_value_from_instance(key);
+		pthread_mutex_unlock(&keys_mtx);
+		if (!string_is_empty(value)) {
+			send_key_info_response(socket, KEY_VALUE_FOUND, value);
+		} else {
+			send_key_info_response(socket, KEY_VALUE_NOT_FOUND, "");
+		}
+	}
+	if (recv_message(socket) != KEY_INFO_REQUEST_FINISHED) {
+		log_info(logger, "Did not receive key info request finished message. Closing connection anyway");
+	}
+	close(socket);
+	pthread_exit(pthread_self);
 }
 
 
 void connection_handler(int socket) {
 	message_type message_type;
 	int result_connected_message = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
-	if (result_connected_message <= 0 || message_type != MODULE_CONNECTED) {
+	if (result_connected_message <= 0) {
 		log_error(logger, "Error receiving connect message");
-	} else {
+		close(socket);
+		return;
+	}
+
+	if (message_type == MODULE_CONNECTED) {
 		module_type module_type;
 		int result_module = recv(socket, &module_type, sizeof(module_type), MSG_WAITALL);
 		if (result_module <= 0) {
@@ -71,6 +193,17 @@ void connection_handler(int socket) {
 		} else if (module_type == ISE) {
 			ise_connection_handler(socket);
 		}
+	} else if(message_type == KEY_INFO_REQUEST) {
+		module_type module_type;
+		int result_module = recv(socket, &module_type, sizeof(module_type), MSG_WAITALL);
+		if (result_module <= 0 || module_type != PLANIFIER) {
+			log_error(logger, "[KeyInfoRequest] Operation not permitted for module '%d'", module_type);
+			close(socket);
+			return;
+		}
+		key_info_request_handler(socket);
+	} else {
+		log_error(logger, "Received unknown connection message");
 	}
 }
 
@@ -138,7 +271,7 @@ void instance_connection_handler(int socket) {
 			//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
 
-		if(list_any_satisfy(instances_thread_list, _is_existent_instance_connected)){
+		if(list_any_satisfy(instances_thread_list, (void*)_is_existent_instance_connected)){
 			close(socket);
 			log_error(logger, "Another instance with same name is connected.");
 			pthread_exit(pthread_self);
@@ -170,12 +303,4 @@ void planifier_connection_handler(int socket) {
 	} else {
 		log_info(logger, "Planifier connected");
 	}
-}
-
-void handle_instance_disconnection(t_instance* instance){
-	pthread_mutex_lock(&instances_list_mtx);
-	instance -> is_available = false;
-	pthread_mutex_unlock(&instances_list_mtx);
-	last_instance_selected -> is_available = false; //TODO poner semaforo acá.
-	log_info(logger, "Instance %s has been marked as UNAVAILABLE", instance -> ip_port);
 }
