@@ -132,8 +132,6 @@ int process_sentence(t_sentence* sentence) {
 
 //TODO hacer deserializador.
 t_sentence* wait_for_statement(int socket_fd) {
-	log_info(logger, "Waiting for sentence from coordinator...");
-
 	t_sentence *sentence = sentence_create();
 
 	if (recv_sentence_operation(socket_fd, &sentence->operation_id) > 0) {
@@ -161,6 +159,7 @@ void signal_handler(int sig){
     if (sig == SIGINT) {
     	log_info(logger, "Caught signal for Ctrl+C\n");
     	instance_running = false;
+    	exit_gracefully(0);
     }
 }
 
@@ -205,6 +204,40 @@ void create_mount_path(char* mounting_path) {
 	}
 }
 
+void wait_for_key_value_requests(int socket) {
+	char* key;
+	int key_received = recv_string(socket, &key);
+	if (key_received == 0) {
+		_exit_with_error("[KeyInfoRequest] Coordinator has disconnected!");
+	}
+	if (key_received < 0) {
+		log_error(logger, "[KeyInfoRequest] Could not receive key");
+		return;
+	}
+	char* value = entry_table_get(entries_table, key);
+	if (value != NULL) {
+		int value_size = strlen(value) + 1;
+		int buffer_size = sizeof(execution_result) + sizeof(int) + value_size;
+		void* buffer = malloc(buffer_size);
+		void* offset = buffer;
+		execution_result result = KEY_VALUE_FOUND;
+		concat_value(&offset, &result, sizeof(execution_result));
+		concat_string(&offset, value, value_size);
+
+		if (send(socket, buffer, buffer_size, 0) < 0) {
+			log_error(logger, "[KeyInfoRequest] Could not send value");
+			return;
+		}
+	} else {
+		execution_result result = KEY_VALUE_NOT_FOUND;
+		if (send(socket, &result, sizeof(execution_result), 0) < 0) {
+			log_error(logger,
+					"[KeyInfoRequest] Could not send key value not found message");
+			return;
+		}
+	}
+}
+
 int instance_run(int argc, char* argv[]) {
 	configure_logger();
 	log_info(logger, "Initializing instance...");
@@ -223,15 +256,26 @@ int instance_run(int argc, char* argv[]) {
 
 	log_info(logger, "Initializing instance... OK");
 
-	while(instance_running){
-		t_sentence* sentence = wait_for_statement(coordinator_socket);
-		if (NULL != sentence) {
-			process_sentence(sentence);
-			sentence_destroy(sentence);
-			send_result(coordinator_socket, 200);
-			//TODO avisar al coordinador.
-		} else {
-			_exit_with_error("Error receiving sentence from coordinator. Maybe was disconnected");
+	while(instance_running) {
+		log_info(logger, "Waiting for sentence from coordinator...");
+
+		message_type request = recv_message(coordinator_socket);
+		if (request == 0) {
+			_exit_with_error("Coordinator has disconnected!");
+		}
+		if (request == PROCESS_SENTENCE) {
+			t_sentence* sentence = wait_for_statement(coordinator_socket);
+			if (NULL != sentence) {
+				process_sentence(sentence);
+				sentence_destroy(sentence);
+				send_result(coordinator_socket, 200);
+				//TODO avisar al coordinador.
+			} else {
+				_exit_with_error(
+						"Error receiving sentence from coordinator. Maybe was disconnected");
+			}
+		} else if (request == GET_KEY_VALUE) {
+			wait_for_key_value_requests(coordinator_socket);
 		}
 	}
 	return 0;

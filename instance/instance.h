@@ -17,6 +17,7 @@
 #include <commons/config.h>
 #include "commons-sockets.h"
 #include "types.h"
+#include "response_codes.h"
 #include "storage/entry-table.h"
 #include "commons/collections/dictionary.h"
 #include <signal.h>
