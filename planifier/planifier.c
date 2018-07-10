@@ -51,6 +51,8 @@ void load_configuration(char *config_file_path) {
 	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
 	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 
+	set_coordinator_connection_params(coordinator_ip, coordinator_port);
+
 	config_destroy(config);
 	dictionary_destroy(algorithms);
 
@@ -59,7 +61,6 @@ void load_configuration(char *config_file_path) {
 
 void connect_to_coordinator() {
 	coordinator_socket = connect_to(coordinator_ip, coordinator_port);
-	set_coordinator_socket(coordinator_socket);
 
 	if (coordinator_socket < 0) {
 		exit_with_error(coordinator_socket, "No se pudo conectar al coordinador");
