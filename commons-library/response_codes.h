@@ -21,7 +21,9 @@ typedef enum {
 	START_COMPACTION = 9,
 	INSTANCE_AVAILABLE_FOR_KEY = 10,
 	NO_INSTANCE_AVAILABLE_FOR_KEY = 11,
-	KEY_FOUND = 12
+	KEY_FOUND = 12,
+	KEY_VALUE_FOUND = 13,
+	KEY_VALUE_NOT_FOUND = 14
 } execution_result;
 
 char* get_execution_result_description(int execution_result);

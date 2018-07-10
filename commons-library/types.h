@@ -42,6 +42,7 @@ typedef int message_type;
 extern message_type MODULE_CONNECTED;
 extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
+extern message_type PROCESS_SENTENCE;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
 extern message_type ISE_KILL;

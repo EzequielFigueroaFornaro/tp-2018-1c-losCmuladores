@@ -79,6 +79,43 @@ void send_key_info_response(int socket, execution_result response_code, char* re
 			get_execution_result_description(response_code), response);
 }
 
+char* get_key_value_from_instance(char* key) {
+	if (dictionary_has_key(keys_location, key)) {
+		t_instance* instance = dictionary_get(keys_location, key);
+
+		int key_size = strlen(key) + 1;
+		int request_size = sizeof(message_type) + sizeof(int) + key_size;
+		void* request = malloc(request_size);
+		void* offset = request;
+		concat_value(&offset, &GET_KEY_VALUE, sizeof(message_type));
+		concat_string(&offset, key, key_size);
+
+		if (send(instance->socket_id, request, request_size, 0) < 0) {
+			log_error(logger,
+					"[KeyInfoRequest] Could not send request to instance");
+			return "";
+		}
+
+		int result;
+		if (recv_int(instance->socket_id, &result) <= 0) {
+			log_error(logger,
+					"[KeyInfoRequest] Could not receive response code from instance");
+			return "";
+		}
+
+		if (result == KEY_VALUE_FOUND) {
+			char* value;
+			if (recv_string(instance->socket_id, &value) <= 0) {
+				log_error(logger,
+						"[KeyInfoRequest] Could not receive value from instance");
+				return "";
+			}
+			return value;
+		}
+	}
+	return "";
+}
+
 void key_info_request_handler(int socket) {
 	message_type request = recv_message(socket);
 
@@ -118,12 +155,20 @@ void key_info_request_handler(int socket) {
 			send_key_info_response(socket, NO_INSTANCE_AVAILABLE_FOR_KEY, "");
 		}
 	} else if (request == GET_KEY_VALUE) {
-		// TODO
+		pthread_mutex_lock(&keys_mtx);
+		char* value = get_key_value_from_instance(key);
+		pthread_mutex_unlock(&keys_mtx);
+		if (!string_is_empty(value)) {
+			send_key_info_response(socket, KEY_VALUE_FOUND, value);
+		} else {
+			send_key_info_response(socket, KEY_VALUE_NOT_FOUND, "");
+		}
 	}
 	if (recv_message(socket) != KEY_INFO_REQUEST_FINISHED) {
 		log_info(logger, "Did not receive key info request finished message. Closing connection anyway");
 	}
 	close(socket);
+	pthread_exit(pthread_self);
 }
 
 

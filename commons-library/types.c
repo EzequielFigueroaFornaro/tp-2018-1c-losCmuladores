@@ -10,6 +10,7 @@
 message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
 message_type EXECUTION_RESULT = 200;
+message_type PROCESS_SENTENCE = 201;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 message_type ISE_KILL = 302;
@@ -69,10 +70,12 @@ t_buffer serialize_sentence(t_sentence* sentence){
 	int key_length = strlen(sentence -> key) + 1;
 	int value_length = strlen(sentence -> value) + 1;
 
-	// operation_id + key_length + value_int + value_length
-	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int) + value_length;
+	// message_type:PROCESS_SENTENCE + operation_id + key_length + value_int + value_length
+	int message_size = sizeof(message_type) + sizeof(int) + sizeof(int)
+			+ key_length + sizeof(int) + value_length;
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
+	concat_value(&offset, &PROCESS_SENTENCE, sizeof(message_type));
 	concat_value(&offset, &(sentence -> operation_id), operation_length);
 	concat_string(&offset, sentence -> key, key_length);
 	concat_string(&offset, sentence -> value, value_length);

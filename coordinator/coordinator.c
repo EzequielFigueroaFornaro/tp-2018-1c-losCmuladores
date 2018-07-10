@@ -13,6 +13,10 @@
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
 	*sentence = malloc(sizeof(t_sentence));
 	int result;
+	if ((result = recv_message(ise_socket)) != PROCESS_SENTENCE) {
+		return result > 0? -1 : result;
+	}
+
 	if ((result = recv_sentence_operation(ise_socket, &((*sentence)->operation_id))) > 0) {
 		if ((result = recv_string(ise_socket, &((*sentence)->key))) > 0) {
 			result = recv_string(ise_socket, &((*sentence)->value));
@@ -238,6 +242,10 @@ void exit_gracefully(int code) {
 	free(instance_configuration);
 
 	pthread_mutex_lock(&instances_list_mtx);
+	void close_instance_connection(t_instance* instance) {
+		close(instance->socket_id);
+	}
+	list_iterate(instances_thread_list, (void*) close_instance_connection);
 	list_destroy(instances_thread_list);
 	pthread_mutex_unlock(&instances_list_mtx);
 	pthread_mutex_destroy(&instances_list_mtx);

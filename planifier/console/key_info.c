@@ -19,7 +19,7 @@ void open_new_coordinator_connection() {
 
 execution_result expected_result_for_param(key_param param) {
 	switch (param) {
-	case value: return KEY_FOUND;
+	case value: return KEY_VALUE_FOUND;
 	case instance: return KEY_FOUND;
 	case calculated_instance: return INSTANCE_AVAILABLE_FOR_KEY;
 	}
