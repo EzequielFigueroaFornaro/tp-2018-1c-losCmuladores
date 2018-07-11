@@ -69,3 +69,7 @@ esi* get_esi_by_id(long esi_id) {
 	pthread_mutex_unlock(&esi_map_mtx);
 	return esi;
 }
+
+bool string_is_blank(char* string) {
+	return string == NULL || string_is_empty(string);
+}

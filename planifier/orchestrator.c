@@ -140,7 +140,7 @@ void finish_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	pthread_mutex_unlock(&esi_map_mtx);
-
+	//TODO el terminar un esi exigue liberar los recursos que tien etomados?
 	switch(esi->estado) {
 		case BLOQUEADO:
 			pthread_mutex_lock(&blocked_list_mtx);
@@ -205,7 +205,6 @@ t_queue* get_all_waiting_for_resource(char* resource) {
 void block_esi_by_resource(long esi_id, char* resource) {
 	block_esi(esi_id);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-
 	t_queue* blocked_esis = get_all_waiting_for_resource(resource);
 	if (blocked_esis == NULL) {
 		blocked_esis = queue_create();
@@ -248,6 +247,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	if (resource_taken(recurso)) {
 		block_esi_by_resource(esi_id, recurso);
+		cambiar_recurso_que_lo_bloquea(recurso, esi_id);
 		able_to_give_resource = false;
 	} else {
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
@@ -257,6 +257,15 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	return able_to_give_resource;
 }
 
+
+void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
+	log_debug(logger, "Changing ESI%ld's blocking resource to '%s'", esi_id, recurso);
+	pthread_mutex_lock(&esi_map_mtx);
+	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
+	esi -> blocking_resource = recurso;
+	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
+	pthread_mutex_unlock(&esi_map_mtx);
+}
 
 char* get_resource_taken_by_esi(long esi_id) {
 	char* resource = "";

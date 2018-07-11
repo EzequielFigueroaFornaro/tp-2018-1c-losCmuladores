@@ -16,6 +16,7 @@ typedef struct {
 	long tiempo_de_entrada;
 	long cantidad_de_instrucciones;
 	int instruction_pointer;
+	char* blocking_resource;
 	pthread_t esi_thread;
 	int socket_id;
 } esi;
@@ -61,6 +62,8 @@ char* esis_to_string();
 void list_remove_esi(t_list* list, long esi_id);
 
 esi* get_esi_by_id(long esi_id);
+
+bool string_is_blank(char* string);
 
 #endif
 
