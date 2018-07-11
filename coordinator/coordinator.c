@@ -306,56 +306,11 @@ void delay_execution(){
 	sleep(delay * 0.001);
 }
 
-int process_sentence(t_sentence* sentence, long ise_id){
-	int result_to_ise;
-	t_instance* selected_instance;
-
-	delay_execution();//Retardo por requerimiento.
-
-	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
-
-	if(planifier_validation == OK){
-
-		if((sentence -> operation_id) != GET_SENTENCE) {
-
-			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
-
-			int send_to_instance_result;
-
-			if(selected_instance != NULL){
-				free(last_instance_selected);
-				last_instance_selected = malloc(sizeof(t_instance));
-				memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
-				send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
-			}
-
-			pthread_mutex_lock(&keys_mtx);
-			if(send_to_instance_result == KEY_UNREACHABLE || selected_instance == NULL) {
-
-				//if(sentence -> operation_id == STORE_SENTENCE){
-				dictionary_remove(keys_location, sentence -> key);
-				notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise_id);
-				result_to_ise = KEY_UNREACHABLE;
-				//}
-				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
-			}
-			dictionary_put(keys_location, sentence -> key, selected_instance);
-			pthread_mutex_unlock(&keys_mtx);
-		} else {
-			result_to_ise = planifier_validation;
-		}
-	} else {
-		result_to_ise = planifier_validation;
-	}
-
-	return result_to_ise;
-}
-
 //TODO test.
 void start_compaction(){
 	void _send_compaction_order(t_instance* instance){
 		log_info(logger, "Sending compaction order to instance %s", instance -> name);
-		int status = send(instance -> socket_id, START_COMPACTION, sizeof(int), 0);
+		int status = send(instance -> socket_id, (int*) START_COMPACTION, sizeof(int), 0); //TODO testear sin el casteo.
 		if(status <= 0){
 			log_error(logger, "Error while sending compaction order to instance %s. It will be marked as unavailable", instance -> name);
 			handle_instance_disconnection(instance);
@@ -378,7 +333,63 @@ void start_compaction(){
 	t_list* available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
 	list_iterate(available_instances, (void*) _send_compaction_order);
 	list_destroy(available_instances);
-	log_infor(logger, "Compaction process finished.");
+	log_info(logger, "Compaction process finished.");
+	return;
+}
+
+int process_sentence(t_sentence* sentence, long ise_id){
+	int _send_to_instance(t_instance* selected_instance){
+		free(last_instance_selected);
+		last_instance_selected = malloc(sizeof(t_instance));
+		memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
+		return send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+	}
+
+	int result_to_ise;
+	t_instance* selected_instance;
+
+	delay_execution();//Retardo por requerimiento.
+
+	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
+
+	if(planifier_validation == OK){
+
+		if((sentence -> operation_id) != GET_SENTENCE) {
+
+			selected_instance = select_instance_to_send_by_distribution_strategy_and_operation(sentence);
+
+			int send_to_instance_result;
+
+			if(selected_instance != NULL){
+				send_to_instance_result = _send_to_instance(selected_instance);
+			}
+			//TODO agregar un log del resultado de la instancia.
+
+			if(send_to_instance_result == NEED_COMPACTION){
+				start_compaction();
+				send_to_instance_result = _send_to_instance(selected_instance);
+			}
+
+			pthread_mutex_lock(&keys_mtx);
+			if(send_to_instance_result == KEY_UNREACHABLE || selected_instance == NULL) {
+
+				//if(sentence -> operation_id == STORE_SENTENCE){
+				dictionary_remove(keys_location, sentence -> key);
+				notify_sentence_and_ise_to_planifier(KEY_UNREACHABLE, sentence -> key, ise_id);
+				result_to_ise = KEY_UNREACHABLE;
+				//}
+				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
+			}
+			dictionary_put(keys_location, sentence -> key, selected_instance);
+			pthread_mutex_unlock(&keys_mtx);
+		} else {
+			result_to_ise = planifier_validation;
+		}
+	} else {
+		result_to_ise = planifier_validation;
+	}
+
+	return result_to_ise;
 }
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
