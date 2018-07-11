@@ -53,6 +53,8 @@ pthread_t start_console();
 //
 //int get_esi_id(long* esi_id);
 
+t_sentence* wait_for_statement_from_coordinator(int socket_id);
+
 void try_to_block_resource(char* resource, long esi_id);
 //
 //void free_resource(char* resource);

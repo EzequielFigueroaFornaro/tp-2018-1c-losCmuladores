@@ -94,6 +94,6 @@ void save_operation_log(t_sentence* sentence, long ise_id);
 
 void exit_gracefully(int code);
 
-int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id);
+int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_id);
 
 #endif /* COORDINATOR_H_ */

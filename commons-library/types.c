@@ -21,16 +21,16 @@ message_type CALCULATE_INSTANCE = 403;
 message_type KEY_INFO_REQUEST_FINISHED = 404;
 
 
-t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){
+t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id){
 	int key_length = strlen(key) + 1;
-	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int);
+	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(long);
 
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
 
 	concat_value(&offset, &(operation_id), sizeof(int));
 	concat_string(&offset, key, key_length);
-	concat_value(&offset, &ise_id, sizeof(int));
+	concat_value(&offset, &ise_id, sizeof(long));
 
 	t_buffer buffer_struct;
 	buffer_struct.buffer_content = buffer;

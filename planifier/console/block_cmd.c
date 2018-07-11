@@ -22,13 +22,12 @@ command_result do_validations(char* resource, long esi_id) {
 		return result;
 	}
 
-	char* esi_current_resource_taken = get_resource_taken_by_esi(esi_id);
-	if (!string_is_empty(esi_current_resource_taken)) {
+	if (!string_is_blank(esi->blocking_resource)) {
 		result.code = COMMAND_ERROR;
 		result.content =
 				string_from_format(
 						"ESI%ld already has a resource: '%s'. ESIs can't have more than 1 resource taken",
-						esi_id, esi_current_resource_taken);
+						esi_id, esi->blocking_resource);
 		return result;
 	}
 
