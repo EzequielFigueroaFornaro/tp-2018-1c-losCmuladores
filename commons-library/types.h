@@ -42,12 +42,15 @@ typedef int message_type;
 extern message_type MODULE_CONNECTED;
 extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
+extern message_type PROCESS_SENTENCE;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
 extern message_type ISE_KILL;
+extern message_type KEY_INFO_REQUEST;
 extern message_type GET_INSTANCE;
 extern message_type GET_KEY_VALUE;
 extern message_type CALCULATE_INSTANCE;
+extern message_type KEY_INFO_REQUEST_FINISHED;
 
 t_sentence* sentence_create();
 

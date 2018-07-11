@@ -15,23 +15,29 @@ bool is_empty(char* string) {
 
 void append(char* field, char* value) {
 	if (!is_empty(value)) {
-		string_append_with_format(&buffer, "\n%s: {%s}", field, value);
+		string_append_with_format(&buffer, "\t%s: %s\n", field, value);
 	}
+}
+
+char* get_waiting(char* key) {
+	char* waiting = get_all_waiting_for_resource_as_string(key, ", ");
+	return is_empty(waiting)? "No hay" : string_from_format("{ %s }", waiting);
 }
 
 command_result status_cmd(command command) {
 	char* key = (char*) list_get(command.args, 0);
 	buffer = string_new();
 
-	append("value", get_key_param(value, key));
 	char* instance_name = get_key_param(instance, key);
-	append("instance", instance_name);
-	append("calculated_instance", is_empty(instance_name)? get_key_param(calculated_instance, key) : "");
-	append("waiting", get_all_waiting_for_resource_as_string(key, ", "));
+
+	string_append(&buffer, "\n");
+	append("valor", get_key_param(value, key));
+	append("instancia", instance_name);
+	append("instancia_calculada", is_empty(instance_name)? get_key_param(calculated_instance, key) : "");
+	append("esperando", get_waiting(key));
 
 	command_result result;
 	result.code = COMMAND_OK;
-	memcpy(result.content, buffer, strlen(buffer));
-	free(buffer);
+	result.content = buffer;
 	return result;
 }

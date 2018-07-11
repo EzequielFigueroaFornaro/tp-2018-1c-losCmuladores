@@ -15,8 +15,6 @@ void ise_connection_handler(int socket);
 void instance_connection_handler(int socket);
 void planifier_connection_handler(int socket);
 
-//void handle_instance_disconnection(t_instance* instance);
-
 void signal_handler(int sig);
 
 void _exit_with_error(int socket, char* error_msg, void * buffer);

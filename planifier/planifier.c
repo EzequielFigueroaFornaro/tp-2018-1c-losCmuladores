@@ -48,6 +48,8 @@ void load_configuration(char *config_file_path) {
 	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
 	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 
+	set_coordinator_connection_params(coordinator_ip, coordinator_port);
+
 	config_destroy(config);
 	dictionary_destroy(algorithms);
 
@@ -56,7 +58,6 @@ void load_configuration(char *config_file_path) {
 
 void connect_to_coordinator() {
 	coordinator_socket = connect_to(coordinator_ip, coordinator_port);
-	set_coordinator_socket(coordinator_socket);
 
 	if (coordinator_socket < 0) {
 		exit_with_error(coordinator_socket, "No se pudo conectar al coordinador");
@@ -105,7 +106,7 @@ void connect_to_coordinator() {
 			}
 		}*/
 
-/*
+
         while(true){//TODO QUE CONDICION PONGO ACA?
             t_sentence* sentence = wait_for_statement_from_coordinator(coordinator_socket);
             if (NULL != sentence) {//no hace falta
@@ -118,7 +119,7 @@ void connect_to_coordinator() {
                     case SET_SENTENCE:
                         log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->value, sentence->key);
                         execution_result result;
-                        if (el_esi_puede_tomar_el_recurso(sentence->value, sentence->key)){
+                        if (strcmp(get_resource_taken_by_esi(sentence->value), sentence->key) == 0 /*tengo igual a lo que tome como true*/){
                             log_info(logger, "Operacion SET exitosa");
                             result = OK;
                         }else{
@@ -144,7 +145,7 @@ void connect_to_coordinator() {
                 exit_with_error(coordinator_socket, "Error receiving sentence from coordinator. Maybe was disconnected");
             }
         }
-*/
+
 
 	}
 }
@@ -200,21 +201,22 @@ t_sentence* wait_for_statement_from_coordinator(int socket_id) {
 //	}
 //}
 
-//void free_resource(char* resource){
-//	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-//	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
-//	dictionary_remove(recurso_tomado_por_esi, resource);
-//	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-//	long* esi_id = queue_pop(esi_queue);
-//	while (!is_valid_esi(*esi_id)) {
-//		esi_id = queue_pop(esi_queue);
-//	}
-//	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-////	add_esi_bloqueada(*esi_id); TODO ?????
-//	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
-//
-//	send_execution_result_to_coordinator(OK);
-//}
+void free_resource(char* resource){
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
+	dictionary_remove(recurso_tomado_por_esi, resource);
+	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
+	long* esi_id = queue_pop(esi_queue);
+	while (!is_valid_esi(*esi_id)) {
+		esi_id = queue_pop(esi_queue);
+	}
+	cambiar_recurso_que_lo_bloquea("", *esi_id);
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+    //add_esi_bloqueada(*esi_id); TODO ?????
+	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
+
+	send_execution_result_to_coordinator(OK);
+}
 
 /*bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource){
 //	pthread_mutex_lock(&map_boqueados);

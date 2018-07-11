@@ -29,7 +29,7 @@
 #include "console/console.h"
 #include "console/console_log.h"
 #include "dispatcher.h"
-#include "key_info.h"
+#include "console/key_info.h"
 
 int server_port;
 int server_max_connections;
