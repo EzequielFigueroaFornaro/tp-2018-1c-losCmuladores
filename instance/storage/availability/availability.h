@@ -32,4 +32,8 @@ void availability_take_space(t_availability *availability, int index, int contin
 
 void availability_free_space(t_availability *availability, int index, int continuous_size);
 
+void availability_log_debug(t_availability *availability);
+
+bool availability_need_compaction(t_availability *availability, int entries_needed);
+
 #endif /* STORAGE_AVAILABILITY_H_ */

@@ -63,5 +63,7 @@ void list_remove_esi(t_list* list, long esi_id);
 
 esi* get_esi_by_id(long esi_id);
 
+bool string_is_blank(char* string);
+
 #endif
 

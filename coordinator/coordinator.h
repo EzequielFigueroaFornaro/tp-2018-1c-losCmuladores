@@ -82,7 +82,7 @@ typedef struct {
 
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence);
 
-int send_instance_configuration(int client_sock);
+int send_instance_configuration(int client_sock, char *name);
 
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence);
 

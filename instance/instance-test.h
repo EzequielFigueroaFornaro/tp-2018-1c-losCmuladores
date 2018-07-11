@@ -16,4 +16,6 @@ void test_file_system_store_key();
 
 void test_file_system_load_key();
 
+void test_entry_table_has_atomic();
+
 #endif /* INSTANCE_TEST_H_ */
