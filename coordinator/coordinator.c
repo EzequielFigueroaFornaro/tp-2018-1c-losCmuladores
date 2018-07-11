@@ -289,9 +289,34 @@ void load_configuration(char* config_file_path){
 	log_info(logger, "OK.");
 }
 
-int send_instance_configuration(int client_sock){
+int send_instance_configuration(int client_sock, char *name){
 	log_info(logger, "Sending instance configuration to host %s", get_client_address(client_sock));
-	int status = send(client_sock, instance_configuration, sizeof(t_instance_configuration), 0);
+
+	t_list *instance_keys = list_create();
+	int keys_size = 0;
+	void _instance_keys_iterator(char *key, void *entry) {
+		t_instance *instance = (t_instance *) entry;
+		if (string_equals_ignore_case(instance->name, name)) {
+			list_add(instance_keys, (void *)key);
+			keys_size += strlen(key) + 1;
+		}
+	}
+	dictionary_iterator(keys_location, _instance_keys_iterator);
+
+	int keys_count = list_size(instance_keys);
+	int buffer_size = sizeof(t_instance_configuration) + keys_size + keys_count * sizeof(int);
+	void* buffer = malloc(buffer_size);
+	void* offset = buffer;
+	concat_value(&offset, instance_configuration, sizeof(t_instance_configuration));
+	concat_value(&offset, &keys_count, sizeof(keys_count));
+	void _concat_key(void *item) {
+		char *key = (char *)item;
+		concat_string(&offset, key, strlen(key) + 1);
+	}
+	list_iterate(instance_keys, _concat_key);
+
+
+	int status = send(client_sock, buffer, buffer_size, 0);
 	if(status <= 0){
 		log_error(logger, "Could not send instance configuration.%d", status);
 		close(client_sock);

@@ -10,17 +10,20 @@
 
 #include "instance.h"
 #include "instance-test.h"
+#include "storage/entry-table.h"
 #include "storage/file/file-system.h"
-
+#include "response_codes.h"
 #include <commons/log.h>
 #include <stdbool.h>
+#include "logging.h"
 
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
+t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
 
-void configure_logger() {
-	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
+void init_logger() {
+	logger = log_create("instance.log", "instance", true, LOG_LEVEL_DEBUG);
 }
 
 void exit_gracefully(int return_nr) {
@@ -37,7 +40,7 @@ t_instance_config* instance_config_create() {
 	instance_config->coordinator_ip = NULL;
 	instance_config->instance_name = NULL;
 	instance_config->mount_path = NULL;
-	instance_config->replacement_algorithm = NULL;
+	instance_config->replacement_algorithm = CIRCULAR;
 	return instance_config;
 }
 
@@ -45,7 +48,6 @@ void instance_config_destroy(t_instance_config *instance_config) {
 	free(instance_config->coordinator_ip);
 	free(instance_config->instance_name);
 	free(instance_config->mount_path);
-	free(instance_config->replacement_algorithm);
 	free(instance_config);
 }
 
@@ -59,22 +61,14 @@ t_instance_config* load_configuration(char* config_file_path){
 	instance_config->coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 	instance_config->instance_name = string_duplicate(config_get_string_value(config, "NAME"));
 	instance_config->mount_path = string_duplicate(config_get_string_value(config, "MOUNT_PATH"));
-	instance_config->replacement_algorithm = string_duplicate(config_get_string_value(config, "REPLACEMENT_ALGORITHM"));
+
+	char *replacement_algorithm_str = config_get_string_value(config, "REPLACEMENT_ALGORITHM");
+	instance_config->replacement_algorithm = _replacement_algorithm_to_enum(replacement_algorithm_str);
 
 	config_destroy(config);
 
 	log_info(logger, "Instance configuration loaded OK");
 	return instance_config;
-}
-
-void _exit_with_error(char *error_msg, ...) {
-	va_list arguments;
-	va_start(arguments, error_msg);
-	char *formatted_message = string_from_vformat(error_msg, arguments);
-	va_end(arguments);
-	log_error(logger, formatted_message);
-	free(formatted_message);
-	exit_gracefully(1);
 }
 
 t_instance_configuration *receive_instance_configuration(int socket){
@@ -100,15 +94,6 @@ void check_if_connection_was_ok(int server_socket){
 	  log_info(logger, "Connected !");
 }
 
-int process_sentence_set(t_sentence* sentence) {
-	char *value = sentence->value;
-	if (entry_table_can_put(entries_table, value)) {
-		return entry_table_put(entries_table, sentence->key, sentence->value);
-	} else if (entry_table_enough_free_entries(entries_table, value)) {
-
-	}
-}
-
 int process_sentence(t_sentence* sentence) {
 	log_info(logger, "Processing statement...");
 	switch(sentence->operation_id) {
@@ -121,7 +106,7 @@ int process_sentence(t_sentence* sentence) {
 		}
 		return 0;
 	case SET_SENTENCE:
-		return process_sentence_set(sentence);
+		return entry_table_put(entries_table, sentence->key, sentence->value);
 	case STORE_SENTENCE:
 		return entry_table_store(entries_table, instance_config->mount_path, sentence->key);
 	default:
@@ -157,7 +142,8 @@ t_sentence* wait_for_statement(int socket_fd) {
 
 void signal_handler(int sig){
     if (sig == SIGINT) {
-    	log_info(logger, "Caught signal for Ctrl+C\n");
+    	log_info(logger, "Caught signal for Ctrl+C");
+    	close(coordinator_socket);
     	instance_running = false;
     	exit_gracefully(0);
     }
@@ -239,7 +225,7 @@ void wait_for_key_value_requests(int socket) {
 }
 
 int instance_run(int argc, char* argv[]) {
-	configure_logger();
+	init_logger();
 	log_info(logger, "Initializing instance...");
     signal(SIGINT,signal_handler);
 
@@ -251,7 +237,7 @@ int instance_run(int argc, char* argv[]) {
 	send_instance_name(coordinator_socket, instance_config->instance_name);
 
 	t_instance_configuration *configuration = receive_instance_configuration(coordinator_socket);
-	entries_table = entry_table_create(configuration->entries_quantity, configuration->entries_size);
+	entries_table = entry_table_create(configuration->entries_quantity, configuration->entries_size, instance_config->replacement_algorithm);
 	free(configuration);
 
 	log_info(logger, "Initializing instance... OK");
@@ -266,10 +252,17 @@ int instance_run(int argc, char* argv[]) {
 		if (request == PROCESS_SENTENCE) {
 			t_sentence* sentence = wait_for_statement(coordinator_socket);
 			if (NULL != sentence) {
-				process_sentence(sentence);
+			int sentence_result = process_sentence(sentence);
 				sentence_destroy(sentence);
-				send_result(coordinator_socket, 200);
-				//TODO avisar al coordinador.
+
+			int coordinator_result = sentence_result;
+			if (sentence_result >= 0) {
+				coordinator_result = OK;
+			} else if (sentence_result == -2) {
+				log_info(logger, "Sending NEED_COMPACTION message to coordinator");
+				coordinator_result = NEED_COMPACTION;
+			}
+			send_result(coordinator_socket, coordinator_result);
 			} else {
 				_exit_with_error(
 						"Error receiving sentence from coordinator. Maybe was disconnected");
@@ -278,10 +271,12 @@ int instance_run(int argc, char* argv[]) {
 			wait_for_key_value_requests(coordinator_socket);
 		}
 	}
+	exit_gracefully(1);
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
+	init_logger();
 	if (argc > 2 && string_equals_ignore_case(argv[2], "--test")) {
 		return instance_run_test();
 	} else {
@@ -311,3 +306,27 @@ int connect_to_coordinator(char *coordinator_ip, int coordinator_port) {
 	}
 	return coordinator_socket;
 }
+
+t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement) {
+	if (strcmp(replacement, "CIRC") == 0) {
+		return CIRCULAR;
+	} else if (strcmp(replacement, "LRU") == 0) {
+		return LRU;
+	} else if (strcmp(replacement, "BSU") == 0) {
+		return BSU;
+	} else {
+		_exit_with_error("El algoritmo de reemplazo %s es invalido", replacement);
+		return -1;
+	}
+}
+
+void _exit_with_error(char *error_msg, ...) {
+	va_list arguments;
+	va_start(arguments, error_msg);
+	char *formatted_message = string_from_vformat(error_msg, arguments);
+	va_end(arguments);
+	log_error(logger, formatted_message);
+	free(formatted_message);
+	exit_gracefully(1);
+}
+
