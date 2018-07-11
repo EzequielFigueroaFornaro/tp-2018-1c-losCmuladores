@@ -288,3 +288,46 @@ char* get_resource_taken_by_esi(long esi_id) {
 bool resource_taken(char* resource) {
 	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
+
+void buscar_deadlock(){
+	pthread_mutex_lock(&blocked_list_mtx);
+	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+	for(int i=0: i<list_size(BLOCKED_ESI_LIST): i++){
+		esi _esi = list_get(BLOCKED_ESI_LIST , i);
+		buscar_deadlock(_eso -> id, list_create());
+	}
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&blocked_list_mtx);
+}
+
+
+
+long[] buscar_deadlock(long id, *t_list corte){
+	if(/*TODO metodo contains*/conteins(corte,id)){
+		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
+		*t_list corte ids_en_deadlock = list_create();
+		list_add(ids_en_deadlock, id);
+	}else{
+		log_debug(logger, "Agarro el esi id: %ld, del mapa", esi_id);
+		esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
+		if((esi->status) != BLOQUEADO){
+			return list_create();
+		}
+		char* recurso = _esi -> blocking_resource;
+		esi esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
+
+		corte = list_add(corte, id);
+		*t_list resultado = buscar_deadlock(esi_bloqueante, corte);
+		if(list_is_empty(resultado) || contains(/*TODO metodo contains*/resultado, id)){
+			return resultado
+		}else{
+			return list_add(resultado, id);
+		}
+	}
+}
+
+
+;
+
