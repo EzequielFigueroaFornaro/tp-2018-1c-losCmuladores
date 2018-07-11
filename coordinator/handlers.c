@@ -277,7 +277,7 @@ void instance_connection_handler(int socket) {
 //			pthread_exit(pthread_self);
 //			//todo EXIT THREAD WITH ERROR.
 //						//_exit_with_error(socket, "Could not receive instance name", NULL);
-//		}
+		}
 
 
 
