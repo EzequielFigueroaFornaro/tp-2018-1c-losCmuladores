@@ -247,7 +247,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	if (resource_taken(recurso)) {
 		block_esi_by_resource(esi_id, recurso);
-		cambiar_recurso_que_lo_bloquea(recurso,esi_id)
+		cambiar_recurso_que_lo_bloquea(recurso,esi_id);
 		able_to_give_resource = false;
 	} else {
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
@@ -293,7 +293,7 @@ void buscar_deadlock(){
 	pthread_mutex_lock(&blocked_list_mtx);
 	pthread_mutex_lock(&esi_map_mtx);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-	for(int i=0: i<list_size(BLOCKED_ESI_LIST): i++){
+	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		esi _esi = list_get(BLOCKED_ESI_LIST , i);
 		buscar_deadlock(_eso -> id, list_create());
 	}
@@ -304,10 +304,13 @@ void buscar_deadlock(){
 
 
 
-long[] buscar_deadlock(long id, *t_list corte){
-	if(/*TODO metodo contains*/conteins(corte,id)){
+t_list* buscar_deadlock(long id, t_list* corte){
+	bool id_function(long list_id){
+		return list_id=id;
+	}
+	if(list_any_satisfy(corte,(void*)id_function)){
 		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
-		*t_list corte ids_en_deadlock = list_create();
+		t_list* ids_en_deadlock = list_create();
 		list_add(ids_en_deadlock, id);
 	}else{
 		log_debug(logger, "Agarro el esi id: %ld, del mapa", esi_id);
@@ -317,11 +320,10 @@ long[] buscar_deadlock(long id, *t_list corte){
 		}
 		char* recurso = _esi -> blocking_resource;
 		esi esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
-
 		corte = list_add(corte, id);
-		*t_list resultado = buscar_deadlock(esi_bloqueante, corte);
-		if(list_is_empty(resultado) || contains(/*TODO metodo contains*/resultado, id)){
-			return resultado
+		t_list* resultado = buscar_deadlock(esi_bloqueante, corte);
+		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function)){
+			return resultado;
 		}else{
 			return list_add(resultado, id);
 		}
@@ -329,5 +331,4 @@ long[] buscar_deadlock(long id, *t_list corte){
 }
 
 
-;
 
