@@ -247,7 +247,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	if (resource_taken(recurso)) {
 		block_esi_by_resource(esi_id, recurso);
-		cambiar_recurso_que_lo_bloquea(recurso,esi_id)
+		cambiar_recurso_que_lo_bloquea(recurso, esi_id);
 		able_to_give_resource = false;
 	} else {
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
@@ -259,7 +259,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 
 
 void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
-	log_debug(logger, "Changing ESI%ld's state to %d", esi_id, nuevo_estado);
+	log_debug(logger, "Changing ESI%ld's blocking resource to '%s'", esi_id, recurso);
 	pthread_mutex_lock(&esi_map_mtx);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi -> blocking_resource = recurso;
