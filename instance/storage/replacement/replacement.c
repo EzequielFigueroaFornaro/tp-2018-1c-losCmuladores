@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "logging.h"
+#include <commons/string.h>
 
 typedef struct {
 	char *key;
@@ -21,6 +22,7 @@ t_replacement_entry* _replacement_entry_create(char *key, int size);
 void _replacement_entry_destroy(void *entry);
 int _find_index_to_insert_bsu(t_replacement *replacement, int size);
 int _replacement_size(t_replacement *replacement);
+bool _replacement_contains(t_replacement *replacement, char *key);
 
 t_replacement* replacement_create(t_replacement_algorithm algorithm) {
 	t_replacement *replacement = (t_replacement *)malloc(sizeof(t_replacement));
@@ -35,18 +37,22 @@ void replacement_destroy(t_replacement *replacement) {
 }
 
 void replacement_add(t_replacement *replacement, char *key, int size) {
-	log_info(logger, "Adding key '%s' to replacement list", key);
+	log_debug(logger, "Adding key %s to replacement list", key);
 	t_replacement_entry* entry = _replacement_entry_create(key, size);
 	switch (replacement -> algorithm) {
 	case CIRCULAR:
-		list_add(replacement -> replacement_entries, (void *)entry);
+		if (!_replacement_contains(replacement, key)) {
+			list_add(replacement -> replacement_entries, (void *)entry);
+		}
 		break;
 	case LRU:
-		; int lru_index = list_size(replacement -> replacement_entries);
+		replacement_remove(replacement, key);
+		int lru_index = list_size(replacement -> replacement_entries);
 		list_add_in_index(replacement -> replacement_entries, lru_index, (void *)entry);
 		break;
 	case BSU:
-		; int bsu_index = _find_index_to_insert_bsu(replacement, size);
+		replacement_remove(replacement, key);
+		int bsu_index = _find_index_to_insert_bsu(replacement, size);
 		list_add_in_index(replacement -> replacement_entries, bsu_index, (void *)entry);
 		break;
 	}
@@ -73,6 +79,18 @@ char* replacement_take(t_replacement *replacement) {
 
 bool replacement_is_empty(t_replacement *replacement) {
 	return list_is_empty(replacement -> replacement_entries);
+}
+
+void replacement_log_debug(t_replacement *replacement) {
+	char *string = strdup("Replacement list is: ");
+	int count = list_size(replacement->replacement_entries);
+	for (int i = 0; i < count; ++i) {
+		t_replacement_entry * item = (t_replacement_entry *)list_get(replacement->replacement_entries, i);
+		char *format = string_from_format("key %s %d, ", item->key, item->size);
+		string_append(&string, format);
+	}
+	log_debug(logger, string);
+	free(string);
 }
 
 
@@ -108,6 +126,15 @@ int _find_index_to_insert_bsu(t_replacement *replacement, int size) {
 
 int _replacement_size(t_replacement *replacement) {
 	return list_size(replacement -> replacement_entries);
+}
+
+bool _replacement_contains(t_replacement *replacement, char *key) {
+	bool _equals_key(void *entry) {
+		t_replacement_entry *item = (t_replacement_entry *)entry;
+		return strcmp(key, item -> key) == 0;
+	}
+
+	return list_any_satisfy(replacement -> replacement_entries, _equals_key);
 }
 
 

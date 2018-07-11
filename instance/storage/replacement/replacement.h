@@ -33,4 +33,6 @@ char *replacement_take(t_replacement *replacement);
 
 bool replacement_is_empty(t_replacement *replacement);
 
+void replacement_log_debug(t_replacement *replacement);
+
 #endif /* STORAGE_REPLACEMENT_REPLACEMENT_H_ */

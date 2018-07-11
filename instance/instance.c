@@ -23,7 +23,7 @@ void _exit_with_error(char *error_msg, ...);
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
 
 void init_logger() {
-	logger = log_create("instance.log", "instance", true, LOG_LEVEL_INFO);
+	logger = log_create("instance.log", "instance", true, LOG_LEVEL_DEBUG);
 }
 
 void exit_gracefully(int return_nr) {
@@ -94,10 +94,6 @@ void check_if_connection_was_ok(int server_socket){
 	  log_info(logger, "Connected !");
 }
 
-int process_sentence_set(t_sentence* sentence) {
-	return entry_table_put(entries_table, sentence->key, sentence->value);
-}
-
 int process_sentence(t_sentence* sentence) {
 	log_info(logger, "Processing statement...");
 	switch(sentence->operation_id) {
@@ -110,7 +106,7 @@ int process_sentence(t_sentence* sentence) {
 		}
 		return 0;
 	case SET_SENTENCE:
-		return process_sentence_set(sentence);
+		return entry_table_put(entries_table, sentence->key, sentence->value);
 	case STORE_SENTENCE:
 		return entry_table_store(entries_table, instance_config->mount_path, sentence->key);
 	default:
@@ -121,7 +117,7 @@ int process_sentence(t_sentence* sentence) {
 
 //TODO hacer deserializador.
 t_sentence* wait_for_statement(int socket_fd) {
-	log_info(logger, "Waiting for sentence from coordinator...");
+	log_info(logger, "Waiting sentence from coordinator...");
 
 	t_sentence *sentence = sentence_create();
 
@@ -148,7 +144,8 @@ t_sentence* wait_for_statement(int socket_fd) {
 
 void signal_handler(int sig){
     if (sig == SIGINT) {
-    	log_info(logger, "Caught signal for Ctrl+C\n");
+    	log_info(logger, "Caught signal for Ctrl+C");
+    	close(coordinator_socket);
     	instance_running = false;
     }
 }
@@ -217,13 +214,20 @@ int instance_run(int argc, char* argv[]) {
 		if (NULL != sentence) {
 			int sentence_result = process_sentence(sentence);
 			sentence_destroy(sentence);
-			int coordinator_result = sentence_result >= 0 ? OK : -1;
+
+			int coordinator_result = sentence_result;
+			if (sentence_result >= 0) {
+				coordinator_result = OK;
+			} else if (sentence_result == -2) {
+				log_info(logger, "Sending NEED_COMPACTION message to coordinator");
+				coordinator_result = NEED_COMPACTION;
+			}
 			send_result(coordinator_socket, coordinator_result);
-			//TODO avisar al coordinador.
 		} else {
 			_exit_with_error("Error receiving sentence from coordinator. Maybe was disconnected");
 		}
 	}
+	exit_gracefully(1);
 	return 0;
 }
 

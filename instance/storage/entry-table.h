@@ -36,6 +36,9 @@ void entry_table_destroy(t_entry_table* entry_table);
 
 /**
  * Inserta una nueva clave en la tabla
+ * return
+ *       -1 Error generico
+ *       -2 Necesita compactar
  */
 int entry_table_put(t_entry_table* entry_table, char *key, char *value);
 
@@ -75,5 +78,10 @@ bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value);
  * Usado para reemplazar entradas
  */
 bool entry_table_has_atomic_entries(t_entry_table* entry_table);
+
+/**
+ * Inicia la compactacion
+ */
+int entry_table_compact(t_entry_table * entry_table);
 
 #endif /* STORAGE_ENTRY_TABLE_H_ */

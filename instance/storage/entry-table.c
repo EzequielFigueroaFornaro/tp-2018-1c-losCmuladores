@@ -57,29 +57,32 @@ void entry_table_destroy(t_entry_table* entry_table) {
 }
 
 int entry_table_put(t_entry_table * table, char *key, char *value) {
-	bool retry = true;
 	int result = -1;
-	do {
-		if (_entry_table_has_key(table, key)) {
-			result = _entry_table_update(table, key, value);
-			retry = false;
-		} else {
-			int try_put_result = _entry_table_try_put(table, key, value);
-			if (try_put_result < 0) {
-				char *key_to_replace = replacement_take(table->replacement);
-				if (key_to_replace == NULL) {
-					result = -1;
+	if (_entry_table_has_key(table, key)) {
+		result = _entry_table_update(table, key, value);
+	} else {
+		bool retry = true;
+		do {
+			int entries_needed = _calculate_value_entries_count(table, value);
+			if (availability_need_compaction(table->availability, entries_needed)) {
+				result = -2;
+				retry = false;
+			} else if (availability_get_free_entries_count(table->availability) < entries_needed) {
+				if (replacement_is_empty(table->replacement)) {
+					log_debug(logger, "Not enough space to save key %s with value %s", key, value);
 					retry = false;
 				} else {
-					log_info(logger, "Replacing '%s' key for '%s'", key_to_replace, key);
+					char *key_to_replace = replacement_take(table->replacement);
+					log_debug(logger, "Replacing old key %s for new key %s", key_to_replace, key);
 					entry_table_remove(table, key_to_replace);
 				}
 			} else {
-				result = try_put_result;
+				result = _entry_table_try_put(table, key, value);
 				retry = false;
 			}
-		}
-	} while(retry);
+		} while(retry);
+	}
+	availability_log_debug(table->availability);
 	return result;
 }
 
@@ -100,6 +103,7 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 	dictionary_remove_and_destroy(entry_table->entries, key, free);
 
 	replacement_remove(entry_table->replacement, key);
+	replacement_log_debug(entry_table->replacement);
 }
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -118,6 +122,10 @@ int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char *value = file_system_read(file_name);
 	return entry_table_put(entry_table, key, value);
+}
+
+int entry_table_compact(t_entry_table * entry_table) {
+	return -1;
 }
 
 bool entry_table_can_put(t_entry_table* entry_table, char *value) {
@@ -199,7 +207,7 @@ int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) 
 	int result = -1;
 	// Requisito: https://sisoputnfrba.gitbook.io/re-distinto/anexo-i-lenguaje-operaciones#aclaraciones-importantes-sobre-las-operaciones
 	if (entries_new_value > entries_old_value) {
-		log_error(logger, "Can not set key '%s' with value '%s' because is bigger than older value '%s'", key, new_value, old_value);
+		log_error(logger, "Can not set key %s with value %s because is bigger than older value %s", key, new_value, old_value);
 	} else {
 		t_entry *entry = dictionary_get(entry_table ->entries, key);
 
@@ -224,7 +232,11 @@ int _entry_table_try_put(t_entry_table * table, char *key, char *value) {
 		_copy_value_in_data(table, value, index);
 		_add_entry_in_table_dictionary(table, key, value, index);
 		if (_is_atomic(table, key)) {
+			log_debug(logger, "Adding key %s to replacement list", key);
 			replacement_add(table->replacement, key, _calculate_value_length(value));
+			replacement_log_debug(table->replacement);
+		} else {
+			log_debug(logger, "Skipping add key %s to replacement list because is not atomic", key);
 		}
 		return index;
 	} else {
