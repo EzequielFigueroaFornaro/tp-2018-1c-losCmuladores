@@ -171,7 +171,10 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	}
 
 	int result;
-	int result_response = recv(instance -> socket_id, &result, sizeof(int), 0);
+	int entries_used;
+	int result_response;
+	recv(instance -> socket_id, &result, sizeof(int), 0);
+	result_response = recv(instance -> socket_id, &entries_used, sizeof(int), 0);
 
 	if(result_response == 0) {
 		log_error(logger, "Selected instance is not available !");
