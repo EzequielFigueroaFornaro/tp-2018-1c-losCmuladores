@@ -351,6 +351,36 @@ int process_sentence(t_sentence* sentence, long ise_id){
 	return result_to_ise;
 }
 
+//TODO test.
+void start_compaction(){
+	void _send_compaction_order(t_instance* instance){
+		log_info(logger, "Sending compaction order to instance %s", instance -> name);
+		int status = send(instance -> socket_id, START_COMPACTION, sizeof(int), 0);
+		if(status <= 0){
+			log_error(logger, "Error while sending compaction order to instance %s. It will be marked as unavailable", instance -> name);
+			handle_instance_disconnection(instance);
+			return;
+		}
+
+		int compaction_result;
+		int compaction_confirmation = recv(instance -> socket_id, &compaction_result, sizeof(int), 0);
+
+		if(compaction_confirmation <= 0 || compaction_result != OK){
+			log_error(logger, "Error receiving compaction result from instance %s. It will be marked as unavailable", instance -> name);
+			handle_instance_disconnection(instance);
+			return;
+		}
+
+		log_info(logger, "Compaction finished for instance %s", instance -> name);
+	}
+
+	log_info(logger, "Starting compaction process...");
+	t_list* available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
+	list_iterate(available_instances, (void*) _send_compaction_order);
+	list_destroy(available_instances);
+	log_infor(logger, "Compaction process finished.");
+}
+
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
 int notify_sentence_and_ise_to_planifier(int operation_id, char* key, int ise_id){
 	/*log_info(logger, "Asking for sentence and resource to planifier %s");
