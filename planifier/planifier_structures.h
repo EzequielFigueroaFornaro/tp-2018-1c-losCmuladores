@@ -12,7 +12,7 @@
 
 typedef struct {
 	long id;
-	int estado;
+	estado estado;
 	long tiempo_de_entrada;
 	long cantidad_de_instrucciones;
 	int instruction_pointer;
@@ -30,7 +30,8 @@ typedef enum {
 	LISTO = 1,
 	BLOQUEADO = 2,
 	CORRIENDO = 3,
-	FINALIZADO = 4
+	FINALIZADO = 4,
+	DESBLOQUEADO=5,
 } estado;
 
 t_dictionary * esi_map;
