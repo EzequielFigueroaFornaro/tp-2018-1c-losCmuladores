@@ -10,6 +10,10 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
+#include "logging.h"
+
+char* _availability_to_string(t_availability *availability);
 
 int calculate_char_size(int entries_count) {
 	int size = entries_count / CHAR_BIT;
@@ -92,6 +96,11 @@ void availability_set_space(t_availability *availability, int index, int continu
 	}
 }
 
+bool availability_need_compaction(t_availability *availability, int entries_needed) {
+	return availability_get_free_entries_count(availability) >= entries_needed &&
+			!availability_has_free_countinuous_space(availability, entries_needed);
+}
+
 void availability_take_space(t_availability *availability, int index, int continuous_size) {
 	availability_set_space(availability, index, continuous_size, true);
 }
@@ -99,3 +108,27 @@ void availability_take_space(t_availability *availability, int index, int contin
 void availability_free_space(t_availability *availability, int index, int continuous_size) {
 	availability_set_space(availability, index, continuous_size, false);
 }
+
+void availability_log_debug(t_availability *availability) {
+	char* string = _availability_to_string(availability);
+	log_debug(logger, "Availability: %s", string);
+	free(string);
+}
+
+char* _availability_to_string(t_availability *availability) {
+	int size = sizeof(char) * availability->max_entries + 1;
+	char *string = (char *)malloc(size);
+	for (int i = 0; i < availability->max_entries; ++i) {
+		if (bitarray_test_bit(availability->bitarray, i)) {
+			memcpy(string + i, "1", 1);
+		} else {
+			memcpy(string + i, "0", 1);
+		}
+	}
+	memcpy(string + availability->max_entries, "\0", 1);
+	return string;
+}
+
+
+
+

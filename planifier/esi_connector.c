@@ -114,9 +114,9 @@ bool wait_execution_result(long esi_id) {
 }
 
 int send_message_to_esi(long esi_id, message_type message) {
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi_to_notify = dictionary_get(esi_map, id_to_string(esi_id));
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	int socket_id = esi_to_notify->socket_id;
 	return send(socket_id, &message, sizeof(message_type), 0);
 }
