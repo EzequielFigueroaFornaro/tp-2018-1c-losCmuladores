@@ -289,14 +289,15 @@ bool resource_taken(char* resource) {
 	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
 
-t_list buscar_deadlock(){
+t_list* buscar_deadlock(){
 	t_list* resultado = list_create();
 	pthread_mutex_lock(&blocked_list_mtx_3);
 	pthread_mutex_lock(&esi_map_mtx_6);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
-		esi _esi = list_get(BLOCKED_ESI_LIST , i);
-		t_list* bloqueados = buscar_deadlock(_esi -> id, list_create());
+		long esi_id = list_get(BLOCKED_ESI_LIST , i);
+
+		t_list* bloqueados = buscar_deadlock(esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
 			long id = list_get(bloqueados , j);
 			bool id_function(long list_id){
@@ -316,17 +317,18 @@ t_list buscar_deadlock(){
 
 
 t_list* buscar_deadlock(long id, t_list* corte){
+
 	bool id_function(long list_id){
 		return list_id=id;
 	}
+
 	if(list_any_satisfy(corte,(void*)id_function)){
 		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
 		t_list* ids_en_deadlock = list_create();
 		list_add(ids_en_deadlock, id);
 		return ids_en_deadlock;
-	}else{
-		log_debug(logger, "Agarro el esi id: %ld, del mapa", esi_id);
-		esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
+	} else {
+		esi* esi = dictionary_get(esi_map, id);
 		if((esi->status) != BLOQUEADO){
 			return list_create();
 		}
