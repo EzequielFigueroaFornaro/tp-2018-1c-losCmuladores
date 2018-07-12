@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "logging.h"
 
 int file_system_save(char* name, char* value) {
 	int file = open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);

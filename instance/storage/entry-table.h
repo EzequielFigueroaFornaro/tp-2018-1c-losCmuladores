@@ -9,14 +9,11 @@
 #define STORAGE_ENTRY_TABLE_H_
 
 #include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
 #include <stddef.h>
 
-#include "availability.h"
-
-typedef struct {
-	int index;
-	int length;
-} t_replacement_circular;
+#include "replacement/replacement.h"
+#include "availability/availability.h"
 
 typedef struct {
 	int index;
@@ -24,19 +21,24 @@ typedef struct {
 } t_entry;
 
 typedef struct {
+	// t_entry dictionary
 	t_dictionary *entries;
 	t_availability *availability;
+	t_replacement *replacement;
 	char *data;
 	int max_entries;
 	size_t entry_size;
 } t_entry_table;
 
-t_entry_table *entry_table_create(int max_entries, size_t entry_size);
+t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm replacement_algorithm);
 
 void entry_table_destroy(t_entry_table* entry_table);
 
 /**
  * Inserta una nueva clave en la tabla
+ * return
+ *       -1 Error generico
+ *       -2 Necesita compactar
  */
 int entry_table_put(t_entry_table* entry_table, char *key, char *value);
 
@@ -70,5 +72,16 @@ bool entry_table_can_put(t_entry_table* entry_table, char *value);
  * Usado para compactar
  */
 bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value);
+
+/**
+ * Determina si hay entradas atomicas
+ * Usado para reemplazar entradas
+ */
+bool entry_table_has_atomic_entries(t_entry_table* entry_table);
+
+/**
+ * Inicia la compactacion
+ */
+int entry_table_compact(t_entry_table * entry_table);
 
 #endif /* STORAGE_ENTRY_TABLE_H_ */

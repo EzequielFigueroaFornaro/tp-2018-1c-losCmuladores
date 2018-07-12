@@ -22,7 +22,7 @@ typedef struct {
 typedef struct {
 	int operation_id;
 	char* key;
-	char* value;
+	long value;
 } t_sentence;
 
 typedef struct {

@@ -19,6 +19,7 @@
 #include "types.h"
 #include "response_codes.h"
 #include "storage/entry-table.h"
+#include "storage/replacement/replacement.h"
 #include "commons/collections/dictionary.h"
 #include <signal.h>
 #include <string.h>
@@ -28,7 +29,7 @@ typedef struct {
 	char *coordinator_ip;
 	char *instance_name;
 	char *mount_path;
-	char *replacement_algorithm;
+	t_replacement_algorithm replacement_algorithm;
 } t_instance_config;
 
 int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
@@ -38,7 +39,7 @@ t_instance_config* instance_config_create();
 void instance_config_destroy(t_instance_config *instance_config);
 
 //Global variables.
-t_log *logger = NULL;
+t_log * logger = NULL;
 t_instance_config *instance_config = NULL;
 t_entry_table* entries_table = NULL;
 int coordinator_socket;

@@ -272,17 +272,19 @@ void instance_connection_handler(int socket) {
 		}
 
 		if(list_any_satisfy(instances_thread_list, (void*)_is_existent_instance_connected)){
-			close(socket);
-			log_error(logger, "Another instance with same name is connected.");
-			pthread_exit(pthread_self);
-			//todo EXIT THREAD WITH ERROR.
-						//_exit_with_error(socket, "Could not receive instance name", NULL);
+//			close(socket);
+//			log_error(logger, "Another instance with same name is connected.");
+//			pthread_exit(pthread_self);
+//			//todo EXIT THREAD WITH ERROR.
+//						//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
+
+
 
 		int r = 1;
 		int send_confirmation_result = send(socket, &r, sizeof(int), 0);
 
-		int result = send_instance_configuration(socket);
+		int result = send_instance_configuration(socket, instance_name);
 
 		if(result != 0){
 			log_error(logger, "Error while connecting instance.");
