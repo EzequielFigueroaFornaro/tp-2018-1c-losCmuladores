@@ -30,7 +30,8 @@ typedef enum {
 	LISTO = 1,
 	BLOQUEADO = 2,
 	CORRIENDO = 3,
-	FINALIZADO = 4
+	FINALIZADO = 4,
+	DESBLOQUEADO=5,
 } estado;
 
 t_dictionary * esi_map;

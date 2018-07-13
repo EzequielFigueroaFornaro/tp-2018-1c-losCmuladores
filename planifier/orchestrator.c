@@ -70,10 +70,10 @@ long get_current_time() {
 }
 
 void add_esi(esi* esi){
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	dictionary_put(esi_map,id_to_string(esi->id), esi);
 	log_debug(logger, "Status of ESIs: %s", esis_to_string());
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	switch(algorithm) {
 		case FIFO:
 			fifo_add_esi(esi->id);
@@ -85,26 +85,26 @@ void add_esi(esi* esi){
 }
 
 bool is_valid_esi(long esi_id){
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	bool result = dictionary_has_key(esi_map,id_to_string(esi_id)) || dictionary_is_empty(esi_map);
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	return result;
 }
 
 bool esi_exists(long esi_id) {
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	bool result = dictionary_has_key(esi_map,id_to_string(esi_id));
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	return result;
 }
 
 void modificar_estado(long esi_id, estado nuevo_estado){
 	log_debug(logger, "Changing ESI%ld's state to %d", esi_id, nuevo_estado);
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi -> estado = nuevo_estado;
 	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 }
 
 void block_esi(long esi_id){
@@ -120,10 +120,10 @@ void block_esi(long esi_id){
 }
 
 void unblock_esi(long esi_id){
-	pthread_mutex_lock(&blocked_list_mtx);
+	pthread_mutex_lock(&blocked_list_mtx_3);
 	modificar_estado(esi_id, LISTO);
 	list_remove_esi(BLOCKED_ESI_LIST, esi_id);
-	pthread_mutex_unlock(&blocked_list_mtx);
+	pthread_mutex_unlock(&blocked_list_mtx_3);
 	switch(algorithm) {
 		case FIFO:
 			fifo_add_esi(esi_id);
@@ -137,40 +137,40 @@ void unblock_esi(long esi_id){
 
 void finish_esi(long esi_id){
 	log_debug(logger, "Moving ESI%ld to finished list...", esi_id);
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	//TODO el terminar un esi exigue liberar los recursos que tien etomados?
 	switch(esi->estado) {
 		case BLOQUEADO:
-			pthread_mutex_lock(&blocked_list_mtx);
+			pthread_mutex_lock(&blocked_list_mtx_3);
 			list_remove_esi(BLOCKED_ESI_LIST, esi->id);
-			pthread_mutex_unlock(&blocked_list_mtx);
+			pthread_mutex_unlock(&blocked_list_mtx_3);
 			break;
 		case CORRIENDO:
 			fifo_finish_esi();
 			break;
 		default:
-			pthread_mutex_lock(&ready_list_mtx);
+			pthread_mutex_lock(&ready_list_mtx_4);
 			list_remove_esi(READY_ESI_LIST, esi->id);
-			pthread_mutex_unlock(&ready_list_mtx);
+			pthread_mutex_unlock(&ready_list_mtx_4);
 			break;
 	}
 	modificar_estado(esi->id, FINALIZADO);
 
-	pthread_mutex_lock(&finished_list_mtx);
+	pthread_mutex_lock(&finished_list_mtx_5);
 	queue_push_id(FINISHED_ESI_LIST, esi->id);
-	pthread_mutex_unlock(&finished_list_mtx);
+	pthread_mutex_unlock(&finished_list_mtx_5);
 }
 
 long esi_se_va_a_ejecutar(){
-	pthread_mutex_lock(&running_esi_mtx);
-	pthread_mutex_lock(&next_running_esi_mtx);
+	pthread_mutex_lock(&running_esi_mtx_1);
+	pthread_mutex_lock(&next_running_esi_mtx_2);
 
 	if (RUNNING_ESI == NEXT_RUNNING_ESI) {
-		pthread_mutex_lock(&esi_map_mtx);
+		pthread_mutex_lock(&esi_map_mtx_6);
 		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
-		pthread_mutex_unlock(&esi_map_mtx);
+		pthread_mutex_unlock(&esi_map_mtx_6);
 		esi->instruction_pointer++;
 	} else {
 		RUNNING_ESI = NEXT_RUNNING_ESI;
@@ -179,23 +179,23 @@ long esi_se_va_a_ejecutar(){
 		}
 	}
 
-	pthread_mutex_unlock(&next_running_esi_mtx);
-	pthread_mutex_unlock(&running_esi_mtx);
+	pthread_mutex_unlock(&next_running_esi_mtx_2);
+	pthread_mutex_unlock(&running_esi_mtx_1);
 	return RUNNING_ESI;
 }
 
 void borrado_de_finish(){
-	pthread_mutex_lock(&finished_list_mtx);
+	pthread_mutex_lock(&finished_list_mtx_5);
 	log_debug(logger, "Deleting finished ESIs... Found %d to delete: [%s]", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
 	while(!queue_is_empty(FINISHED_ESI_LIST)){
 		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
 
-		pthread_mutex_lock(&esi_map_mtx);
+		pthread_mutex_lock(&esi_map_mtx_6);
 		esi* esi = dictionary_remove(esi_map, id_to_string(*esi_to_be_freed)); /*como mierda liberar el espacio del esi*/
 		free(esi);
-		pthread_mutex_unlock(&esi_map_mtx);
+		pthread_mutex_unlock(&esi_map_mtx_6);
 	}
-	pthread_mutex_unlock(&finished_list_mtx);
+	pthread_mutex_unlock(&finished_list_mtx_5);
 }
 
 t_queue* get_all_waiting_for_resource(char* resource) {
@@ -247,7 +247,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	if (resource_taken(recurso)) {
 		block_esi_by_resource(esi_id, recurso);
-		cambiar_recurso_que_lo_bloquea(recurso, esi_id);
+		cambiar_recurso_que_lo_bloquea(recurso,esi_id);
 		able_to_give_resource = false;
 	} else {
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
@@ -260,11 +260,11 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 
 void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
 	log_debug(logger, "Changing ESI%ld's blocking resource to '%s'", esi_id, recurso);
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi -> blocking_resource = recurso;
 	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 }
 
 char* get_resource_taken_by_esi(long esi_id) {
@@ -288,3 +288,62 @@ char* get_resource_taken_by_esi(long esi_id) {
 bool resource_taken(char* resource) {
 	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
+
+t_list* buscar_deadlock(){
+	t_list* resultado = list_create();
+	pthread_mutex_lock(&blocked_list_mtx_3);
+	pthread_mutex_lock(&esi_map_mtx_6);
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
+		long esi_id = list_get(BLOCKED_ESI_LIST , i);
+
+		t_list* bloqueados = buscar_deadlock_en_lista(esi_id, list_create());
+		for(int j=0; j<list_size(bloqueados); j++) {
+			long id = list_get(bloqueados , j);
+			bool id_function(long list_id){
+				return list_id=id;
+			}
+			if(!list_any_satisfy(resultado, (void*)id_function)){
+				list_add(resultado,id);
+			}
+		}
+	}
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
+	pthread_mutex_unlock(&blocked_list_mtx_3);
+	return resultado;
+}
+
+
+//TODO buscar nombre copado para la funcion
+t_list* buscar_deadlock_en_lista(long id, t_list* corte){
+
+	bool id_function(long list_id){
+		return list_id=id;
+	}
+
+	if(list_any_satisfy(corte,(void*)id_function)){
+		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
+		t_list* ids_en_deadlock = list_create();
+		list_add(ids_en_deadlock, id);
+		return ids_en_deadlock;
+	} else {
+		esi* _esi = dictionary_get(esi_map, id);
+		if((_esi->estado) != BLOQUEADO){
+			return list_create();
+		}
+		char* recurso = _esi -> blocking_resource;
+		esi *esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
+		corte = list_add(corte, id);
+		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante->id, corte);
+		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function)){
+			return resultado;
+		}else{
+			list_add(resultado, id);
+			return resultado;
+		}
+	}
+}
+
+
+

@@ -7,12 +7,9 @@
 #include "semaphores.h"
 #include "logging.h"
 
-void sjf_add_esi(long esi);
-
-void sjf_block_esi(long block_esi_id);
-
-void sjf_replan();
-
-void sjf_finish_esi();
+void sjf_desa_add_esi(long esi);
+void sjf_desa_block_esi(long block_esi_id);
+void sjf_desa_replan();
+void sjf_desa_finish_esi();
 
 #endif

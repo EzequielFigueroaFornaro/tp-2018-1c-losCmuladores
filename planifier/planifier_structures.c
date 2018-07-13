@@ -64,9 +64,9 @@ void list_remove_esi(t_list* list, long id) {
 
 esi* get_esi_by_id(long esi_id) {
 	esi* esi;
-	pthread_mutex_lock(&esi_map_mtx);
+	pthread_mutex_lock(&esi_map_mtx_6);
 	esi = dictionary_get(esi_map, id_to_string(esi_id));
-	pthread_mutex_unlock(&esi_map_mtx);
+	pthread_mutex_unlock(&esi_map_mtx_6);
 	return esi;
 }
 

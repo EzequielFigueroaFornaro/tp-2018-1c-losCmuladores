@@ -15,8 +15,8 @@ void acquire_dispatcher() {
 }
 
 void unlock_semaphores(bool unlock_dispatcher) {
-	pthread_mutex_unlock(&next_running_esi_mtx);
-	pthread_mutex_unlock(&running_esi_mtx);
+	pthread_mutex_unlock(&next_running_esi_mtx_2);
+	pthread_mutex_unlock(&running_esi_mtx_1);
 	if (unlock_dispatcher) {
 		pthread_mutex_unlock(&dispatcher_manager);
 	}
@@ -36,8 +36,8 @@ void atomic_execution() {
 		pthread_cond_wait(&permission_to_block_released, &dispatcher_manager);
 		log_debug(logger, "An ESI was blocked by console");
 	}
-	pthread_mutex_lock(&running_esi_mtx);
-	pthread_mutex_lock(&next_running_esi_mtx);
+	pthread_mutex_lock(&running_esi_mtx_1);
+	pthread_mutex_lock(&next_running_esi_mtx_2);
 }
 
 bool valid_esi_status(esi* esi) {
