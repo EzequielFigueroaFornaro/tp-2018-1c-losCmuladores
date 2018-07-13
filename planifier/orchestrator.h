@@ -61,4 +61,8 @@ bool resource_taken(char* resource);
 
 void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id);
 
+t_list* buscar_deadlock();
+//TODO buscar nombre copado para la funcion
+t_list* buscar_deadlock_en_lista(long id, t_list* corte);
+
 #endif

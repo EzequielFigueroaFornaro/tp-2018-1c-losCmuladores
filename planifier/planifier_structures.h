@@ -12,7 +12,7 @@
 
 typedef struct {
 	long id;
-	estado estado;
+	int estado;
 	long tiempo_de_entrada;
 	long cantidad_de_instrucciones;
 	int instruction_pointer;

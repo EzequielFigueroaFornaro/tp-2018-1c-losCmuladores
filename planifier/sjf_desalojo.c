@@ -41,7 +41,7 @@ bool _has_less_entries_used_than(long* esi_id, long* other_esi_id){
 	esi* _esi = dictionary_get(esi_map, other_esi_id);
 	long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 	long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
-	return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)=DESBLOQUEADO);
+	return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
 }
 
 
@@ -52,7 +52,7 @@ void replan_for_new_esi(){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	list_sort(READY_ESI_LIST, (void*) _has_less_entries_used_than);
 
-	long* next_esi = list_get_element(READY_ESI_LIST, 0);
+	long* next_esi = list_get(READY_ESI_LIST, 0);
 	if (next_esi == NULL) {
 		NEXT_RUNNING_ESI = 0;
 		READY_ESI_LIST = list_create();
