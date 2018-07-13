@@ -11,6 +11,7 @@ message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
 message_type EXECUTION_RESULT = 200;
 message_type PROCESS_SENTENCE = 201;
+message_type START_COMPACTION = 202;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 message_type ISE_KILL = 302;

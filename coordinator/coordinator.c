@@ -339,29 +339,37 @@ void delay_execution(){
 void start_compaction(){
 	void _send_compaction_order(t_instance* instance){
 		log_info(logger, "Sending compaction order to instance %s", instance -> name);
-		int status = send(instance -> socket_id, START_COMPACTION, sizeof(int), 0); //TODO testear sin el casteo.
+
+		int status = send(instance -> socket_id, &START_COMPACTION, sizeof(message_type), 0); //TODO testear sin el casteo.
 		if(status <= 0){
 			log_error(logger, "Error while sending compaction order to instance %s. It will be marked as unavailable", instance -> name);
 			handle_instance_disconnection(instance);
-			return;
 		}
+	}
 
+	void _recv_compaction_result(t_instance* instance) {
 		int compaction_result;
 		int compaction_confirmation = recv(instance -> socket_id, &compaction_result, sizeof(int), 0);
 
 		if(compaction_confirmation <= 0 || compaction_result != OK){
 			log_error(logger, "Error receiving compaction result from instance %s. It will be marked as unavailable", instance -> name);
 			handle_instance_disconnection(instance);
-			return;
 		}
 
 		log_info(logger, "Compaction finished for instance %s", instance -> name);
 	}
 
 	log_info(logger, "Starting compaction process...");
-	t_list* available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
+
+	t_list* available_instances;
+	available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
 	list_iterate(available_instances, (void*) _send_compaction_order);
 	list_destroy(available_instances);
+
+	available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
+	list_iterate(available_instances, (void*) _recv_compaction_result);
+	list_destroy(available_instances);
+
 	log_info(logger, "Compaction process finished.");
 	return;
 }

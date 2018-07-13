@@ -26,7 +26,7 @@ bool _is_atomic(t_entry_table *entry_table, char *key);
 int _entry_table_try_put(t_entry_table * table, char *key, char *value);
 bool _entry_table_has_key(t_entry_table * table, char *key);
 int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value);
-void _entry_table_move_entry(t_entry * entry, int destination_index);
+void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int destination_index);
 /**
  * Usado para la compactacion
  * Busca la primer entrada
@@ -139,7 +139,7 @@ void entry_table_compact(t_entry_table * entry_table) {
 	do {
 		entry_to_compact = _entry_table_find_first_entry_by_index(entry_table, start_index);
 		if (entry_to_compact != NULL) {
-			_entry_table_move_entry(entry_to_compact, destination_index);
+			_entry_table_move_entry(entry_table, entry_to_compact, destination_index);
 		}
 	} while(entry_to_compact != NULL);
 
@@ -269,14 +269,14 @@ bool _entry_table_has_key(t_entry_table * table, char *key) {
 t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int start_index) {
 	t_entry *selected_entry = NULL;
 
-	void _compare_entry_index(void *entry_param) {
+	void _compare_entry_index(char *key, void *entry_param) {
 		t_entry *entry = (t_entry *)entry_param;
 		if (entry->index >= start_index && (selected_entry == NULL || selected_entry->index < start_index)) {
 			selected_entry = entry;
 		}
 	}
 
-	list_iterate(entry_table->entries, _compare_entry_index);
+	dictionary_iterator(entry_table->entries, _compare_entry_index);
 	return selected_entry;
 }
 
