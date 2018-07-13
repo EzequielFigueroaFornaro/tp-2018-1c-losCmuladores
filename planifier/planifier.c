@@ -90,7 +90,7 @@ void connect_to_coordinator() {
                         log_info(logger, "Connection was received but the operation its not supported. Ignoring");
                         break;
                 }
-                sentence_destroy(sentence);
+            planifier_sentence_destroy(sentence);
         }
 	}
 }
