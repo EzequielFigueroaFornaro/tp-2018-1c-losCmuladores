@@ -16,9 +16,14 @@ void load_configuration(char *config_file_path) {
 
 	t_dictionary* algorithms = dictionary_create();
 	dictionary_put(algorithms, "FIFO", string_from_format("%d", FIFO));
+	dictionary_put(algorithms, "SJF", string_from_format("%d", SJF));
+	dictionary_put(algorithms, "SJF_DESALOJO", string_from_format("%d", SJF_DESALOJO));
+	dictionary_put(algorithms, "HRRN", string_from_format("%d", HRRN));
 
 	char* algorithm_code = config_get_string_value(config, "ALGORITHM");
 	algorithm = atoi(dictionary_get(algorithms, algorithm_code));
+
+	alpha = config_get_int_value(config, "ALPHA");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,

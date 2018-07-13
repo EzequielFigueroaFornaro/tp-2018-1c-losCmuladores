@@ -19,6 +19,8 @@ typedef struct {
 	char* blocking_resource;
 	pthread_t esi_thread;
 	int socket_id;
+	int duracion_real_ultima_rafaga;
+	float estimacion_ultima_rafaga;
 } esi;
 
 enum tipo_de_esi {
@@ -71,6 +73,8 @@ bool string_is_blank(char* string);
 char* esi_status_to_string(estado status);
 
 char* get_resource_taken_by_esi(long esi_id);
+
+float estimate_next_cpu_burst(esi* esi, int alpha);
 
 #endif
 

@@ -23,12 +23,11 @@ long NEXT_RUNNING_ESI = 0;
 
 void replan_by_algorithm() {
 	switch (algorithm) {
-	case FIFO:
-		fifo_replan();
-		break;
-	default:
-		fifo_replan();
-		break;
+		case FIFO: fifo_replan(); break;
+		case SJF: sjf_replan(); break;
+		case SJF_DESALOJO: sjf_desa_replan(); break;
+		case HRRN: hrrn_replan(); break;
+		default: fifo_replan();	break;
 	}
 }
 
@@ -74,13 +73,13 @@ void add_esi(esi* esi){
 	dictionary_put(esi_map,id_to_string(esi->id), esi);
 	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
+
 	switch(algorithm) {
-		case FIFO:
-			fifo_add_esi(esi->id);
-			break;
-		default:
-			fifo_add_esi(esi->id);
-			break;
+		case FIFO: fifo_add_esi(esi->id); break;
+		case SJF: sjf_add_esi(esi->id); break;
+		case SJF_DESALOJO: sjf_desa_add_esi(esi->id); break;
+		case HRRN: hrrn_add_esi(esi->id); break;
+		default: fifo_add_esi(esi->id);	break;
 	}
 }
 
@@ -109,14 +108,19 @@ void modificar_estado(long esi_id, estado nuevo_estado){
 
 void block_esi(long esi_id){
 	modificar_estado(esi_id, BLOQUEADO);
+
+	pthread_mutex_lock(&esi_map_mtx_6);
+	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
+	esi->duracion_real_ultima_rafaga = esi->instruction_pointer;
+	pthread_mutex_unlock(&esi_map_mtx_6);
+
 	switch(algorithm) {
-			case FIFO:
-				fifo_block_esi(esi_id);
-				break;
-			default:
-				fifo_block_esi(esi_id);
-				break;
-		}
+		case FIFO: fifo_block_esi(esi_id); break;
+		case SJF: sjf_block_esi(esi_id); break;
+		case SJF_DESALOJO: sjf_desa_block_esi(esi_id); break;
+		case HRRN: hrrn_block_esi(esi_id); break;
+		default: fifo_block_esi(esi_id); break;
+	}
 }
 
 void unblock_esi(long esi_id){
@@ -125,12 +129,11 @@ void unblock_esi(long esi_id){
 	list_remove_esi(BLOCKED_ESI_LIST, esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
 	switch(algorithm) {
-		case FIFO:
-			fifo_add_esi(esi_id);
-			break;
-		default:
-			fifo_add_esi(esi_id);
-			break;
+		case FIFO: fifo_add_esi(esi_id); break;
+		case SJF: sjf_add_esi(esi_id); break;
+		case SJF_DESALOJO: sjf_desa_add_esi(esi_id); break;
+		case HRRN: hrrn_add_esi(esi_id); break;
+		default: fifo_add_esi(esi_id);	break;
 	}
 	notify_dispatcher();
 }

@@ -116,3 +116,12 @@ esi* get_esi_by_id(long esi_id) {
 bool string_is_blank(char* string) {
 	return string == NULL || string_is_empty(string);
 }
+
+float estimate_next_cpu_burst(esi* esi, int alpha) {
+	float alpha_coef = alpha / 100;
+	float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
+	float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
+	float estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
+	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
+	return estimated_cpu_burst;
+}
