@@ -26,6 +26,12 @@ bool _is_atomic(t_entry_table *entry_table, char *key);
 int _entry_table_try_put(t_entry_table * table, char *key, char *value);
 bool _entry_table_has_key(t_entry_table * table, char *key);
 int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value);
+void _entry_table_move_entry(t_entry * entry, int destination_index);
+/**
+ * Usado para la compactacion
+ * Busca la primer entrada
+ */
+t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int start_index);
 
 
 t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm algorithm) {
@@ -124,8 +130,20 @@ int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	return entry_table_put(entry_table, key, value);
 }
 
-int entry_table_compact(t_entry_table * entry_table) {
-	return -1;
+void entry_table_compact(t_entry_table * entry_table) {
+	log_info(logger, "Start compaction");
+	int start_index = 0;
+	int destination_index = 0;
+	t_entry *entry_to_compact;
+
+	do {
+		entry_to_compact = _entry_table_find_first_entry_by_index(entry_table, start_index);
+		if (entry_to_compact != NULL) {
+			_entry_table_move_entry(entry_to_compact, destination_index);
+		}
+	} while(entry_to_compact != NULL);
+
+	log_info(logger, "Finish compaction");
 }
 
 bool entry_table_can_put(t_entry_table* entry_table, char *value) {
@@ -248,6 +266,34 @@ bool _entry_table_has_key(t_entry_table * table, char *key) {
 	return dictionary_has_key(table->entries, key);
 }
 
+t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int start_index) {
+	t_entry *selected_entry = NULL;
+
+	void _compare_entry_index(void *entry_param) {
+		t_entry *entry = (t_entry *)entry_param;
+		if (entry->index >= start_index && (selected_entry == NULL || selected_entry->index < start_index)) {
+			selected_entry = entry;
+		}
+	}
+
+	list_iterate(entry_table->entries, _compare_entry_index);
+	return selected_entry;
+}
+
+void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int destination_index) {
+	if (entry->index != destination_index) {
+		log_debug(logger, "Moving entry from index %d to %d. Bytes: %d", entry->index, destination_index, entry->length);
+		int entries_count = _calculate_value_length_entries_count(entry_table, entry->length);
+		availability_free_space(entry_table->availability, entry->index, entries_count);
+		availability_take_space(entry_table->availability, destination_index, entries_count);
+
+		char *data_address = _calculate_data_address(entry_table, entry->index);
+		char *destination_data_address = _calculate_data_address(entry_table, destination_index);
+		memmove(destination_data_address, data_address, entry->length);
+	} else {
+		log_debug(logger, "Skipping move entry. Destination index is equal to current index (%d)", destination_index);
+	}
+}
 
 
 

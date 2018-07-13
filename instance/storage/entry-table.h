@@ -80,8 +80,8 @@ bool entry_table_enough_free_entries(t_entry_table* entry_table, char *value);
 bool entry_table_has_atomic_entries(t_entry_table* entry_table);
 
 /**
- * Inicia la compactacion
+ * Compacta las entradas
  */
-int entry_table_compact(t_entry_table * entry_table);
+void entry_table_compact(t_entry_table * entry_table);
 
 #endif /* STORAGE_ENTRY_TABLE_H_ */
