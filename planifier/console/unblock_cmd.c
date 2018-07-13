@@ -28,7 +28,7 @@ command_result unblock_cmd(command command) {
 					resource);
 		} else {
 			result.code = COMMAND_ERROR;
-			result.content = string_from_format("El recurso %s no existe en el sistema");
+			result.content = string_from_format("El recurso %s no esta tomado por nadie y nadie esta esperando", resource);
 		}
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 	} else {

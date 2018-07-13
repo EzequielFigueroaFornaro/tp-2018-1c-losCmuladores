@@ -31,13 +31,25 @@ void load_configuration(char *config_file_path) {
 
 	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
 	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
-
 	set_coordinator_connection_params(coordinator_ip, coordinator_port);
 
-	config_destroy(config);
-	dictionary_destroy(algorithms);
+	char* taken_resources = config_get_string_value(config, "TAKEN_RESOURCES");
 
 	log_info(logger, "Planifier configuration file loaded");
+
+	set_orchestrator();
+	if (!string_is_blank(taken_resources)) {
+		char** splitted_command = string_split(taken_resources, ",");
+		char** ptr = splitted_command;
+		for (char* c = *ptr; c; c = *++ptr) {
+			long esi_id = ESI_BLOQUEADO;
+			dictionary_put_id(recurso_tomado_por_esi, c, esi_id);
+		}
+		free(splitted_command);
+	}
+	log_info(logger, "Orchestrator loaded");
+	config_destroy(config);
+	dictionary_destroy(algorithms);
 }
 
 void connect_to_coordinator() {
@@ -132,7 +144,6 @@ int main(int argc, char* argv[]) {
 	init_logger();
 	load_configuration(argv[1]);
 
-	set_orchestrator();
 	init_dispatcher();
 
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
