@@ -118,7 +118,6 @@ char* get_operation_as_string(int operation_id) {
 	}
 }
 
-//TODO estos returns pierden memoria segun valgrind.
 char* sentence_to_string(t_sentence* sentence) {
 	if (strcmp(sentence->value, "") == 0) {
 		return string_from_format("{ %s %s }",

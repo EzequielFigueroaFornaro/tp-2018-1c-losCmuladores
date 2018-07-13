@@ -15,24 +15,28 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 	t_instance* instance;
 	instance = (t_instance*) list_find(instances_thread_list, (void*)_is_same_instance_name);
 
+	char* client_address = get_client_address(socket);
+
 	if(instance != NULL){
 		instance -> is_available = true;
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
-		instance -> ip_port = get_client_address(socket);
+		instance -> ip_port = client_address;
 		//TODO ver qué pasa con la cantidad de entradas libres, y refactorizar esto.
 	} else {
-		instance = (t_instance*) malloc(sizeof(t_instance)); //TODO valgrind
+		instance = (t_instance*) malloc(sizeof(t_instance));
 
 		instance -> instance_thread = pthread_self();
 		instance -> socket_id = socket;
 		instance -> is_available = true;
-		instance -> ip_port = get_client_address(socket);
+		instance -> ip_port = client_address;
 		instance -> name = instance_name;
 		instance -> entries_in_use = 0;
 
 		list_add(instances_thread_list, instance);
 	}
+
+	free(client_address);
 }
 
 void signal_handler(int sig){
@@ -235,9 +239,10 @@ void ise_connection_handler(int socket) {
 			return;
 		}
 
-		log_info(logger, "Sentence received: %s", sentence_to_string(sentence));
+		char* string_sentence = sentence_to_string(sentence);
+		log_info(logger, "Sentence received: %s", string_sentence);
 		save_operation_log(sentence, ise_id);
-
+		free(string_sentence);
 		/* TEST: al primer GET devuelve key_blocked. En los siguientes GET y para cualquier
 		  otra sentencia, devuelve OK al ESI (no hay comunicación con el planificador):    */
 
@@ -267,7 +272,7 @@ void instance_connection_handler(int socket) {
 		if(instance_name_result <= 0){
 			close(socket);
 			log_error(logger, "Could not receive instance name");
-			pthread_exit(pthread_self);//todo EXIT THREAD WITH ERROR.
+			pthread_exit(pthread_self);
 			//_exit_with_error(socket, "Could not receive instance name", NULL);
 		}
 

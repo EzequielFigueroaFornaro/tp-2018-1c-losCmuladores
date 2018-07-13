@@ -11,7 +11,7 @@
 #include "coordinator.h"
 
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
-	*sentence = malloc(sizeof(t_sentence)); //TODO acá hay un leak.
+	*sentence = malloc(sizeof(t_sentence));
 	int result;
 	if ((result = recv_message(ise_socket)) != PROCESS_SENTENCE) {
 		return result > 0? -1 : result;
@@ -294,7 +294,9 @@ void load_configuration(char* config_file_path){
 }
 
 int send_instance_configuration(int client_sock, char *name){
-	log_info(logger, "Sending instance configuration to host %s", get_client_address(client_sock));
+	char* client_address = get_client_address(client_sock);
+	log_info(logger, "Sending instance configuration to host %s", client_address);
+	free(client_address);
 
 	t_list *instance_keys = list_create(); //TODO leak
 	int keys_size = 0;
@@ -309,7 +311,7 @@ int send_instance_configuration(int client_sock, char *name){
 
 	int keys_count = list_size(instance_keys);
 	int buffer_size = sizeof(t_instance_configuration) + keys_size + keys_count * sizeof(int);
-	void* buffer = malloc(buffer_size); //TODO leak
+	void* buffer = malloc(buffer_size);
 	void* offset = buffer;
 	concat_value(&offset, instance_configuration, sizeof(t_instance_configuration));
 	concat_value(&offset, &keys_count, sizeof(keys_count));
@@ -319,8 +321,8 @@ int send_instance_configuration(int client_sock, char *name){
 	}
 	list_iterate(instance_keys, _concat_key);
 
-
 	int status = send(client_sock, buffer, buffer_size, 0);
+	free(buffer);
 	if(status <= 0){
 		log_error(logger, "Could not send instance configuration.%d", status);
 		close(client_sock);
@@ -339,7 +341,7 @@ void delay_execution(){
 void start_compaction(){
 	void _send_compaction_order(t_instance* instance){
 		log_info(logger, "Sending compaction order to instance %s", instance -> name);
-		int status = send(instance -> socket_id, START_COMPACTION, sizeof(int), 0); //TODO testear sin el casteo.
+		int status = send(instance -> socket_id, START_COMPACTION, sizeof(int), 0);
 		if(status <= 0){
 			log_error(logger, "Error while sending compaction order to instance %s. It will be marked as unavailable", instance -> name);
 			handle_instance_disconnection(instance);
