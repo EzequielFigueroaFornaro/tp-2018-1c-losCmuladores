@@ -1,4 +1,4 @@
-#include "sjf_desalojo.h"
+#include "sjf.h"
 
 void sjf_add_esi(long esi){
 	pthread_mutex_lock(&ready_list_mtx_4);

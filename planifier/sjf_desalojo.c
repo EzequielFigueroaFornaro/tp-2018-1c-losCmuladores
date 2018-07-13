@@ -1,4 +1,4 @@
-#include "sjf.h"
+#include "sjf_desalojo.h"
 
 void sjf_desa_add_esi(long esi){
 	pthread_mutex_lock(&ready_list_mtx_4);
@@ -45,7 +45,7 @@ bool _has_less_entries_used_than(long* esi_id, long* other_esi_id){
 }
 
 
-void replan_for_new_esi(){
+void replan_for_new_esi() {
 
 	pthread_mutex_lock(&next_running_esi_mtx_2);
 	pthread_mutex_lock(&ready_list_mtx_4);
