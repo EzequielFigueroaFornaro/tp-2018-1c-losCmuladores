@@ -29,19 +29,19 @@ char* list_join(t_list* list) {
 }
 
 void queue_push_id(t_queue* queue, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	queue_push(queue, esi_id);
 }
 
 void list_add_id(t_list* list, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	list_add(list, esi_id);
 }
 
 void dictionary_put_id(t_dictionary* map, char* key, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	dictionary_put(map, key, esi_id);
 }
