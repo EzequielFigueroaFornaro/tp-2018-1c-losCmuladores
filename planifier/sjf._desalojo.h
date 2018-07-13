@@ -5,6 +5,7 @@
 #include "commons/collections/list.h"
 #include "planifier_structures.h"
 #include "semaphores.h"
+#include "logging.h"
 
 void sjf_desa_add_esi(long esi);
 void sjf_desa_block_esi(long block_esi_id);

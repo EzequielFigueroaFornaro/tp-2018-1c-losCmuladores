@@ -297,7 +297,7 @@ t_list* buscar_deadlock(){
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		long esi_id = list_get(BLOCKED_ESI_LIST , i);
 
-		t_list* bloqueados = buscar_deadlock(esi_id, list_create());
+		t_list* bloqueados = buscar_deadlock_en_lista(esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
 			long id = list_get(bloqueados , j);
 			bool id_function(long list_id){
@@ -315,8 +315,8 @@ t_list* buscar_deadlock(){
 }
 
 
-
-t_list* buscar_deadlock(long id, t_list* corte){
+//TODO buscar nombre copado para la funcion
+t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 
 	bool id_function(long list_id){
 		return list_id=id;
@@ -328,14 +328,14 @@ t_list* buscar_deadlock(long id, t_list* corte){
 		list_add(ids_en_deadlock, id);
 		return ids_en_deadlock;
 	} else {
-		esi* esi = dictionary_get(esi_map, id);
-		if((esi->status) != BLOQUEADO){
+		esi* _esi = dictionary_get(esi_map, id);
+		if((_esi->estado) != BLOQUEADO){
 			return list_create();
 		}
 		char* recurso = _esi -> blocking_resource;
-		esi esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
+		esi *esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
 		corte = list_add(corte, id);
-		t_list* resultado = buscar_deadlock(esi_bloqueante, corte);
+		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante->id, corte);
 		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function)){
 			return resultado;
 		}else{

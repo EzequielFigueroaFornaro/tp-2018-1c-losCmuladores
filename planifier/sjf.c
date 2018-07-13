@@ -40,7 +40,7 @@ void sjf_replan(){
 		esi* _esi = dictionary_get(esi_map, other_esi_id);
 		long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 		long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
-		return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)=DESBLOQUEADO);
+		return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
 	}
 	pthread_mutex_lock(&next_running_esi_mtx_2);
 	pthread_mutex_lock(&ready_list_mtx_4);
