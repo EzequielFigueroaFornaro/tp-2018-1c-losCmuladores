@@ -13,13 +13,14 @@ command_result pause_cmd(command command) {
 	pause_dispatcher();
 	log_on_both("Planification paused");
 
-	printf("Press ENTER to resume planification... ");
+	printf("Presionar ENTER para reanudar planificacion... ");
 	getchar();
 
 	resume_dispatcher();
 	log_info(logger, "Planification resumed");
 
-	command_result result = base_command_result(COMMAND_OK);
-	result.content = "Planification resumed!";
+	command_result result;
+	result.code = COMMAND_OK;
+	result.content = "Planificacion reanudada!";
 	return result;
 }

@@ -19,10 +19,10 @@ void add_command(char* command_str, command_code code, int args) {
 void load_commands() {
 	commands = dictionary_create();
 	add_command("exit", EXIT, 0);
-	add_command("pause", PAUSE, 0);
-	add_command("block", BLOCK, 2);
-	add_command("unblock", UNBLOCK, 1);
-	add_command("list", LIST, 1);
+	add_command("pausar", PAUSE, 0);
+	add_command("bloquear", BLOCK, 2);
+	add_command("desbloquear", UNBLOCK, 1);
+	add_command("listar", LIST, 1);
 	add_command("status", STATUS, 1);
 	add_command("kill", KILL, 1);
 	add_command("deadlock", DEADLOCK, 0);

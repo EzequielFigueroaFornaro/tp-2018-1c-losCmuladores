@@ -17,7 +17,8 @@ command_result add_cmd(command command) {
 	dictionary_put(esi_map, esi_id, new_esi);
 
 	pthread_mutex_unlock(&esi_map_mtx_6);
-	command_result result = base_command_result(COMMAND_OK);
+	command_result result;
+	result.code = COMMAND_OK;
 	result.content = string_from_format("ESI%s agregado", esi_id);
 	return result;
 }
@@ -32,7 +33,8 @@ command_result list_esis_cmd(command command) {
 
 	dictionary_iterator(esi_map, (void*) to_string);
 	pthread_mutex_unlock(&esi_map_mtx_6);
-	command_result result = base_command_result(COMMAND_OK);
+	command_result result;
+	result.code = COMMAND_OK;
 	result.content = esis;
 	return result;
 }

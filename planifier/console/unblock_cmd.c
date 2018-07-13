@@ -23,17 +23,21 @@ command_result unblock_cmd(command command) {
 		if (resource_taken(resource)) {
 			unblock_resource(resource);
 			result.code = COMMAND_OK;
-			result.content = string_from_format("No ESIs were waiting. Key %s was unlocked", resource);
+			result.content = string_from_format(
+					"No hay ESIs esperando. El recurso %s fue desbloqueado",
+					resource);
 		} else {
 			result.code = COMMAND_ERROR;
-			result.content = string_from_format("Resource %s not found");
+			result.content = string_from_format("El recurso %s no esta tomado por nadie y nadie esta esperando", resource);
 		}
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 	} else {
 		long* esi_id = queue_pop(esis);
 		unblock_esi(*esi_id);
 		result.code = COMMAND_OK;
-		result.content = string_from_format("ESI%ld was unblocked from waiting for resource %s", *esi_id, resource);
+		result.content = string_from_format(
+				"El ESI%ld fue desbloqueado y ya no espera por el recurso %s",
+				*esi_id, resource);
 	}
 
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);

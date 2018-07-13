@@ -11,23 +11,24 @@ command_result do_validations(char* resource, long esi_id) {
 
 	if (!esi_exists(esi_id)) {
 		result.code = COMMAND_ERROR;
-		result.content = string_from_format("ESI with id '%ld' does not exist", esi_id);
+		result.content = string_from_format("El ESI%ld no existe", esi_id);
 		return result;
 	}
 
 	esi* esi = get_esi_by_id(esi_id);
 	if (esi->estado != CORRIENDO && esi->estado != LISTO) {
 		result.code = COMMAND_ERROR;
-		result.content = string_from_format("ESI%ld isn't either running or ready!", esi_id);
+		result.content = string_from_format("El ESI%ld no esta ni ejecutando ni en listos!", esi_id);
 		return result;
 	}
 
-	if (!string_is_blank(esi->blocking_resource)) {
+	char* resource_taken = get_resource_taken_by_esi(esi_id);
+	if (!string_is_empty(resource_taken)) {
 		result.code = COMMAND_ERROR;
 		result.content =
 				string_from_format(
-						"ESI%ld already has a resource: '%s'. ESIs can't have more than 1 resource taken",
-						esi_id, esi->blocking_resource);
+						"El ESI%ld ya tiene tomado un recurso: '%s'",
+						esi_id, resource_taken);
 		return result;
 	}
 
@@ -56,9 +57,8 @@ command_result block_cmd(command command) {
 		took_resource = bloquear_recurso(resource, id);
 	}
 
-	result.content = string_from_format("ESI%s %s", esi_id,
-			(took_resource ?
-					string_from_format("was given resource '%s'", resource) :
-					string_from_format("is now in the waiting queue of resource '%s'", resource)));
+	result.content = took_resource ?
+					string_from_format("Se asigno el recurso '%s' al ESI%s", resource, esi_id) :
+					string_from_format("El ESI%s ahora esta esperando por el recurso '%s'", resource);
 	return result;
 }

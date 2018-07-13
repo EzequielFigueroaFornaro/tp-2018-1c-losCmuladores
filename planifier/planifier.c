@@ -10,16 +10,20 @@
 
 #include "planifier.h"
 
-
 void load_configuration(char *config_file_path) {
 	log_info(logger, "Loading planifier configuration file...");
 	t_config* config = config_create(config_file_path);
 
 	t_dictionary* algorithms = dictionary_create();
 	dictionary_put(algorithms, "FIFO", string_from_format("%d", FIFO));
+	dictionary_put(algorithms, "SJF", string_from_format("%d", SJF));
+	dictionary_put(algorithms, "SJF_DESALOJO", string_from_format("%d", SJF_DESALOJO));
+	dictionary_put(algorithms, "HRRN", string_from_format("%d", HRRN));
 
 	char* algorithm_code = config_get_string_value(config, "ALGORITHM");
 	algorithm = atoi(dictionary_get(algorithms, algorithm_code));
+
+	alpha = config_get_int_value(config, "ALPHA");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,
@@ -27,13 +31,25 @@ void load_configuration(char *config_file_path) {
 
 	coordinator_port = config_get_int_value(config, "COORDINATOR_PORT");
 	coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
-
 	set_coordinator_connection_params(coordinator_ip, coordinator_port);
 
-	config_destroy(config);
-	dictionary_destroy(algorithms);
+	char* taken_resources = config_get_string_value(config, "TAKEN_RESOURCES");
 
 	log_info(logger, "Planifier configuration file loaded");
+
+	set_orchestrator();
+	if (!string_is_blank(taken_resources)) {
+		char** splitted_command = string_split(taken_resources, ",");
+		char** ptr = splitted_command;
+		for (char* c = *ptr; c; c = *++ptr) {
+			long esi_id = ESI_BLOQUEADO;
+			dictionary_put_id(recurso_tomado_por_esi, c, esi_id);
+		}
+		free(splitted_command);
+	}
+	log_info(logger, "Orchestrator loaded");
+	config_destroy(config);
+	dictionary_destroy(algorithms);
 }
 
 void connect_to_coordinator() {
@@ -76,6 +92,7 @@ void connect_to_coordinator() {
 					break;
 				case STORE_SENTENCE:
 					free_resource(resource);
+					send_execution_result_to_coordinator(OK);
 					break;
 				case KEY_UNREACHABLE:
 					result = OK;
@@ -114,22 +131,6 @@ void send_execution_result_to_coordinator(execution_result result){
 	}
 }
 
-void free_resource(char* resource){
-	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
-	dictionary_remove(recurso_tomado_por_esi, resource);
-	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-	long* esi_id = queue_pop(esi_queue);
-	while (!is_valid_esi(*esi_id)) {
-		esi_id = queue_pop(esi_queue);
-	}
-	cambiar_recurso_que_lo_bloquea("", *esi_id);
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-//	add_esi_bloqueada(*esi_id); TODO ?????
-	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
-	send_execution_result_to_coordinator(OK);
-}
-
 void try_to_block_resource(char* resource, long esi_id){
 	log_debug(logger, "Trying to block resource %s for ESI%ld", resource, esi_id);
 	if (bloquear_recurso(resource, esi_id)){
@@ -143,7 +144,6 @@ int main(int argc, char* argv[]) {
 	init_logger();
 	load_configuration(argv[1]);
 
-	set_orchestrator();
 	init_dispatcher();
 
 	int server_started = start_server(server_port, server_max_connections, (void *) esi_connection_handler, true, logger);
