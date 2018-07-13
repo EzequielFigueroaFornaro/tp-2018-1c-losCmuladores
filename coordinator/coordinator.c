@@ -176,18 +176,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	recv(instance -> socket_id, &result, sizeof(int), 0);
 	result_response = recv(instance -> socket_id, &entries_used, sizeof(int), 0);
 
-	//TODO----------- testear desde acá--------------
-	int entries_in_use;
-	int result_entries_used = recv(instance -> socket_id, &entries_in_use, sizeof(int), 0);
-
-	if(result_entries_used <= 0){
-		log_error(logger, "Error receiving used entries quantity.");
-		return -1;//TODO
-	}
-
-	instance -> entries_in_use = entries_in_use;
-
-	//---------hasta acá-------------
+	instance -> entries_in_use = entries_used;
 
 	if(result_response == 0) {
 		log_error(logger, "Selected instance is not available !");
