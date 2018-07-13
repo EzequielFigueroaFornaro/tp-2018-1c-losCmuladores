@@ -71,9 +71,8 @@ void dispatch() {
 		esi* esi = get_esi_by_id(current_esi);
 		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
 			log_debug(logger, "ESI%ld has finished!", esi->id);
-			finish_esi(esi->id);
-
 			unlock_semaphores(true);
+			finish_esi(esi->id);
 			continue;
 		}
 
@@ -85,18 +84,18 @@ void dispatch() {
 			log_debug(logger, "Told ESI%ld to run", RUNNING_ESI);
 		} else {
 			log_error(logger, "Could not tell ESI%ld to run", RUNNING_ESI);
-			finish_esi(RUNNING_ESI);
 
 			unlock_semaphores(true);
+			finish_esi(RUNNING_ESI);
 			continue;
 		}
 
 		log_debug(logger, "Waiting for execution result...");
 		if (!wait_execution_result(RUNNING_ESI)) {
 			log_error(logger, "Execution result could not be received");
-			finish_esi(RUNNING_ESI);
 
 			unlock_semaphores(true);
+			finish_esi(RUNNING_ESI);
 			continue;
 		}
 		log_debug(logger, "Execution result received, incrementing cpu_time (current cpu_time: %ld)", get_current_time());
