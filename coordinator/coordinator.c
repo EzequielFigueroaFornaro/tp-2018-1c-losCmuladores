@@ -11,7 +11,7 @@
 #include "coordinator.h"
 
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
-	*sentence = malloc(sizeof(t_sentence));
+	*sentence = malloc(sizeof(t_sentence)); //TODO acá hay un leak.
 	int result;
 	if ((result = recv_message(ise_socket)) != PROCESS_SENTENCE) {
 		return result > 0? -1 : result;
@@ -296,7 +296,7 @@ void load_configuration(char* config_file_path){
 int send_instance_configuration(int client_sock, char *name){
 	log_info(logger, "Sending instance configuration to host %s", get_client_address(client_sock));
 
-	t_list *instance_keys = list_create();
+	t_list *instance_keys = list_create(); //TODO leak
 	int keys_size = 0;
 	void _instance_keys_iterator(char *key, void *entry) {
 		t_instance *instance = (t_instance *) entry;
@@ -309,7 +309,7 @@ int send_instance_configuration(int client_sock, char *name){
 
 	int keys_count = list_size(instance_keys);
 	int buffer_size = sizeof(t_instance_configuration) + keys_size + keys_count * sizeof(int);
-	void* buffer = malloc(buffer_size);
+	void* buffer = malloc(buffer_size); //TODO leak
 	void* offset = buffer;
 	concat_value(&offset, instance_configuration, sizeof(t_instance_configuration));
 	concat_value(&offset, &keys_count, sizeof(keys_count));

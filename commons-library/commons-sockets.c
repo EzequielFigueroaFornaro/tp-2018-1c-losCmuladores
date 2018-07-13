@@ -149,7 +149,7 @@ int recv_string(int socket, char** string) {
 	int length;
 	int length_result = recv_int(socket, &length);
 	if (length_result > 0) {
-		*string = malloc(length);
+		*string = malloc(length); //TODO leak.
 		int result = recv(socket, *string, length, MSG_WAITALL);
 		if (result < 0) {
 			free(*string);
