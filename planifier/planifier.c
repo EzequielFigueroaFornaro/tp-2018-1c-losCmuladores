@@ -10,36 +10,20 @@
 
 #include "planifier.h"
 
-//bool deshabilitar_recurso(char* recurso, long esi_id_desabilitado){
-//	// TODO [Lu] revisar &blocked_esi_type
-//	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-//	long blocked_esi_type = ESI_BLOQUEADO;
-//	if(!dictionary_has_key(recurso_tomado_por_esi, recurso)){
-//		dictionary_put(recurso_tomado_por_esi, recurso, &blocked_esi_type);
-//		dictionary_put(esis_bloqueados_por_recurso, recurso, queue_create());
-//		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-//		return true;
-//	}
-//	long* esi_id = dictionary_get(recurso_tomado_por_esi,recurso);
-//	if(*esi_id != esi_id_desabilitado){
-//		t_queue* cola_de_esis = dictionary_get(esis_bloqueados_por_recurso,recurso);
-//		queue_push(cola_de_esis, esi_id);
-////		stop_and_block_esi(esi_id);
-//	}
-//	finish_esi(*esi_id);
-//	dictionary_put(recurso_tomado_por_esi, recurso, &blocked_esi_type);
-//	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-//}
-
 void load_configuration(char *config_file_path) {
 	log_info(logger, "Loading planifier configuration file...");
 	t_config* config = config_create(config_file_path);
 
 	t_dictionary* algorithms = dictionary_create();
 	dictionary_put(algorithms, "FIFO", string_from_format("%d", FIFO));
+	dictionary_put(algorithms, "SJF", string_from_format("%d", SJF));
+	dictionary_put(algorithms, "SJF_DESALOJO", string_from_format("%d", SJF_DESALOJO));
+	dictionary_put(algorithms, "HRRN", string_from_format("%d", HRRN));
 
 	char* algorithm_code = config_get_string_value(config, "ALGORITHM");
 	algorithm = atoi(dictionary_get(algorithms, algorithm_code));
+
+	alpha = config_get_int_value(config, "ALPHA");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,
@@ -96,6 +80,7 @@ void connect_to_coordinator() {
 					break;
 				case STORE_SENTENCE:
 					free_resource(resource);
+					send_execution_result_to_coordinator(OK);
 					break;
 				case KEY_UNREACHABLE:
 					result = OK;
@@ -202,6 +187,7 @@ void send_execution_result_to_coordinator(execution_result result){
 	}
 }
 
+<<<<<<< HEAD
 void free_resource(char* resource){
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
@@ -218,6 +204,8 @@ void free_resource(char* resource){
 	send_execution_result_to_coordinator(OK);
 }
 
+=======
+>>>>>>> master
 void try_to_block_resource(char* resource, long esi_id){
 	log_debug(logger, "Trying to block resource %s for ESI%ld", resource, esi_id);
     bool took_resource = bloquear_recurso(resource, esi_id);

@@ -9,6 +9,10 @@
 #include "commons/string.h"
 
 #include "fifo.h"
+#include "sjf.h"
+#include "sjf_desalojo.h"
+#include "hrrn.h"
+
 #include "planifier_structures.h"
 #include "semaphores.h"
 #include "logging.h"
@@ -16,10 +20,15 @@
 #include "esi_connector.h"
 
 typedef enum {
-	FIFO = 1
+	FIFO = 1,
+	SJF = 2,
+	SJF_DESALOJO = 3,
+	HRRN = 4
 } planifier_algorithm;
 
 planifier_algorithm algorithm;
+
+int alpha;
 
 void add_esi(esi* esi);
 
@@ -55,8 +64,6 @@ long get_current_time();
 
 void notify_dispatcher();
 
-char* get_resource_taken_by_esi(long esi_id);
-
 bool resource_taken(char* resource);
 
 void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id);
@@ -64,5 +71,7 @@ void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id);
 t_list* buscar_deadlock();
 //TODO buscar nombre copado para la funcion
 t_list* buscar_deadlock_en_lista(long id, t_list* corte);
+
+void free_resource(char* resource);
 
 #endif

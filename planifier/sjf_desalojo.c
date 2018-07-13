@@ -37,8 +37,8 @@ void sjf_desa_finish_esi(){
 
 
 bool _has_less_entries_used_than(long* esi_id, long* other_esi_id){
-	esi* other_esi =	 dictionary_get(esi_map, esi_id);
-	esi* _esi = dictionary_get(esi_map, other_esi_id);
+	esi* other_esi =	 dictionary_get(esi_map, id_to_string(*esi_id));
+	esi* _esi = dictionary_get(esi_map, id_to_string(*other_esi_id));
 	long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 	long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 	return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
@@ -57,7 +57,7 @@ void replan_for_new_esi(){
 		NEXT_RUNNING_ESI = 0;
 		READY_ESI_LIST = list_create();
 	} else {
-		if(_has_less_entries_used_than(RUNNING_ESI,next_esi)){
+		if(_has_less_entries_used_than(&RUNNING_ESI,next_esi)){
 			long* next_esi = list_remove(READY_ESI_LIST, 0);
 			NEXT_RUNNING_ESI = *next_esi;
 			log_debug(logger, "Next ESI to run is ESI%ld", NEXT_RUNNING_ESI);

@@ -8,8 +8,8 @@
 #include "deadlock_cmd.h"
 
 command_result deadlock_cmd(command command) {
-	// TODO
-	command_result result = base_command_result(COMMAND_OK);
-	result.content = "~~~nO iMpLeMeNtAdOoO~~~";
+	command_result result;
+	result.code = COMMAND_OK;
+	result.content = string_from_format("ESIs en deadlock: { %s }", list_join(buscar_deadlock()));
 	return result;
 }

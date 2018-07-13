@@ -56,7 +56,7 @@ pthread_t start_console();
 t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id);
 
 void try_to_block_resource(char* resource, long esi_id);
-//
-//void free_resource(char* resource);
+
+void send_execution_result_to_coordinator(execution_result result);
 
 #endif /* PLANIFIER_H_ */
