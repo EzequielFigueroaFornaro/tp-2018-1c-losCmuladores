@@ -23,12 +23,11 @@ long NEXT_RUNNING_ESI = 0;
 
 void replan_by_algorithm() {
 	switch (algorithm) {
-	case FIFO:
-		fifo_replan();
-		break;
-	default:
-		fifo_replan();
-		break;
+		case FIFO: fifo_replan(); break;
+		case SJF: sjf_replan(); break;
+		case SJF_DESALOJO: sjf_desa_replan(); break;
+		case HRRN: hrrn_replan(); break;
+		default: fifo_replan();	break;
 	}
 }
 
@@ -74,13 +73,13 @@ void add_esi(esi* esi){
 	dictionary_put(esi_map,id_to_string(esi->id), esi);
 	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
+
 	switch(algorithm) {
-		case FIFO:
-			fifo_add_esi(esi->id);
-			break;
-		default:
-			fifo_add_esi(esi->id);
-			break;
+		case FIFO: fifo_add_esi(esi->id); break;
+		case SJF: sjf_add_esi(esi->id); break;
+		case SJF_DESALOJO: sjf_desa_add_esi(esi->id); break;
+		case HRRN: hrrn_add_esi(esi->id); break;
+		default: fifo_add_esi(esi->id);	break;
 	}
 }
 
@@ -109,14 +108,19 @@ void modificar_estado(long esi_id, estado nuevo_estado){
 
 void block_esi(long esi_id){
 	modificar_estado(esi_id, BLOQUEADO);
+
+	pthread_mutex_lock(&esi_map_mtx_6);
+	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
+	esi->duracion_real_ultima_rafaga = esi->instruction_pointer;
+	pthread_mutex_unlock(&esi_map_mtx_6);
+
 	switch(algorithm) {
-			case FIFO:
-				fifo_block_esi(esi_id);
-				break;
-			default:
-				fifo_block_esi(esi_id);
-				break;
-		}
+		case FIFO: fifo_block_esi(esi_id); break;
+		case SJF: sjf_block_esi(esi_id); break;
+		case SJF_DESALOJO: sjf_desa_block_esi(esi_id); break;
+		case HRRN: hrrn_block_esi(esi_id); break;
+		default: fifo_block_esi(esi_id); break;
+	}
 }
 
 void unblock_esi(long esi_id){
@@ -125,12 +129,11 @@ void unblock_esi(long esi_id){
 	list_remove_esi(BLOCKED_ESI_LIST, esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
 	switch(algorithm) {
-		case FIFO:
-			fifo_add_esi(esi_id);
-			break;
-		default:
-			fifo_add_esi(esi_id);
-			break;
+		case FIFO: fifo_add_esi(esi_id); break;
+		case SJF: sjf_add_esi(esi_id); break;
+		case SJF_DESALOJO: sjf_desa_add_esi(esi_id); break;
+		case HRRN: hrrn_add_esi(esi_id); break;
+		default: fifo_add_esi(esi_id);	break;
 	}
 	notify_dispatcher();
 }
@@ -282,16 +285,16 @@ t_list* buscar_deadlock(){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
-		long esi_id = list_get(BLOCKED_ESI_LIST , i);
+		long* esi_id = list_get(BLOCKED_ESI_LIST , i);
 
-		t_list* bloqueados = buscar_deadlock_en_lista(esi_id, list_create());
+		t_list* bloqueados = buscar_deadlock_en_lista(*esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
-			long id = list_get(bloqueados , j);
-			bool id_function(long list_id){
-				return list_id=id;
+			long* id = list_get(bloqueados , j);
+			bool id_function(long* list_id){
+				return *list_id == *id;
 			}
 			if(!list_any_satisfy(resultado, (void*)id_function)){
-				list_add(resultado,id);
+				list_add_id(resultado, *id);
 			}
 		}
 	}
@@ -305,28 +308,28 @@ t_list* buscar_deadlock(){
 //TODO buscar nombre copado para la funcion
 t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 
-	bool id_function(long list_id){
-		return list_id=id;
+	bool id_function(long* list_id){
+		return *list_id == id;
 	}
 
 	if(list_any_satisfy(corte,(void*)id_function)){
 		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
 		t_list* ids_en_deadlock = list_create();
-		list_add(ids_en_deadlock, id);
+		list_add_id(ids_en_deadlock, id);
 		return ids_en_deadlock;
 	} else {
-		esi* _esi = dictionary_get(esi_map, id);
+		esi* _esi = dictionary_get(esi_map, id_to_string(id));
 		if((_esi->estado) != BLOQUEADO){
 			return list_create();
 		}
 		char* recurso = _esi -> blocking_resource;
 		esi *esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
-		corte = list_add(corte, id);
+		list_add_id(corte, id);
 		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante->id, corte);
 		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function)){
 			return resultado;
 		}else{
-			list_add(resultado, id);
+			list_add_id(resultado, id);
 			return resultado;
 		}
 	}

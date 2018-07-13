@@ -29,19 +29,19 @@ char* list_join(t_list* list) {
 }
 
 void queue_push_id(t_queue* queue, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	queue_push(queue, esi_id);
 }
 
 void list_add_id(t_list* list, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	list_add(list, esi_id);
 }
 
 void dictionary_put_id(t_dictionary* map, char* key, long id) {
-	long* esi_id = malloc(sizeof(long)); // TODO [Lu] free
+	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
 	dictionary_put(map, key, esi_id);
 }
@@ -115,4 +115,13 @@ esi* get_esi_by_id(long esi_id) {
 
 bool string_is_blank(char* string) {
 	return string == NULL || string_is_empty(string);
+}
+
+float estimate_next_cpu_burst(esi* esi, int alpha) {
+	float alpha_coef = alpha / 100;
+	float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
+	float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
+	float estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
+	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
+	return estimated_cpu_burst;
 }

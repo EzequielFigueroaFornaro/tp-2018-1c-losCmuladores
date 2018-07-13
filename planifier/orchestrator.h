@@ -9,6 +9,10 @@
 #include "commons/string.h"
 
 #include "fifo.h"
+#include "sjf.h"
+#include "sjf_desalojo.h"
+#include "hrrn.h"
+
 #include "planifier_structures.h"
 #include "semaphores.h"
 #include "logging.h"
@@ -16,10 +20,15 @@
 #include "esi_connector.h"
 
 typedef enum {
-	FIFO = 1
+	FIFO = 1,
+	SJF = 2,
+	SJF_DESALOJO = 3,
+	HRRN = 4
 } planifier_algorithm;
 
 planifier_algorithm algorithm;
+
+int alpha;
 
 void add_esi(esi* esi);
 
