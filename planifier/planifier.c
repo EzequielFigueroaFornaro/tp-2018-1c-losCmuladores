@@ -198,7 +198,7 @@ t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id) {
 void send_execution_result_to_coordinator(execution_result result){
 	if(send(coordinator_socket, &result, sizeof(execution_result), 0) <0){
 		log_info(logger, "Could not send response to coordinator");
-		//TODO que hago si no lo pude recibir?
+		//TODO que hago si no lo pude mandar?
 	}
 }
 
@@ -220,9 +220,7 @@ void free_resource(char* resource){
 
 void try_to_block_resource(char* resource, long esi_id){
 	log_debug(logger, "Trying to block resource %s for ESI%ld", resource, esi_id);
-    acquire_permission_to_block();
     bool took_resource = bloquear_recurso(resource, esi_id);
-    release_permission_to_block();
 	if (took_resource){
 		send_execution_result_to_coordinator(OK);
 	}else{

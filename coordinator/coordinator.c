@@ -393,15 +393,13 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_i
 	}
 
 	int result;
-	int result_response = recv(planifier_socket, &result, sizeof(int), 0);
 
 	//TODO AUXILIOOOOOOOO, QUÉ HAGO ACÁ ?
-	if(result_response <= 0) {
+	if(recv_int(planifier_socket, &result) <= 0) {
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
 	return result;
-//	return OK;
 }
 
 int main(int argc, char* argv[]) {
