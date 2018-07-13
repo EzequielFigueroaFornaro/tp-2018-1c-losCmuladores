@@ -50,6 +50,7 @@ long new_esi(int socket, long esi_size){
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
 	pthread_mutex_unlock(&cpu_time_mtx);
+	new_esi -> blocking_resource = "";
 	add_esi(new_esi);
 	return new_esi -> id;
 }
