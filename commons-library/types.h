@@ -22,8 +22,14 @@ typedef struct {
 typedef struct {
 	int operation_id;
 	char* key;
-	long value;
+	char* value;
 } t_sentence;
+
+typedef struct {
+	int operation_id;
+	char* resource;
+	long esi_id;
+} t_planifier_sentence;
 
 typedef struct {
 	void* buffer_content;
@@ -77,6 +83,7 @@ void concat_string(void** mem_address, void* string, int string_length);
 char* get_operation_as_string(int operation_id);
 
 char* sentence_to_string(t_sentence* sentence);
+char* planifier_sentence_to_string(t_planifier_sentence* sentence);
 
 char* get_operation_as_string(int operation_id);
 

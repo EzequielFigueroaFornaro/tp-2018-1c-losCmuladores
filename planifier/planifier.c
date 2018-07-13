@@ -109,18 +109,18 @@ void connect_to_coordinator() {
 
 
         while(true){//TODO QUE CONDICION PONGO ACA?
-            t_sentence* sentence = wait_for_statement_from_coordinator(coordinator_socket);
+			t_planifier_sentence* sentence = wait_for_statement_from_coordinator(coordinator_socket);
             if (NULL != sentence) {//no hace falta
                 log_info(logger, "Se recibio un nuevo mensaje del coordinador");
                 switch(sentence->operation_id){
                     case GET_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: GET ; Esi Id: %ld",sentence->value);
-                        try_to_block_resource(sentence->key, sentence->value);
+                        log_info(logger, "Tipo de mensaje: GET ; Esi Id: %ld",sentence->esi_id);
+                        try_to_block_resource(sentence->resource, sentence->esi_id);
                         break;
                     case SET_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->value, sentence->key);
+                        log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->esi_id, sentence->resource);
                         execution_result result;
-                        if (strcmp(get_resource_taken_by_esi(sentence->value), sentence->key) == 0 /*tengo igual a lo que tome como true*/){
+                        if (strcmp(get_resource_taken_by_esi(sentence->esi_id), sentence->resource) == 1){
                             log_info(logger, "Operacion SET exitosa");
                             result = OK;
                         }else{
@@ -130,8 +130,8 @@ void connect_to_coordinator() {
                         send(coordinator_socket, &result, sizeof(execution_result), 0);
                         break;
                     case STORE_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->key);
-                        free_resource(sentence->key);
+                        log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->resource);
+                        free_resource(sentence->resource);
                         break;
                     case KEY_UNREACHABLE:
                         log_info(logger, "Tipo de mensaje: KEY_UNREACHABLE");
@@ -151,15 +151,15 @@ void connect_to_coordinator() {
 	}
 }
 
-    t_sentence* wait_for_statement_from_coordinator(int socket_id) {
+t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id) {
     log_info(logger, "Waiting for sentence from coordinator...");
 
-    t_sentence *sentence = sentence_create();
+	t_planifier_sentence *sentence = planifier_sentence_create();
 
     if (recv_sentence_operation(socket_id, &sentence->operation_id) > 0) {
-        if (recv_string(socket_id, &sentence->key) > 0) {
-            if (recv_long(socket_id, &sentence->value) > 0) {
-                char *sentence_str = sentence_to_string(sentence);
+        if (recv_string(socket_id, &sentence->resource) > 0) {
+            if (recv_long(socket_id, &sentence->esi_id) > 0) {
+                char *sentence_str = planifier_sentence_to_string(sentence);
                 log_info(logger, "Sentence successfully received: %s", sentence_str);
                 free(sentence_str);
                 return sentence;

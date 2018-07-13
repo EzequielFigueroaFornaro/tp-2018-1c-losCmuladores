@@ -47,6 +47,14 @@ t_sentence* sentence_create() {
 	return sentence;
 }
 
+t_planifier_sentence* planifier_sentence_create() {
+	t_planifier_sentence* sentence = malloc(sizeof(t_planifier_sentence));
+	sentence->operation_id = 0;
+	sentence->resource = NULL;
+	sentence->esi_id = 0;
+	return sentence;
+}
+
 t_sentence* sentence_create_with(int operation_id, char* key, char* value) {
 	t_sentence* sentence = sentence_create();
 	sentence -> operation_id = operation_id;
@@ -125,4 +133,13 @@ char* sentence_to_string(t_sentence* sentence) {
 	}
 	return string_from_format("{ %s %s %s }",
 			get_operation_as_string(sentence->operation_id), sentence->key, sentence->value);
+}
+
+char* planifier_sentence_to_string(t_planifier_sentence* sentence) {
+	if (sentence->esi_id != 0) {
+		return string_from_format("{ %s %s }",
+								  get_operation_as_string(sentence->operation_id), sentence->resource);
+	}
+	return string_from_format("{ %s %s %ld }",
+							  get_operation_as_string(sentence->operation_id), sentence->resource, sentence->esi_id);
 }
