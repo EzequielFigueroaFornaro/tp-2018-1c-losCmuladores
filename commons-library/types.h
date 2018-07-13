@@ -64,6 +64,8 @@ t_sentence* sentence_create_with(int operation_id, char* key, char* value);
 
 void sentence_destroy(t_sentence* sentence);
 
+void planifier_sentence_destroy(t_planifier_sentence* sentence);
+
 bool is_valid_operation(int operation);
 
 t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id);

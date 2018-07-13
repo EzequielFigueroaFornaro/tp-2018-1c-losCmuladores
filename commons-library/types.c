@@ -73,6 +73,13 @@ void sentence_destroy(t_sentence* sentence) {
 	}
 }
 
+void planifier_sentence_destroy(t_planifier_sentence* sentence) {
+    if (NULL != sentence) {
+        free(sentence->resource);
+        free(sentence);
+    }
+}
+
 t_buffer serialize_sentence(t_sentence* sentence){
 	int operation_length = sizeof(sentence -> operation_id);
 	int key_length = strlen(sentence -> key) + 1;
