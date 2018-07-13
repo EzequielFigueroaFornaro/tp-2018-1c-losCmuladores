@@ -10,7 +10,6 @@
 
 #include "planifier.h"
 
-
 void load_configuration(char *config_file_path) {
 	log_info(logger, "Loading planifier configuration file...");
 	t_config* config = config_create(config_file_path);
@@ -76,6 +75,7 @@ void connect_to_coordinator() {
 					break;
 				case STORE_SENTENCE:
 					free_resource(resource);
+					send_execution_result_to_coordinator(OK);
 					break;
 				case KEY_UNREACHABLE:
 					result = OK;
@@ -112,22 +112,6 @@ void send_execution_result_to_coordinator(execution_result result){
 		log_info(logger, "Could not send response to coordinator");
 		//TODO que hago si no lo pude recibir?
 	}
-}
-
-void free_resource(char* resource){
-	pthread_mutex_lock(&blocked_by_resource_map_mtx);
-	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
-	dictionary_remove(recurso_tomado_por_esi, resource);
-	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-	long* esi_id = queue_pop(esi_queue);
-	while (!is_valid_esi(*esi_id)) {
-		esi_id = queue_pop(esi_queue);
-	}
-	cambiar_recurso_que_lo_bloquea("", *esi_id);
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-//	add_esi_bloqueada(*esi_id); TODO ?????
-	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
-	send_execution_result_to_coordinator(OK);
 }
 
 void try_to_block_resource(char* resource, long esi_id){

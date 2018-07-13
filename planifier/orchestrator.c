@@ -161,6 +161,11 @@ void finish_esi(long esi_id){
 	pthread_mutex_lock(&finished_list_mtx_5);
 	queue_push_id(FINISHED_ESI_LIST, esi->id);
 	pthread_mutex_unlock(&finished_list_mtx_5);
+
+	char* resource_taken = get_resource_taken_by_esi(esi->id);
+	if (!string_is_empty(resource_taken)) {
+		free_resource(resource_taken);
+	}
 }
 
 long esi_se_va_a_ejecutar(){
@@ -267,24 +272,6 @@ void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
 	pthread_mutex_unlock(&esi_map_mtx_6);
 }
 
-char* get_resource_taken_by_esi(long esi_id) {
-	char* resource = "";
-
-	void find_resource(char* key, long* value) {
-		if (esi_id == *value) {
-			resource = key;
-		}
-	}
-	pthread_mutex_lock(&blocked_resources_map_mtx);
-	if (dictionary_is_empty(recurso_tomado_por_esi)) {
-		pthread_mutex_unlock(&blocked_resources_map_mtx);
-		return "";
-	}
-	dictionary_iterator(recurso_tomado_por_esi, (void*) find_resource);
-	pthread_mutex_unlock(&blocked_resources_map_mtx);
-	return resource;
-}
-
 bool resource_taken(char* resource) {
 	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
@@ -345,5 +332,19 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 	}
 }
 
-
-
+void free_resource(char* resource) {
+	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+	pthread_mutex_lock(&blocked_resources_map_mtx);
+	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
+	dictionary_remove(recurso_tomado_por_esi, resource);
+	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
+	long* esi_id = queue_pop(esi_queue);
+	while (!is_valid_esi(*esi_id)) {
+		esi_id = queue_pop(esi_queue);
+	}
+	cambiar_recurso_que_lo_bloquea("", *esi_id);
+	pthread_mutex_unlock(&blocked_resources_map_mtx);
+	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+//	add_esi_bloqueada(*esi_id); TODO ?????
+	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
+}

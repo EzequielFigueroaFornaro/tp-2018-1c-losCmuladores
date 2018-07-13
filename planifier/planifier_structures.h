@@ -14,7 +14,7 @@ typedef struct {
 	long id;
 	int estado;
 	long tiempo_de_entrada;
-	long cantidad_de_instrucciones;
+	int cantidad_de_instrucciones;
 	int instruction_pointer;
 	char* blocking_resource;
 	pthread_t esi_thread;
@@ -31,7 +31,7 @@ typedef enum {
 	BLOQUEADO = 2,
 	CORRIENDO = 3,
 	FINALIZADO = 4,
-	DESBLOQUEADO=5,
+	DESBLOQUEADO=5
 } estado;
 
 t_dictionary * esi_map;
@@ -60,11 +60,17 @@ void dictionary_put_id(t_dictionary* map, char* key, long id);
 
 char* esis_to_string();
 
+char* esi_to_string(esi* esi);
+
 void list_remove_esi(t_list* list, long esi_id);
 
 esi* get_esi_by_id(long esi_id);
 
 bool string_is_blank(char* string);
+
+char* esi_status_to_string(estado status);
+
+char* get_resource_taken_by_esi(long esi_id);
 
 #endif
 

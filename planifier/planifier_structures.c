@@ -46,10 +46,53 @@ void dictionary_put_id(t_dictionary* map, char* key, long id) {
 	dictionary_put(map, key, esi_id);
 }
 
+char* esi_status_to_string(estado status) {
+	switch(status) {
+	case LISTO: return "LISTO";
+	case BLOQUEADO: return "BLOQUEADO";
+	case CORRIENDO: return "CORRIENDO";
+	case FINALIZADO: return "FINALIZADO";
+	case DESBLOQUEADO: return "DESBLOQUEADO";
+	}
+	return "DESCONOCIDO";
+}
+
+char* get_resource_taken_by_esi(long esi_id) {
+	char* resource = "";
+
+	void find_resource(char* key, long* value) {
+		if (esi_id == *value) {
+			resource = key;
+		}
+	}
+	pthread_mutex_lock(&blocked_resources_map_mtx);
+	if (dictionary_is_empty(recurso_tomado_por_esi)) {
+		pthread_mutex_unlock(&blocked_resources_map_mtx);
+		return "";
+	}
+	dictionary_iterator(recurso_tomado_por_esi, (void*) find_resource);
+	pthread_mutex_unlock(&blocked_resources_map_mtx);
+	return resource;
+}
+
+char* esi_to_string(esi* esi) {
+	return string_from_format("{ id: %ld, "
+							  "estado: %s, "
+							  "recurso_tomado: %s, "
+							  "recurso_que_lo_bloquea: %s, "
+							  "instruccion_actual: %d/%d }",
+							  esi->id,
+							  esi_status_to_string(esi->estado),
+							  get_resource_taken_by_esi(esi->id),
+							  (!string_is_blank(esi->blocking_resource)? esi->blocking_resource:""),
+							  esi->instruction_pointer, esi->cantidad_de_instrucciones);
+
+}
+
 char* esis_to_string() {
 	char* buffer = string_new();
 	void to_string(char* esi_id, esi* esi) {
-		string_append_with_format(&buffer, "\n\t\t\t\t\t\tESI%ld -> status: %d", esi->id, esi->estado);
+		string_append_with_format(&buffer, "\n%s", esi_to_string(esi));
 	}
 	dictionary_iterator(esi_map, (void*)to_string);
 	return buffer;

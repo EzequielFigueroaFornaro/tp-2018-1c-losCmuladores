@@ -58,6 +58,6 @@ int get_esi_id(long* esi_id);
 
 void try_to_block_resource(char* resource, long esi_id);
 
-void free_resource(char* resource);
+void send_execution_result_to_coordinator(execution_result result);
 
 #endif /* PLANIFIER_H_ */
