@@ -212,7 +212,7 @@ void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *valu
 	entry->index = index;
 	entry->length = _calculate_value_length(value);
 
-	dictionary_put(table->entries, key, (void*)entry);
+	dictionary_put_posta(table->entries, key, (void*)entry);
 }
 
 bool _is_atomic(t_entry_table *entry_table, char *key) {

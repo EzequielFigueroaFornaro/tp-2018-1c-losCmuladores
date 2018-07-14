@@ -13,7 +13,7 @@ void add_command(char* command_str, command_code code, int args) {
 	command_config* command = malloc(sizeof(command_config));
 	command->code = code;
 	command->args_count = args;
-	dictionary_put(commands, command_str, command);
+	dictionary_put_posta(commands, command_str, command);
 }
 
 void load_commands() {

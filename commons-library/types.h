@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "commons/string.h"
+#include "commons/collections/dictionary.h"
 
 typedef struct {
 	long entries_size;

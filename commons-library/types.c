@@ -22,6 +22,13 @@ message_type CALCULATE_INSTANCE = 403;
 message_type KEY_INFO_REQUEST_FINISHED = 404;
 
 
+void dictionary_put_posta(t_dictionary *self, char *key, void *data) {
+	void * element = dictionary_get(self, key);
+	if(element == NULL){
+		dictionary_put(self, key, data);
+	}
+}
+
 t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id){
 	int key_length = strlen(key) + 1;
 	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(long);
