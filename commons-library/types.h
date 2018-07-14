@@ -98,4 +98,6 @@ void planifier_sentence_destroy(t_planifier_sentence* sentence);
 
 char* planifier_sentence_to_string(t_planifier_sentence* sentence);
 
+void dictionary_put_posta(t_dictionary *self, char *key, void *data);
+
 #endif /* TYPES_H_ */

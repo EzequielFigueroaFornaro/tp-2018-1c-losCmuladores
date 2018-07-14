@@ -11,6 +11,7 @@
 #include <commons/collections/dictionary.h>
 #include "semaphores.h"
 #include "logging.h"
+#include "types.h"
 
 typedef struct {
 	long id;
