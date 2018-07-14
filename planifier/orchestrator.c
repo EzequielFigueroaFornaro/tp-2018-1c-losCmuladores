@@ -347,7 +347,7 @@ void free_resource(char* resource) {
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
 	dictionary_remove(recurso_tomado_por_esi, resource);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-	if(!queue_is_empty(esi_queue)){
+	if(esi_queue != NULL && !queue_is_empty(esi_queue)){
 		long* esi_id = queue_pop(esi_queue);
 		while (!is_valid_esi(*esi_id)) {
 			esi_id = queue_pop(esi_queue);
