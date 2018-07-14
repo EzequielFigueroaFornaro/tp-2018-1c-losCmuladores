@@ -81,6 +81,7 @@ void dispatch() {
 			log_debug(logger, "ESI%ld has finished!", esi->id);
 			unlock_semaphores(true);
 			finish_esi(esi->id);
+
 			continue;
 		}
 
