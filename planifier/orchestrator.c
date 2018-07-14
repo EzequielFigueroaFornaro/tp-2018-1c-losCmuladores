@@ -10,6 +10,10 @@
 
 #include "orchestrator.h"
 
+#include <commons/log.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
 long id = 0;
 long cpu_time = 0;
 
@@ -253,23 +257,20 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 	bool able_to_give_resource;
 
 	pthread_mutex_lock(&blocked_resources_map_mtx);
-	if (resource_taken(recurso)) {
+	if (resource_taken(recurso, esi_id)) {
 		block_esi_by_resource(esi_id, recurso);
 		cambiar_recurso_que_lo_bloquea(recurso,esi_id);
 		able_to_give_resource = false;
 	} else {
-		t_queue* blocked_esis = get_all_waiting_for_resource(recurso);
-		if (blocked_esis == NULL) {
-			blocked_esis = queue_create();
-		}
-		queue_push_id(blocked_esis, esi_id);
-		dictionary_put(esis_bloqueados_por_recurso, recurso, blocked_esis);
-
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
 		able_to_give_resource = true;
 	}
 	pthread_mutex_unlock(&blocked_resources_map_mtx);
 	return able_to_give_resource;
+}
+
+bool resource_taken_by_any_esi(char* resource) {
+	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
 
 
@@ -286,8 +287,9 @@ pthread_mutex_t DEADLOCK_ENCONTRADO_MUTEX = PTHREAD_MUTEX_INITIALIZER;
 bool DEADLOCK_ENCONTRADO = PTHREAD_MUTEX_INITIALIZER;
 
 
-bool resource_taken(char* resource) {
-	return dictionary_has_key(recurso_tomado_por_esi, resource);
+bool resource_taken(char* resource, long esi_id) {
+	long* esi = dictionary_get(recurso_tomado_por_esi, resource);
+	return esi != NULL && *esi != esi_id;
 }
 
 t_list* buscar_deadlock(){

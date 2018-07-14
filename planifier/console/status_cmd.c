@@ -31,7 +31,7 @@ command_result status_cmd(command command) {
 	buffer = string_new();
 
 	t_queue* esis = get_all_waiting_for_resource(key);
-	if ((esis == NULL || queue_is_empty(esis)) && !resource_taken(key)) {
+	if ((esis == NULL || queue_is_empty(esis))) {
 		result.code = COMMAND_ERROR;
 		result.content = "La clave no esta activa/no existe";
 		return result;

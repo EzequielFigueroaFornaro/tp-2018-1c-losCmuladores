@@ -64,7 +64,8 @@ long get_current_time();
 
 void notify_dispatcher();
 
-bool resource_taken(char* resource);
+bool resource_taken(char* resource, long esi_id);
+bool resource_taken_by_any_esi(char* resource);
 
 void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id);
 

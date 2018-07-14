@@ -22,7 +22,7 @@ command_result do_validations(char* resource, long esi_id) {
 		return result;
 	}
 
-	if (is_resource_taken_by_esi(esi_id, resource)) {
+	if (is_resource_taken_by_esi(esi_id, resource) && resource_taken_by_any_esi(resource)) {
 		result.code = COMMAND_ERROR;
 		result.content =
 				string_from_format(
