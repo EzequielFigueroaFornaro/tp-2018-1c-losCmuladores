@@ -149,7 +149,15 @@ void signal_handler(int sig){
     }
 }
 
-void send_result(int coordinator_socket, int result, int used_entries){
+void send_result(int coordinator_socket, int result){
+	int send_result = send(coordinator_socket, &result, sizeof(result), 0);
+
+	if(send_result <= 0){
+		_exit_with_error("Could not send result %d to coordinator.", result);
+	}
+}
+
+void send_sentence_result(int coordinator_socket, int result, int used_entries){
 	int size = sizeof(result) + sizeof(used_entries);
 	int *data = (int *)malloc(size);
 	memcpy(data, &result, sizeof(result));
@@ -158,7 +166,7 @@ void send_result(int coordinator_socket, int result, int used_entries){
 	free(data);
 
 	if(send_result <= 0){
-		log_error(logger, "Could not send result to coordinator.");
+		_exit_with_error("Could not send result %d to coordinator.", result);
 	}
 }
 
@@ -268,12 +276,15 @@ int instance_run(int argc, char* argv[]) {
 				coordinator_result = NEED_COMPACTION;
 			}
 			int used_entries = availability_get_taken_entries_count(entries_table->availability);
-			send_result(coordinator_socket, coordinator_result, used_entries);
+			send_sentence_result(coordinator_socket, coordinator_result, used_entries);
 			} else {
 				_exit_with_error("Error receiving sentence from coordinator. Maybe was disconnected");
 			}
 		} else if (request == GET_KEY_VALUE) {
 			wait_for_key_value_requests(coordinator_socket);
+		} else if (request == START_COMPACTION) {
+			entry_table_compact(entries_table);
+			send_result(coordinator_socket, OK);
 		}
 	}
 	exit_gracefully(1);

@@ -49,6 +49,7 @@ long new_esi(int socket, long esi_size){
 	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
+	new_esi -> blocking_resource = NULL;
 	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> blocking_resource = "";
 	add_esi(new_esi);

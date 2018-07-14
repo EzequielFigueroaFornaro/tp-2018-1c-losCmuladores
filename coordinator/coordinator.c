@@ -11,7 +11,7 @@
 #include "coordinator.h"
 
 int receive_sentence_execution_request(int ise_socket, t_sentence** sentence) {
-	*sentence = malloc(sizeof(t_sentence));
+	*sentence = malloc(sizeof(t_sentence)); //TODO acá hay un leak.
 	int result;
 	if ((result = recv_message(ise_socket)) != PROCESS_SENTENCE) {
 		return result > 0? -1 : result;
@@ -30,8 +30,6 @@ bool is_same_instance(t_instance *one, t_instance *another){
 	return result;
 }
 
-//TODO Seguramente los mutex no vayan acá, sino en donde se orqueste la selección de la instancia,
-//TODO qué hacemos si no hay ninguna instancia disponible ?
 t_instance* select_instance_to_send_by_equitative_load(){
 	t_instance* selected = NULL;
 
@@ -112,6 +110,10 @@ t_instance* select_instance_to_send_by_lsu(){
 
 	t_instance* selected_instance = list_get(available_instances, 0);
 
+	if(selected_instance == NULL) {
+		return NULL;
+	}
+
 	int entries_qty = selected_instance -> entries_in_use;
 	bool _same_entries_used(t_instance* instance){
 			return instance -> entries_in_use == entries_qty;
@@ -125,9 +127,6 @@ t_instance* select_instance_to_send_by_lsu(){
 
 	list_destroy(available_instances);
 	list_destroy(instances_with_same_entries_than_selected_instance);
-
-	//TODO ESTO ES DE PRUEBA.
-	//selected_instance -> entries_in_use = selected_instance -> entries_in_use + rand() % 15;
 
 	return selected_instance;
 }
@@ -175,6 +174,8 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	int result_response;
 	recv(instance -> socket_id, &result, sizeof(int), 0);
 	result_response = recv(instance -> socket_id, &entries_used, sizeof(int), 0);
+
+	instance -> entries_in_use = entries_used;
 
 	if(result_response == 0) {
 		log_error(logger, "Selected instance is not available !");
@@ -293,9 +294,11 @@ void load_configuration(char* config_file_path){
 }
 
 int send_instance_configuration(int client_sock, char *name){
-	log_info(logger, "Sending instance configuration to host %s", get_client_address(client_sock));
+	char* client_address = get_client_address(client_sock);
+	log_info(logger, "Sending instance configuration to host %s", client_address);
+	free(client_address);
 
-	t_list *instance_keys = list_create();
+	t_list *instance_keys = list_create(); //TODO leak
 	int keys_size = 0;
 	void _instance_keys_iterator(char *key, void *entry) {
 		t_instance *instance = (t_instance *) entry;
@@ -308,7 +311,7 @@ int send_instance_configuration(int client_sock, char *name){
 
 	int keys_count = list_size(instance_keys);
 	int buffer_size = sizeof(t_instance_configuration) + keys_size + keys_count * sizeof(int);
-	void* buffer = malloc(buffer_size);
+	void* buffer = malloc(buffer_size); //TODO leak
 	void* offset = buffer;
 	concat_value(&offset, instance_configuration, sizeof(t_instance_configuration));
 	concat_value(&offset, &keys_count, sizeof(keys_count));
@@ -318,8 +321,8 @@ int send_instance_configuration(int client_sock, char *name){
 	}
 	list_iterate(instance_keys, _concat_key);
 
-
 	int status = send(client_sock, buffer, buffer_size, 0);
+	free(buffer);
 	if(status <= 0){
 		log_error(logger, "Could not send instance configuration.%d", status);
 		close(client_sock);
@@ -334,11 +337,57 @@ void delay_execution(){
 	sleep(delay * 0.001);
 }
 
+//TODO test cuando la instancia reciba bien la orden de compactar.
+void start_compaction(){
+	void _send_compaction_order(t_instance* instance){
+		log_info(logger, "Sending compaction order to instance %s", instance -> name);
+
+		int status = send(instance -> socket_id, &START_COMPACTION, sizeof(message_type), 0); //TODO testear sin el casteo.
+		if(status <= 0){
+			log_error(logger, "Error while sending compaction order to instance %s. It will be marked as unavailable", instance -> name);
+			handle_instance_disconnection(instance);
+		}
+	}
+
+	void _recv_compaction_result(t_instance* instance) {
+		int compaction_result;
+		int compaction_confirmation = recv(instance -> socket_id, &compaction_result, sizeof(int), 0);
+
+		if(compaction_confirmation <= 0 || compaction_result != OK){
+			log_error(logger, "Error receiving compaction result from instance %s. It will be marked as unavailable", instance -> name);
+			handle_instance_disconnection(instance);
+		}
+
+		log_info(logger, "Compaction finished for instance %s", instance -> name);
+	}
+
+	log_info(logger, "Starting compaction process...");
+
+	t_list* available_instances;
+	available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
+	list_iterate(available_instances, (void*) _send_compaction_order);
+	list_destroy(available_instances);
+
+	available_instances = list_filter(instances_thread_list, (void*) is_instance_available);
+	list_iterate(available_instances, (void*) _recv_compaction_result);
+	list_destroy(available_instances);
+
+	log_info(logger, "Compaction process finished.");
+	return;
+}
+
 int process_sentence(t_sentence* sentence, long ise_id){
+	int _send_to_instance(t_instance* selected_instance){
+		free(last_instance_selected);
+		last_instance_selected = malloc(sizeof(t_instance));
+		memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
+		return send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+	}
+
 	int result_to_ise;
 	t_instance* selected_instance;
 
-	delay_execution();//Retardo por requerimiento.
+	delay_execution();
 
 	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
 
@@ -351,10 +400,19 @@ int process_sentence(t_sentence* sentence, long ise_id){
 			int send_to_instance_result;
 
 			if(selected_instance != NULL){
-				free(last_instance_selected);
-				last_instance_selected = malloc(sizeof(t_instance));
-				memcpy(last_instance_selected, selected_instance, sizeof(t_instance));
-				send_to_instance_result = send_statement_to_instance_and_wait_for_result(selected_instance, sentence);
+				send_to_instance_result = _send_to_instance(selected_instance);
+			} else {
+				send_to_instance_result = KEY_UNREACHABLE;
+			}
+			//TODO agregar un log del resultado de la instancia.
+
+			if(send_to_instance_result == NEED_COMPACTION){
+				start_compaction();
+				if(selected_instance -> is_available) {
+					send_to_instance_result = _send_to_instance(selected_instance);
+				} else {
+					send_to_instance_result = KEY_UNREACHABLE;
+				}
 			}
 
 			pthread_mutex_lock(&keys_mtx);
@@ -368,6 +426,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
 			dictionary_put(keys_location, sentence -> key, selected_instance);
+			result_to_ise = send_to_instance_result;
 			pthread_mutex_unlock(&keys_mtx);
 		} else {
 			result_to_ise = planifier_validation;

@@ -10,7 +10,6 @@ char* get_execution_result_description(int execution_result) {
 	case KEY_BLOCKED : return "Clave bloqueada por otro proceso";
 	case PARSE_ERROR : return "Error al intentar parsear sentencia";
 	case NEED_COMPACTION : return "Se necesita compactacion";
-	case START_COMPACTION : return "Inicia compactacion";
 	case INSTANCE_AVAILABLE_FOR_KEY: return "Instancia encontrada para contener key solicitada";
 	case NO_INSTANCE_AVAILABLE_FOR_KEY: return "No hay instancia que pueda contener la key solicitada";
 	case KEY_FOUND : return "Clave encontrada en instancia";
