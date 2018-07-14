@@ -175,7 +175,7 @@ long esi_se_va_a_ejecutar(){
 	pthread_mutex_lock(&running_esi_mtx_1);
 	pthread_mutex_lock(&next_running_esi_mtx_2);
 
-	if (RUNNING_ESI == NEXT_RUNNING_ESI) {
+	if ((RUNNING_ESI == NEXT_RUNNING_ESI) && NEXT_RUNNING_ESI!=0) {
 		pthread_mutex_lock(&esi_map_mtx_6);
 		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
 		pthread_mutex_unlock(&esi_map_mtx_6);
@@ -262,7 +262,6 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 		if (blocked_esis == NULL) {
 			blocked_esis = queue_create();
 		}
-		queue_push_id(blocked_esis, esi_id);
 		dictionary_put(esis_bloqueados_por_recurso, recurso, blocked_esis);
 
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
@@ -348,13 +347,15 @@ void free_resource(char* resource) {
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
 	dictionary_remove(recurso_tomado_por_esi, resource);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-	long* esi_id = queue_pop(esi_queue);
-	while (!is_valid_esi(*esi_id)) {
-		esi_id = queue_pop(esi_queue);
+	if(!queue_is_empty(esi_queue)){
+		long* esi_id = queue_pop(esi_queue);
+		while (!is_valid_esi(*esi_id)) {
+			esi_id = queue_pop(esi_queue);
+		}
+		cambiar_recurso_que_lo_bloquea("", *esi_id);
+		pthread_mutex_unlock(&blocked_resources_map_mtx);
+		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+		unblock_esi(*esi_id);
 	}
-	cambiar_recurso_que_lo_bloquea("", *esi_id);
-	pthread_mutex_unlock(&blocked_resources_map_mtx);
-	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-	unblock_esi(*esi_id);
 	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
 }
