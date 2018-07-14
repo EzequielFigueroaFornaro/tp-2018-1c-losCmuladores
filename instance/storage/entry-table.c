@@ -151,6 +151,18 @@ int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list 
 	return 1;
 }
 
+int entry_table_load_all(t_entry_table * entry_table, char* mount_path) {
+	t_list *keys = list_create();
+	void _add_key(char *key, void *value) {
+		list_add(keys, (void *)strdup(key));
+	}
+	dictionary_iterator(entry_table->entries, _add_key);
+
+	int result = entry_table_load_list(entry_table, mount_path, keys);
+	list_destroy_and_destroy_elements(keys, free);
+	return result;
+}
+
 void entry_table_compact(t_entry_table * entry_table) {
 	log_info(logger, "Start compaction");
 	int start_index = 0;
