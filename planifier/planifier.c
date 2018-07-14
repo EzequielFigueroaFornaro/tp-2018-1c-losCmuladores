@@ -94,8 +94,7 @@ void connect_to_coordinator() {
                         log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->resource);
                         free_resource(sentence->resource);
                         execution_result result_store = OK;
-                        int resultado_loco = send(coordinator_socket, &result_store, sizeof(int), 0);
-                        resultado_loco;
+                        send(coordinator_socket, &result_store, sizeof(int), 0);
                         break;
                     case KEY_UNREACHABLE:
                         log_info(logger, "Tipo de mensaje: KEY_UNREACHABLE");
