@@ -59,6 +59,7 @@ extern message_type GET_INSTANCE;
 extern message_type GET_KEY_VALUE;
 extern message_type CALCULATE_INSTANCE;
 extern message_type KEY_INFO_REQUEST_FINISHED;
+extern message_type HEALTH_CHECK;
 
 t_sentence* sentence_create();
 
