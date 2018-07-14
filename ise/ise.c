@@ -66,14 +66,25 @@ void execute_script() {
 			result = send_sentence_to_coordinator(current_sentence.operation);
 		} else {
 			result = PARSE_ERROR;
+			log_info(logger, get_execution_result_description(result));
 		}
 		handle_execution_result(result);
 	}
 }
 
 void handle_execution_result(execution_result result) {
-	log_info(logger, "Received result from coordinator: %s", get_execution_result_description(result));
+	if (result != PARSE_ERROR) {
+		log_info(logger, "Received result from coordinator: %s", get_execution_result_description(result));
+	}
 	notify_planifier(result);
+	if (result == KEY_UNREACHABLE ||
+				   result == KEY_LOCK_NOT_ACQUIRED ||
+				   result == KEY_TOO_LONG ||
+				   result == KEY_NOT_FOUND) {
+		log_info(logger, "Aborting...");
+		exit_with_error();
+	}
+
 	if (result == KEY_BLOCKED) {
 		log_info(logger, "Going to retry last sentence next...");
 		set_retry_current_sentence(true);
