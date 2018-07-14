@@ -319,6 +319,8 @@ int instance_run(int argc, char* argv[]) {
 		} else if (request == START_COMPACTION) {
 			entry_table_compact(entries_table);
 			send_result(coordinator_socket, OK);
+		} else if (request == HEALTH_CHECK) {
+			send_result(coordinator_socket, OK);
 		}
 	}
 	pthread_join(dump_thread, NULL);

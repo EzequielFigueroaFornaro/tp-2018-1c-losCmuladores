@@ -131,8 +131,28 @@ t_instance* select_instance_to_send_by_lsu(){
 	return selected_instance;
 }
 
+int health_check(t_instance* instance){
+	int status = send(instance -> socket_id, &HEALTH_CHECK, sizeof(message_type), 0);
+	if(status <= 0){
+		log_error(logger, "Health check to instance %s. It will be marked as unavailable", instance -> name);
+		handle_instance_disconnection(instance);
+		return -1;
+	}
+
+	int health_check_result;
+	int health_check_confirmation = recv(instance -> socket_id, &health_check_result, sizeof(int), 0);
+
+	if(health_check_confirmation <= 0 || health_check_result != OK){
+		log_error(logger, "Error receiving health check result from instance %s. It will be marked as unavailable", instance -> name);
+		handle_instance_disconnection(instance);
+		return -1;
+	}
+
+	return health_check_result;
+}
+
 t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sentence* sentence) {
-	if(sentence -> operation_id == SET_SENTENCE){
+	t_instance* _look_for_instance(){
 		switch(distribution) {
 			case EL: return select_instance_to_send_by_equitative_load();
 			case LSU: return select_instance_to_send_by_lsu();
@@ -140,12 +160,25 @@ t_instance* select_instance_to_send_by_distribution_strategy_and_operation(t_sen
 			default: _exit_with_error(-1, "Invalid distribution strategy.", NULL);
 			return NULL;
 		}
-	} else { //Sino, debería ser STORE. Un GET no debería llegar nunca a este punto.
-		pthread_mutex_lock(&keys_mtx);
-		t_instance* instance = (t_instance*) dictionary_get(keys_location, sentence -> key);
-		pthread_mutex_unlock(&keys_mtx);
-		return instance;
 	}
+
+	pthread_mutex_lock(&keys_mtx);
+	t_instance* instance = (t_instance*) dictionary_get(keys_location, sentence -> key);
+	pthread_mutex_unlock(&keys_mtx);
+
+	bool is_available = false;
+
+	if(sentence -> operation_id == SET_SENTENCE && instance == NULL && is_available == false){
+		while(instance == NULL || !is_available){
+			instance = _look_for_instance();
+			if(instance != NULL){
+				int result = health_check(instance);
+				is_available = (result == 1) ? true : false;
+			}
+		}
+	}
+
+	return instance;
 }
 
 void handle_instance_disconnection(t_instance* instance){
