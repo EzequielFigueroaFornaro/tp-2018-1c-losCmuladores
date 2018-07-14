@@ -23,12 +23,14 @@
 #include "commons/collections/dictionary.h"
 #include <signal.h>
 #include <string.h>
+#include <pthread.h>
 
 typedef struct {
 	int coordinator_port;
 	char *coordinator_ip;
 	char *instance_name;
 	char *mount_path;
+	int dump_interval;
 	t_replacement_algorithm replacement_algorithm;
 } t_instance_config;
 
@@ -37,6 +39,8 @@ int connect_to_coordinator(char *coordinator_ip, int coordinator_port);
 t_instance_config* instance_config_create();
 
 void instance_config_destroy(t_instance_config *instance_config);
+
+pthread_t start_dump_interval();
 
 //Global variables.
 t_log * logger = NULL;
