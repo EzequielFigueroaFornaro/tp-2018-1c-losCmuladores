@@ -16,7 +16,7 @@ command_result do_validations(char* resource, long esi_id) {
 	}
 
 	esi* esi = get_esi_by_id(esi_id);
-	if (esi->estado != CORRIENDO && esi->estado != LISTO) {
+	if (esi->estado != CORRIENDO && esi->estado != LISTO && esi->estado != DESBLOQUEADO) {
 		result.code = COMMAND_ERROR;
 		result.content = string_from_format("El ESI%ld no esta ni ejecutando ni en listos!", esi_id);
 		return result;

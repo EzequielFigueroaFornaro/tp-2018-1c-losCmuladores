@@ -81,7 +81,7 @@ void connect_to_coordinator() {
                     case SET_SENTENCE:
                         log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->esi_id, sentence->resource);
                         execution_result result;
-                        if (strcmp(get_resource_taken_by_esi(sentence->esi_id), sentence->resource) == 1){
+                        if (strcmp(get_resource_taken_by_esi(sentence->esi_id), sentence->resource) == 0){
                             log_info(logger, "Operacion SET exitosa");
                             result = OK;
                         }else{
@@ -93,10 +93,14 @@ void connect_to_coordinator() {
                     case STORE_SENTENCE:
                         log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->resource);
                         free_resource(sentence->resource);
+                        execution_result result_store = OK;
+                        int resultado_loco = send(coordinator_socket, &result_store, sizeof(int), 0);
+                        resultado_loco;
                         break;
                     case KEY_UNREACHABLE:
                         log_info(logger, "Tipo de mensaje: KEY_UNREACHABLE");
-                        send(coordinator_socket, OK, sizeof(execution_result), 0);
+                        execution_result result_key = OK;
+                        send(coordinator_socket, &result_key, sizeof(int), 0);
                         break;
                     default:
                         log_info(logger, "Connection was received but the operation its not supported. Ignoring");
