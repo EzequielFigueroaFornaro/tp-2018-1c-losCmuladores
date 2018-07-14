@@ -25,6 +25,6 @@ void esi_connection_handler(int socket);
 
 bool send_esi_to_run(long esi_id);
 
-bool wait_execution_result(long esi_id);
+bool wait_execution_result(long esi_id, int* result);
 
 #endif /* ESI_CONNECTOR_H_ */
