@@ -83,7 +83,7 @@ char* esi_to_string(esi* esi) {
 							  "instruccion_actual: %d/%d }",
 							  esi->id,
 							  esi_status_to_string(esi->estado),
-							  get_resource_taken_by_esi(esi->id),
+//							  get_resource_taken_by_esi(esi->id),
 							  esi->blocking_resource,
 							  esi->instruction_pointer, esi->cantidad_de_instrucciones);
 

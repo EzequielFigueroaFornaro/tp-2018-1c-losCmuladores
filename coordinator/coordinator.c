@@ -443,7 +443,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
 int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_id){
-	log_info(logger, "Asking for sentence and resource to planifier %s", key);
+/*	log_info(logger, "Asking for sentence and resource to planifier %s", key);
 
 	t_buffer buffer = serialize_operation_resource_request(operation_id, key, ise_id);
 
@@ -461,7 +461,8 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_i
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
-	return result;
+	return result;*/
+	return OK;
 }
 
 int main(int argc, char* argv[]) {
