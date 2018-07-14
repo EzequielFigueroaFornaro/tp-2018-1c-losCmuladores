@@ -26,6 +26,12 @@ typedef struct {
 } t_sentence;
 
 typedef struct {
+	int operation_id;
+	char* resource;
+	long esi_id;
+} t_planifier_sentence;
+
+typedef struct {
 	void* buffer_content;
 	int size;
 } t_buffer ;
@@ -59,9 +65,11 @@ t_sentence* sentence_create_with(int operation_id, char* key, char* value);
 
 void sentence_destroy(t_sentence* sentence);
 
+void planifier_sentence_destroy(t_planifier_sentence* sentence);
+
 bool is_valid_operation(int operation);
 
-t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id);
+t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id);
 
 //Devuelve un buffer y su size a partir de una sentencia.
 t_buffer serialize_sentence(t_sentence* sentence); // TODO [Lu] no deberia devolver un puntero a t_buffer?
@@ -78,6 +86,7 @@ void concat_string(void** mem_address, void* string, int string_length);
 char* get_operation_as_string(int operation_id);
 
 char* sentence_to_string(t_sentence* sentence);
+char* planifier_sentence_to_string(t_planifier_sentence* sentence);
 
 char* get_operation_as_string(int operation_id);
 

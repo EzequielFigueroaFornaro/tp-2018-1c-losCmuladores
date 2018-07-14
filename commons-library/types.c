@@ -22,16 +22,16 @@ message_type CALCULATE_INSTANCE = 403;
 message_type KEY_INFO_REQUEST_FINISHED = 404;
 
 
-t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id){
+t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id){
 	int key_length = strlen(key) + 1;
-	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(int);
+	int message_size = sizeof(int) + sizeof(int) + key_length + sizeof(long);
 
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
 
 	concat_value(&offset, &(operation_id), sizeof(int));
 	concat_string(&offset, key, key_length);
-	concat_value(&offset, &ise_id, sizeof(int));
+	concat_value(&offset, &ise_id, sizeof(long));
 
 	t_buffer buffer_struct;
 	buffer_struct.buffer_content = buffer;
@@ -45,6 +45,14 @@ t_sentence* sentence_create() {
 	sentence->operation_id = 0;
 	sentence->key = NULL;
 	sentence->value = NULL;
+	return sentence;
+}
+
+t_planifier_sentence* planifier_sentence_create() {
+	t_planifier_sentence* sentence = malloc(sizeof(t_planifier_sentence));
+	sentence->operation_id = 0;
+	sentence->resource = NULL;
+	sentence->esi_id = 0;
 	return sentence;
 }
 
@@ -64,6 +72,13 @@ void sentence_destroy(t_sentence* sentence) {
 		free(sentence->value);
 		free(sentence);
 	}
+}
+
+void planifier_sentence_destroy(t_planifier_sentence* sentence) {
+    if (NULL != sentence) {
+        free(sentence->resource);
+        free(sentence);
+    }
 }
 
 t_buffer serialize_sentence(t_sentence* sentence){
@@ -127,4 +142,13 @@ char* sentence_to_string(t_sentence* sentence) {
 	}
 	return string_from_format("{ %s %s %s }",
 			get_operation_as_string(sentence->operation_id), sentence->key, sentence->value);
+}
+
+char* planifier_sentence_to_string(t_planifier_sentence* sentence) {
+	if (sentence->esi_id != 0) {
+		return string_from_format("{ %s %s }",
+								  get_operation_as_string(sentence->operation_id), sentence->resource);
+	}
+	return string_from_format("{ %s %s %ld }",
+							  get_operation_as_string(sentence->operation_id), sentence->resource, sentence->esi_id);
 }

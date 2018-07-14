@@ -97,7 +97,7 @@ int send_id_to_esi(int socket, long esi_id) {
 	return result_send_new_esi_id;
 }
 
-bool wait_execution_result(long esi_id) {
+bool wait_execution_result(long esi_id, int* result) {
 	esi* esi_to_get_result_from = dictionary_get(esi_map, id_to_string(esi_id));
 	int socket = esi_to_get_result_from->socket_id;
 
@@ -105,8 +105,7 @@ bool wait_execution_result(long esi_id) {
 		return false;
 	}
 
-	execution_result esi_execution_result;
-	int esi_execution_result_status = recv(socket, &esi_execution_result, sizeof(execution_result), MSG_WAITALL);
+	int esi_execution_result_status = recv(socket, result, sizeof(execution_result), MSG_WAITALL);
 	if (esi_execution_result_status <= 0) {
 		log_error(logger, "Error trying to receive the execution result");
 		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?

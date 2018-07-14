@@ -14,9 +14,18 @@ void acquire_dispatcher() {
 	pthread_mutex_lock(&dispatcher_manager);
 }
 
-void unlock_semaphores(bool unlock_dispatcher) {
+void acquire_next_and_running_semaphores() {
+	pthread_mutex_lock(&running_esi_mtx_1);
+	pthread_mutex_lock(&next_running_esi_mtx_2);
+}
+
+void unlock_next_and_running_semaphores() {
 	pthread_mutex_unlock(&next_running_esi_mtx_2);
 	pthread_mutex_unlock(&running_esi_mtx_1);
+}
+
+void unlock_semaphores(bool unlock_dispatcher) {
+	unlock_next_and_running_semaphores();
 	if (unlock_dispatcher) {
 		pthread_mutex_unlock(&dispatcher_manager);
 	}
@@ -36,8 +45,7 @@ void atomic_execution() {
 		pthread_cond_wait(&permission_to_block_released, &dispatcher_manager);
 		log_debug(logger, "An ESI was blocked by console");
 	}
-	pthread_mutex_lock(&running_esi_mtx_1);
-	pthread_mutex_lock(&next_running_esi_mtx_2);
+	acquire_next_and_running_semaphores();
 }
 
 bool valid_esi_status(esi* esi) {
@@ -73,6 +81,7 @@ void dispatch() {
 			log_debug(logger, "ESI%ld has finished!", esi->id);
 			unlock_semaphores(true);
 			finish_esi(esi->id);
+
 			continue;
 		}
 
@@ -91,14 +100,26 @@ void dispatch() {
 		}
 
 		log_debug(logger, "Waiting for execution result...");
-		if (!wait_execution_result(RUNNING_ESI)) {
+		int execution_result;
+		if (!wait_execution_result(RUNNING_ESI, &execution_result)) {
 			log_error(logger, "Execution result could not be received");
 
 			unlock_semaphores(true);
 			finish_esi(RUNNING_ESI);
 			continue;
 		}
-		log_debug(logger, "Execution result received, incrementing cpu_time (current cpu_time: %ld)", get_current_time());
+
+		log_info(logger, "Execution for ESI is: %s", get_execution_result_description(execution_result));
+		if (execution_result == KEY_UNREACHABLE ||
+				execution_result == KEY_LOCK_NOT_ACQUIRED ||
+				execution_result == KEY_TOO_LONG ||
+				execution_result == KEY_NOT_FOUND) {
+			log_info(logger, "Finishing ESI%ld because of execution error", RUNNING_ESI);
+			unlock_next_and_running_semaphores();
+			finish_esi(RUNNING_ESI);
+			acquire_next_and_running_semaphores();
+		}
+		log_debug(logger, "Incrementing cpu_time (current cpu_time: %ld)", get_current_time());
 		cpu_time_incrementate();
 		log_debug(logger, "cpu_time incremented to %ld", get_current_time());
 		borrado_de_finish();
