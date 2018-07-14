@@ -81,6 +81,7 @@ int entry_table_put(t_entry_table * table, char *key, char *value) {
 					char *key_to_replace = replacement_take(table->replacement);
 					log_debug(logger, "Replacing old key %s for new key %s", key_to_replace, key);
 					entry_table_remove(table, key_to_replace);
+					free(key_to_replace);
 				}
 			} else {
 				result = _entry_table_try_put(table, key, value);
@@ -129,13 +130,15 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char *value = file_system_read(file_name);
+	int result = 1;
 	if (NULL == value) {
 		log_debug(logger, "Skipping load key %s. Not found in disk", key);
-		return 1;
 	} else {
 		log_debug(logger, "Loading key %s from disk with value %s", key, value);
-		return entry_table_put(entry_table, key, value);
+		result = entry_table_put(entry_table, key, value);
 	}
+	free(value);
+	return result;
 }
 
 int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list *keys) {
@@ -151,14 +154,24 @@ int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list 
 	return 1;
 }
 
-int entry_table_load_all(t_entry_table * entry_table, char* mount_path) {
+int entry_table_store_all(t_entry_table * entry_table, char* mount_path) {
 	t_list *keys = list_create();
 	void _add_key(char *key, void *value) {
 		list_add(keys, (void *)strdup(key));
 	}
 	dictionary_iterator(entry_table->entries, _add_key);
 
-	int result = entry_table_load_list(entry_table, mount_path, keys);
+	int result = 1;
+	int keys_count = list_size(keys);
+	for (int i = 0; i < keys_count; ++i) {
+		char *key = (char *)list_get(keys, i);
+		int result = entry_table_store(entry_table, mount_path, key);
+		if (result < 0) {
+			log_error(logger, "Error while loading entry %s", key);
+			break;
+		}
+	}
+
 	list_destroy_and_destroy_elements(keys, free);
 	return result;
 }
