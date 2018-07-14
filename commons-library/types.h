@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "commons/string.h"
+#include "commons/collections/dictionary.h"
 
 typedef struct {
 	long entries_size;
@@ -89,5 +90,11 @@ char* sentence_to_string(t_sentence* sentence);
 char* planifier_sentence_to_string(t_planifier_sentence* sentence);
 
 char* get_operation_as_string(int operation_id);
+
+t_planifier_sentence* planifier_sentence_create();
+
+void planifier_sentence_destroy(t_planifier_sentence* sentence);
+
+char* planifier_sentence_to_string(t_planifier_sentence* sentence);
 
 #endif /* TYPES_H_ */

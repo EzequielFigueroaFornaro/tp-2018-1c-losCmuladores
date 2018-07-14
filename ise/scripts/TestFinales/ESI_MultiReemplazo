@@ -32,12 +32,3 @@ SET microsoft:consola:xbox Halo
 SET microsoft:consola:xbox360 Halo
 SET microsoft:consola:xboxone Halo
 SET nintendo:consola:switch ZeldaBOTW
-STORE sony:consola:ps1
-STORE sony:consola:ps2
-STORE sony:consola:ps4
-STORE sony:consola:ps3
-STORE microsoft:consola:xbox
-STORE microsoft:consola:xbox360
-STORE microsoft:consola:xboxone
-STORE nintendo:consola:switch
-

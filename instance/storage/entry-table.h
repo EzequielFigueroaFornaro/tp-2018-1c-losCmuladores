@@ -63,6 +63,11 @@ int entry_table_store(t_entry_table * entry_table, char* mounting_path, char *ke
 int entry_table_load(t_entry_table * entry_table, char* mounting_path, char *key);
 
 /**
+ * Carga los valores de los archivos en disco a la tabla de entradas
+ */
+int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list *keys);
+
+/**
  * determina si hay suficiente espacio continuo para poder almacenar el valor
  */
 bool entry_table_can_put(t_entry_table* entry_table, char *value);

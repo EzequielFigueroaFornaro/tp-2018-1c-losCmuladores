@@ -112,6 +112,7 @@ void block_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi->duracion_real_ultima_rafaga = esi->instruction_pointer;
+	log_debug(logger, "Duracion ultima rafaga: %d", esi->duracion_real_ultima_rafaga);
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
 	switch(algorithm) {
@@ -165,10 +166,9 @@ void finish_esi(long esi_id){
 	queue_push_id(FINISHED_ESI_LIST, esi->id);
 	pthread_mutex_unlock(&finished_list_mtx_5);
 
-	char* resource_taken = get_resource_taken_by_esi(esi->id);
-	if (!string_is_empty(resource_taken)) {
-		free_resource(resource_taken);
-	}
+	t_list* resources_taken = get_resources_taken_by_esi(esi->id);
+	list_iterate(resources_taken, (void*) free_resource);
+	list_destroy(resources_taken);
 }
 
 long esi_se_va_a_ejecutar(){
@@ -262,6 +262,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 		if (blocked_esis == NULL) {
 			blocked_esis = queue_create();
 		}
+		queue_push_id(blocked_esis, esi_id);
 		dictionary_put(esis_bloqueados_por_recurso, recurso, blocked_esis);
 
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);

@@ -24,13 +24,6 @@ void unlock_next_and_running_semaphores() {
 	pthread_mutex_unlock(&running_esi_mtx_1);
 }
 
-void unlock_semaphores(bool unlock_dispatcher) {
-	unlock_next_and_running_semaphores();
-	if (unlock_dispatcher) {
-		pthread_mutex_unlock(&dispatcher_manager);
-	}
-}
-
 void atomic_execution() {
 	if (paused) {
 		pthread_cond_signal(&paused_planification);
@@ -45,22 +38,36 @@ void atomic_execution() {
 		pthread_cond_wait(&permission_to_block_released, &dispatcher_manager);
 		log_debug(logger, "An ESI was blocked by console");
 	}
-	acquire_next_and_running_semaphores();
+//	acquire_next_and_running_semaphores();
 }
 
 bool valid_esi_status(esi* esi) {
 	if (esi->estado == BLOQUEADO) {
 		if (NEXT_RUNNING_ESI == 0) {
 			log_debug(logger, "ESI%ld was running but was evicted and ready list is empty, sleeping...", esi->id);
+//			unlock_next_and_running_semaphores();
 			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
-			unlock_semaphores(false);
 		} else {
 			log_debug(logger, "ESI%ld was running but was evicted, continuing with next ESI...", esi->id);
-			unlock_semaphores(true);
+//			unlock_next_and_running_semaphores();
+			pthread_mutex_unlock(&dispatcher_manager);
 		}
 		return false;
 	} 
 	return true;
+}
+
+void check_execution_error(execution_result result) {
+	if (result == KEY_UNREACHABLE
+			|| result == KEY_LOCK_NOT_ACQUIRED
+			|| result == KEY_TOO_LONG
+			|| result == KEY_NOT_FOUND) {
+		log_info(logger, "Finishing ESI%ld because of execution error",
+				RUNNING_ESI);
+//		unlock_next_and_running_semaphores();
+		finish_esi(RUNNING_ESI);
+//		acquire_next_and_running_semaphores();
+	}
 }
 
 void dispatch() {
@@ -72,16 +79,17 @@ void dispatch() {
 		if (current_esi == 0) {
 			log_debug(logger, "Ready list is empty, sleeping...");
 			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
-			unlock_semaphores(false);
+//			unlock_next_and_running_semaphores();
 			continue;
 		}
 
 		esi* esi = get_esi_by_id(current_esi);
 		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
-			log_debug(logger, "ESI%ld has finished!", esi->id);
-			unlock_semaphores(true);
-			finish_esi(esi->id);
+//			unlock_next_and_running_semaphores();
+			pthread_mutex_unlock(&dispatcher_manager);
 
+			log_debug(logger, "ESI%ld has finished!", esi->id);
+			finish_esi(esi->id);
 			continue;
 		}
 
@@ -92,9 +100,10 @@ void dispatch() {
 		if (send_esi_to_run(RUNNING_ESI)) {
 			log_debug(logger, "Told ESI%ld to run", RUNNING_ESI);
 		} else {
-			log_error(logger, "Could not tell ESI%ld to run", RUNNING_ESI);
+//			unlock_next_and_running_semaphores();
+			pthread_mutex_unlock(&dispatcher_manager);
 
-			unlock_semaphores(true);
+			log_error(logger, "Could not tell ESI%ld to run", RUNNING_ESI);
 			finish_esi(RUNNING_ESI);
 			continue;
 		}
@@ -102,29 +111,24 @@ void dispatch() {
 		log_debug(logger, "Waiting for execution result...");
 		int execution_result;
 		if (!wait_execution_result(RUNNING_ESI, &execution_result)) {
-			log_error(logger, "Execution result could not be received");
+//			unlock_next_and_running_semaphores();
+			pthread_mutex_unlock(&dispatcher_manager);
 
-			unlock_semaphores(true);
+			log_error(logger, "Execution result could not be received");
 			finish_esi(RUNNING_ESI);
 			continue;
 		}
 
 		log_info(logger, "Execution for ESI is: %s", get_execution_result_description(execution_result));
-		if (execution_result == KEY_UNREACHABLE ||
-				execution_result == KEY_LOCK_NOT_ACQUIRED ||
-				execution_result == KEY_TOO_LONG ||
-				execution_result == KEY_NOT_FOUND) {
-			log_info(logger, "Finishing ESI%ld because of execution error", RUNNING_ESI);
-			unlock_next_and_running_semaphores();
-			finish_esi(RUNNING_ESI);
-			acquire_next_and_running_semaphores();
-		}
+		check_execution_error(execution_result);
+
 		log_debug(logger, "Incrementing cpu_time (current cpu_time: %ld)", get_current_time());
 		cpu_time_incrementate();
 		log_debug(logger, "cpu_time incremented to %ld", get_current_time());
 		borrado_de_finish();
 
-		unlock_semaphores(true);
+//		unlock_next_and_running_semaphores();
+		pthread_mutex_unlock(&dispatcher_manager);
 	}
 }
 

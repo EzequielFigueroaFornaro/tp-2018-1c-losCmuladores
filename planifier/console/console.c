@@ -19,6 +19,8 @@ command_result execute_command(command command) {
 		return list_cmd(command);
 	case PAUSE:
 		return pause_cmd(command);
+	case RESUME:
+		return resume_cmd(command);
 	case BLOCK:
 		return block_cmd(command);
 	case UNBLOCK:

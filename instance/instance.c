@@ -85,6 +85,34 @@ t_instance_configuration *receive_instance_configuration(int socket){
 	return instance_configuration;
 }
 
+t_list *receive_keys_to_load(int socket) {
+	log_info(logger, "Receiving keys to load from coordinator.");
+
+	t_list *keys = NULL;
+	int key_count;
+	int key_count_status = recv(socket, &key_count, sizeof(key_count), MSG_WAITALL);
+
+	if (key_count_status > 0) {
+		keys = list_create();
+		for (int i = 0; i < key_count; ++i) {
+			char *key;
+			int key_result = recv_string(socket, &key);
+			if (key_result > 0) {
+				list_add(keys, (void *)key);
+			} else {
+				log_error(logger, "Error receiving key to load from coordinator");
+				list_destroy(keys);
+				keys = NULL;
+				break;
+			}
+		}
+	} else {
+		log_error(logger, "Error receiving keys count from coordinator");
+	}
+	log_info(logger, "Received %d keys to load from coordinator.", list_size(keys));
+	return keys;
+}
+
 void check_if_connection_was_ok(int server_socket){
 	 if(server_socket == -1){
 		  log_error(logger, "Could not connect with coordinator.");
@@ -252,6 +280,9 @@ int instance_run(int argc, char* argv[]) {
 	t_instance_configuration *configuration = receive_instance_configuration(coordinator_socket);
 	entries_table = entry_table_create(configuration->entries_quantity, configuration->entries_size, instance_config->replacement_algorithm);
 	free(configuration);
+	t_list *keys_to_load = receive_keys_to_load(coordinator_socket);
+	entry_table_load_list(entries_table, instance_config->mount_path, keys_to_load);
+	list_destroy(keys_to_load);
 
 	log_info(logger, "Initializing instance... OK");
 

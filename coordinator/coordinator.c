@@ -184,7 +184,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	}
 
 	pthread_mutex_lock(&keys_mtx);
-	dictionary_put(keys_location, sentence -> key, instance);
+	dictionary_put_posta(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
 	return result;
@@ -237,7 +237,7 @@ void send_statement_result_to_ise(int socket, long ise_id, execution_result resu
 }
 
 void configure_logger() {
-	logger = log_create("coordinator.log", "coordinator", 1, LOG_LEVEL_INFO);
+	logger = log_create("coordinator.log", "coordinator", 1, LOG_LEVEL_DEBUG);
 }
 
 void exit_gracefully(int code) {
@@ -294,10 +294,6 @@ void load_configuration(char* config_file_path){
 }
 
 int send_instance_configuration(int client_sock, char *name){
-	char* client_address = get_client_address(client_sock);
-	log_info(logger, "Sending instance configuration to host %s", client_address);
-	free(client_address);
-
 	t_list *instance_keys = list_create(); //TODO leak
 	int keys_size = 0;
 	void _instance_keys_iterator(char *key, void *entry) {
@@ -310,7 +306,12 @@ int send_instance_configuration(int client_sock, char *name){
 	dictionary_iterator(keys_location, _instance_keys_iterator);
 
 	int keys_count = list_size(instance_keys);
-	int buffer_size = sizeof(t_instance_configuration) + keys_size + keys_count * sizeof(int);
+
+	char* client_address = get_client_address(client_sock);
+	log_info(logger, "Sending instance configuration to host %s. Keys count: %d", client_address, keys_count);
+	free(client_address);
+
+	int buffer_size = sizeof(t_instance_configuration) + sizeof(keys_size) + keys_size * sizeof(char) + keys_count * sizeof(int);
 	void* buffer = malloc(buffer_size); //TODO leak
 	void* offset = buffer;
 	concat_value(&offset, instance_configuration, sizeof(t_instance_configuration));
@@ -318,8 +319,10 @@ int send_instance_configuration(int client_sock, char *name){
 	void _concat_key(void *item) {
 		char *key = (char *)item;
 		concat_string(&offset, key, strlen(key) + 1);
+		log_debug(logger, "Concat key %s", key);
 	}
 	list_iterate(instance_keys, _concat_key);
+
 
 	int status = send(client_sock, buffer, buffer_size, 0);
 	free(buffer);
@@ -425,7 +428,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 				//}
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
-			dictionary_put(keys_location, sentence -> key, selected_instance);
+			dictionary_put_posta(keys_location, sentence -> key, selected_instance);
 			result_to_ise = send_to_instance_result;
 			pthread_mutex_unlock(&keys_mtx);
 		} else {

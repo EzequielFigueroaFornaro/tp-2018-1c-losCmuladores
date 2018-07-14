@@ -19,4 +19,6 @@
 
 command_result pause_cmd(command command);
 
+command_result resume_cmd(command command);
+
 #endif /* CONSOLE_PAUSE_CMD_H_ */
