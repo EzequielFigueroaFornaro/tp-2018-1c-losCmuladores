@@ -35,20 +35,23 @@ void file_system_delete(char* name) {
 
 char* file_system_read(char* name) {
 	int file = open(name, O_RDWR);
+	if (file != -1) {
+		struct stat st;
+		fstat(file, &st);
+		int length = st.st_size;
 
-	struct stat st;
-	fstat(file, &st);
-	int length = st.st_size;
+		void *map_file = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, file, 0);
 
-	void *map_file = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, file, 0);
+		char *value = malloc(length);
+		memcpy(value, map_file, length);
 
-	char *value = malloc(length);
-	memcpy(value, map_file, length);
+		munmap(map_file, length);
+		close(file);
 
-	munmap(map_file, length);
-	close(file);
-
-	return value;
+		return value;
+	} else {
+		return NULL;
+	}
 }
 
 int create_folder(char* folder) {
