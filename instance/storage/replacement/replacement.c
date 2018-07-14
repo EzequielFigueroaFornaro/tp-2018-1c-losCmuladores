@@ -82,11 +82,13 @@ bool replacement_is_empty(t_replacement *replacement) {
 
 void replacement_log_debug(t_replacement *replacement) {
 	char *string = strdup("Replacement list is: ");
+	char *format;
 	int count = list_size(replacement->replacement_entries);
 	for (int i = 0; i < count; ++i) {
 		t_replacement_entry * item = (t_replacement_entry *)list_get(replacement->replacement_entries, i);
-		char *format = string_from_format("key %s %d, ", item->key, item->size);
+		format = string_from_format("key %s %d, ", item->key, item->size);
 		string_append(&string, format);
+		free(format);
 	}
 	log_debug(logger, string);
 	free(string);
