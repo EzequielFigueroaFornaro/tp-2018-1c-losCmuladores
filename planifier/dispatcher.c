@@ -72,14 +72,14 @@ void dispatch() {
 		if (current_esi == 0) {
 			log_debug(logger, "Ready list is empty, sleeping...");
 			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
-			unlock_semaphores(true);
+			unlock_semaphores(false);
 			continue;
 		}
 
 		esi* esi = get_esi_by_id(current_esi);
 		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
 			log_debug(logger, "ESI%ld has finished!", esi->id);
-			unlock_semaphores(false);
+			unlock_semaphores(true);
 			finish_esi(esi->id);
 
 			continue;

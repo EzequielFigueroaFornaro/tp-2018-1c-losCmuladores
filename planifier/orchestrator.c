@@ -71,7 +71,7 @@ long get_current_time() {
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	dictionary_put(esi_map,id_to_string(esi->id), esi);
-	log_debug(logger, "Status of ESIs: %s", esis_to_string());
+//	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
 	switch(algorithm) {
@@ -102,7 +102,7 @@ void modificar_estado(long esi_id, estado nuevo_estado){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi -> estado = nuevo_estado;
-	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
+//	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 }
 
@@ -356,6 +356,9 @@ void free_resource(char* resource) {
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 		unblock_esi(*esi_id);
+	}else{
+		pthread_mutex_unlock(&blocked_resources_map_mtx);
+		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 	}
 	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
 }
