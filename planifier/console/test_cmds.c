@@ -14,7 +14,7 @@ command_result add_cmd(command command) {
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi->id = atol(esi_id);
 
-	dictionary_put_posta(esi_map, esi_id, new_esi);
+	dictionary_put(esi_map, esi_id, new_esi);
 
 	pthread_mutex_unlock(&esi_map_mtx_6);
 	command_result result;

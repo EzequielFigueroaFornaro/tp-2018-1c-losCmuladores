@@ -24,9 +24,10 @@ message_type KEY_INFO_REQUEST_FINISHED = 404;
 
 void dictionary_put_posta(t_dictionary *self, char *key, void *data) {
 	void * element = dictionary_get(self, key);
-	if(element == NULL){
-		dictionary_put(self, key, data);
+	if(element != NULL) {
+		dictionary_remove(self, key);
 	}
+	dictionary_put(self, key, data);
 }
 
 t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id){
