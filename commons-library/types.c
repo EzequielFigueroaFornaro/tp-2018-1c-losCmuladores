@@ -11,6 +11,7 @@ message_type MODULE_CONNECTED = 100;
 message_type CONNECTION_SUCCESS = 101;
 message_type EXECUTION_RESULT = 200;
 message_type PROCESS_SENTENCE = 201;
+message_type START_COMPACTION = 202;
 message_type ISE_STOP = 300;
 message_type ISE_EXECUTE = 301;
 message_type ISE_KILL = 302;
@@ -118,6 +119,7 @@ char* get_operation_as_string(int operation_id) {
 	}
 }
 
+//TODO estos returns pierden memoria segun valgrind.
 char* sentence_to_string(t_sentence* sentence) {
 	if (strcmp(sentence->value, "") == 0) {
 		return string_from_format("{ %s %s }",
