@@ -117,6 +117,8 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 	char * value = entry_table_get(entry_table, key);
 	int result = -1;
 	if (NULL != value) {
+		int length = _calculate_value_length(value);
+		replacement_add(entry_table->replacement, key, length);
 		result = file_system_save(file_name, value);
 	}
 	free(file_name);
@@ -133,13 +135,14 @@ int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 void entry_table_compact(t_entry_table * entry_table) {
 	log_info(logger, "Start compaction");
 	int start_index = 0;
-	int destination_index = 0;
 	t_entry *entry_to_compact;
 
 	do {
 		entry_to_compact = _entry_table_find_first_entry_by_index(entry_table, start_index);
 		if (entry_to_compact != NULL) {
-			_entry_table_move_entry(entry_table, entry_to_compact, destination_index);
+			_entry_table_move_entry(entry_table, entry_to_compact, start_index);
+			int size = _calculate_value_length_entries_count(entry_table, entry_to_compact->length);
+			start_index += size;
 		}
 	} while(entry_to_compact != NULL);
 
@@ -172,7 +175,7 @@ char* _make_full_file_name(char *mount_path, char *key) {
 }
 
 int _calculate_value_length(char *value) {
-	return strlen(value) + 1;
+	return strlen(value);
 }
 
 int _calculate_value_length_entries_count(t_entry_table * table, int value_len) {
@@ -236,6 +239,8 @@ int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) 
 		_copy_value_in_data(entry_table, new_value, index);
 		entry->length = _calculate_value_length(new_value);
 
+		replacement_add(entry_table->replacement, key, entry->length);
+
 		result = entries_to_free;
 	}
 	free(old_value);
@@ -283,6 +288,9 @@ t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int 
 void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int destination_index) {
 	if (entry->index != destination_index) {
 		log_debug(logger, "Moving entry from index %d to %d. Bytes: %d", entry->index, destination_index, entry->length);
+
+		entry->index = destination_index;
+
 		int entries_count = _calculate_value_length_entries_count(entry_table, entry->length);
 		availability_free_space(entry_table->availability, entry->index, entries_count);
 		availability_take_space(entry_table->availability, destination_index, entries_count);
