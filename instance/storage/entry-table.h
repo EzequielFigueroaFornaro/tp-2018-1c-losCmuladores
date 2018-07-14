@@ -67,7 +67,7 @@ int entry_table_load(t_entry_table * entry_table, char* mounting_path, char *key
  */
 int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list *keys);
 
-int entry_table_load_all(t_entry_table * entry_table, char* mount_path);
+int entry_table_store_all(t_entry_table * entry_table, char* mount_path);
 
 /**
  * determina si hay suficiente espacio continuo para poder almacenar el valor

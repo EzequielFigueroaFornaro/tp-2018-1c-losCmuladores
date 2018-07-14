@@ -25,6 +25,8 @@
 #include <string.h>
 #include <pthread.h>
 
+extern pthread_mutex_t atomic_operation;
+
 typedef struct {
 	int coordinator_port;
 	char *coordinator_ip;

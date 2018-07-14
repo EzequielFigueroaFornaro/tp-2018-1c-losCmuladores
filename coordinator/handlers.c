@@ -35,8 +35,6 @@ void check_if_exists_or_create_new_instance(char* instance_name, int socket){
 
 		list_add(instances_thread_list, instance);
 	}
-
-	free(client_address);
 }
 
 void signal_handler(int sig){

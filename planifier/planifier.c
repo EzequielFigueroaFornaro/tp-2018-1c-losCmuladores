@@ -26,6 +26,7 @@ void load_configuration(char *config_file_path) {
 	log_debug(logger, "Algorithm is: %d (%s)", algorithm, algorithm_code);
 
 	alpha = config_get_int_value(config, "ALPHA");
+	initial_estimation = config_get_int_value(config, "INITIAL_ESTIMATION");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,

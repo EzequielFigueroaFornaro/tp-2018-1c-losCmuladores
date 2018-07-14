@@ -42,7 +42,7 @@ void esi_connection_handler(int socket) {
 long new_esi(int socket, long esi_size){
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = increment_id();
-	new_esi -> estado = LISTO;
+	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = get_current_time();
 	new_esi -> socket_id = socket;
 	new_esi -> esi_thread = pthread_self();

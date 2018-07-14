@@ -42,6 +42,8 @@ void replacement_add(t_replacement *replacement, char *key, int size) {
 	case CIRCULAR:
 		if (!_replacement_contains(replacement, key)) {
 			list_add(replacement -> replacement_entries, (void *)entry);
+		} else {
+			_replacement_entry_destroy(entry);
 		}
 		break;
 	case LRU:

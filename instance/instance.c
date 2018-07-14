@@ -17,6 +17,8 @@
 #include <stdbool.h>
 #include "logging.h"
 
+pthread_mutex_t atomic_operation = PTHREAD_MUTEX_INITIALIZER;
+
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
@@ -299,30 +301,35 @@ int instance_run(int argc, char* argv[]) {
 		if (request == PROCESS_SENTENCE) {
 			t_sentence* sentence = wait_for_statement(coordinator_socket);
 			if (NULL != sentence) {
-			int sentence_result = process_sentence(sentence);
-			sentence_destroy(sentence);
+				pthread_mutex_lock(&atomic_operation);
+				int sentence_result = process_sentence(sentence);
+				sentence_destroy(sentence);
 
-			int coordinator_result = sentence_result;
-			if (sentence_result >= 0) {
-				coordinator_result = OK;
-			} else if (sentence_result == -2) {
-				log_info(logger, "Sending NEED_COMPACTION message to coordinator");
-				coordinator_result = NEED_COMPACTION;
-			}
-			int used_entries = availability_get_taken_entries_count(entries_table->availability);
-			send_sentence_result(coordinator_socket, coordinator_result, used_entries);
+				int coordinator_result = sentence_result;
+				if (sentence_result >= 0) {
+					coordinator_result = OK;
+				} else if (sentence_result == -2) {
+					log_info(logger, "Sending NEED_COMPACTION message to coordinator");
+					coordinator_result = NEED_COMPACTION;
+				}
+				int used_entries = availability_get_taken_entries_count(entries_table->availability);
+				pthread_mutex_unlock(&atomic_operation);
+				send_sentence_result(coordinator_socket, coordinator_result, used_entries);
 			} else {
 				_exit_with_error("Error receiving sentence from coordinator. Maybe was disconnected");
 			}
 		} else if (request == GET_KEY_VALUE) {
 			wait_for_key_value_requests(coordinator_socket);
 		} else if (request == START_COMPACTION) {
+			pthread_mutex_lock(&atomic_operation);
 			entry_table_compact(entries_table);
+			pthread_mutex_unlock(&atomic_operation);
 			send_result(coordinator_socket, OK);
 		} else if (request == HEALTH_CHECK) {
 			send_result(coordinator_socket, OK);
 		}
 	}
+
 	pthread_join(dump_thread, NULL);
 	exit_gracefully(1);
 	return 0;
@@ -364,7 +371,10 @@ void dump_interval() {
 	while(instance_running) {
 		usleep(instance_config->dump_interval * 1000000);
 		log_info(logger, "Starting dump interval");
-		int result = entry_table_load_all(entries_table, instance_config->mount_path);
+
+		pthread_mutex_lock(&atomic_operation);
+		int result = entry_table_store_all(entries_table, instance_config->mount_path);
+		pthread_mutex_unlock(&atomic_operation);
 		if (result <= 0) {
 			_exit_with_error("Error executing dump interval");
 		}
@@ -400,6 +410,7 @@ void _exit_with_error(char *error_msg, ...) {
 	va_end(arguments);
 	log_error(logger, formatted_message);
 	free(formatted_message);
+	pthread_mutex_destroy(&atomic_operation);
 	exit_gracefully(1);
 }
 
