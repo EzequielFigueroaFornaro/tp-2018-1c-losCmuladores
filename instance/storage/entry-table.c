@@ -35,7 +35,7 @@ t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int 
 
 
 t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm algorithm) {
-	size_t data_size = max_entries * entry_size;
+	size_t data_size = max_entries * entry_size + max_entries;
 
 	t_dictionary *entries = dictionary_create();
 	t_availability *availability = availability_create(max_entries);
@@ -129,7 +129,26 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char *value = file_system_read(file_name);
-	return entry_table_put(entry_table, key, value);
+	if (NULL == value) {
+		log_debug(logger, "Skipping load key %s. Not found in disk", key);
+		return 1;
+	} else {
+		log_debug(logger, "Loading key %s from disk with value %s", key, value);
+		return entry_table_put(entry_table, key, value);
+	}
+}
+
+int entry_table_load_list(t_entry_table * entry_table, char* mount_path, t_list *keys) {
+	int keys_count = list_size(keys);
+	for (int i = 0; i < keys_count; ++i) {
+		char *key = (char *)list_get(keys, i);
+		int result = entry_table_load(entry_table, mount_path, key);
+		if (result < 0) {
+			log_error(logger, "Error while loading entry %s", key);
+			return result;
+		}
+	}
+	return 1;
 }
 
 void entry_table_compact(t_entry_table * entry_table) {
@@ -175,7 +194,7 @@ char* _make_full_file_name(char *mount_path, char *key) {
 }
 
 int _calculate_value_length(char *value) {
-	return strlen(value);
+	return strlen(value) + 1;
 }
 
 int _calculate_value_length_entries_count(t_entry_table * table, int value_len) {
@@ -193,7 +212,7 @@ int _calculate_value_entries_count(t_entry_table * table, char *value) {
 }
 
 char* _calculate_data_address(t_entry_table * table, int index) {
-	int offset = sizeof(char) * table->entry_size * index;
+	int offset = sizeof(char) * (table->entry_size * index + index);
 	return table->data + offset;
 }
 
