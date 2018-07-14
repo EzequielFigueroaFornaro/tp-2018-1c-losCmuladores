@@ -392,7 +392,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 
 	delay_execution();
 
-	int planifier_validation = notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
+	int planifier_validation = OK;// notify_sentence_and_ise_to_planifier(sentence -> operation_id, sentence -> key, ise_id);
 
 	if(planifier_validation == OK){
 
