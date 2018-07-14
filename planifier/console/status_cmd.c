@@ -25,8 +25,17 @@ char* get_waiting(char* key) {
 }
 
 command_result status_cmd(command command) {
+	command_result result;
+
 	char* key = (char*) list_get(command.args, 0);
 	buffer = string_new();
+
+	t_queue* esis = get_all_waiting_for_resource(key);
+	if ((esis == NULL || queue_is_empty(esis)) && !resource_taken(key)) {
+		result.code = COMMAND_ERROR;
+		result.content = "La clave no esta activa/no existe";
+		return result;
+	}
 
 	char* instance_name = get_key_param(instance, key);
 
@@ -36,7 +45,6 @@ command_result status_cmd(command command) {
 	append("instancia_calculada", is_empty(instance_name)? get_key_param(calculated_instance, key) : "");
 	append("esperando", get_waiting(key));
 
-	command_result result;
 	result.code = COMMAND_OK;
 	result.content = buffer;
 	return result;

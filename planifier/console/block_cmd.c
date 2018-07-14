@@ -22,12 +22,13 @@ command_result do_validations(char* resource, long esi_id) {
 		return result;
 	}
 
-	if (!string_is_blank(esi->blocking_resource)) {
+	char* resource_taken = get_resource_taken_by_esi(esi_id);
+	if (!string_is_empty(resource_taken)) {
 		result.code = COMMAND_ERROR;
 		result.content =
 				string_from_format(
 						"El ESI%ld ya tiene tomado un recurso: '%s'",
-						esi_id, esi->blocking_resource);
+						esi_id, resource_taken);
 		return result;
 	}
 
