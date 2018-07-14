@@ -61,6 +61,7 @@ t_instance_config* load_configuration(char* config_file_path){
 	instance_config->coordinator_ip = string_duplicate(config_get_string_value(config, "COORDINATOR_IP"));
 	instance_config->instance_name = string_duplicate(config_get_string_value(config, "NAME"));
 	instance_config->mount_path = string_duplicate(config_get_string_value(config, "MOUNT_PATH"));
+	instance_config->dump_interval = config_get_int_value(config, "DUMP_INTERVAL");
 
 	char *replacement_algorithm_str = config_get_string_value(config, "REPLACEMENT_ALGORITHM");
 	instance_config->replacement_algorithm = _replacement_algorithm_to_enum(replacement_algorithm_str);
@@ -286,6 +287,8 @@ int instance_run(int argc, char* argv[]) {
 
 	log_info(logger, "Initializing instance... OK");
 
+	pthread_t dump_thread = start_dump_interval();
+
 	while(instance_running) {
 		log_info(logger, "Waiting for sentence from coordinator...");
 
@@ -318,6 +321,7 @@ int instance_run(int argc, char* argv[]) {
 			send_result(coordinator_socket, OK);
 		}
 	}
+	pthread_join(dump_thread, NULL);
 	exit_gracefully(1);
 	return 0;
 }
@@ -352,6 +356,26 @@ int connect_to_coordinator(char *coordinator_ip, int coordinator_port) {
 		}
 	}
 	return coordinator_socket;
+}
+
+void dump_interval() {
+	while(instance_running) {
+		usleep(instance_config->dump_interval * 1000000);
+		log_info(logger, "Starting dump interval");
+		int result = entry_table_load_all(entries_table, instance_config->mount_path);
+		if (result <= 0) {
+			_exit_with_error("Error executing dump interval");
+		}
+		log_info(logger, "Finish dump interval");
+	}
+}
+
+pthread_t start_dump_interval() {
+	pthread_t dump_thread;
+	if (pthread_create(&dump_thread, NULL, (void*) dump_interval, NULL) < 0) {
+		_exit_with_error("Error starting dump interval thread");
+	}
+	return dump_thread;
 }
 
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement) {

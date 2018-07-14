@@ -282,6 +282,10 @@ void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
     pthread_mutex_unlock(&esi_map_mtx_6);
 }
 
+pthread_mutex_t DEADLOCK_ENCONTRADO_MUTEX = PTHREAD_MUTEX_INITIALIZER;
+bool DEADLOCK_ENCONTRADO = PTHREAD_MUTEX_INITIALIZER;
+
+
 bool resource_taken(char* resource) {
 	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
@@ -291,9 +295,10 @@ t_list* buscar_deadlock(){
 	pthread_mutex_lock(&blocked_list_mtx_3);
 	pthread_mutex_lock(&esi_map_mtx_6);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
+	pthread_mutex_lock(&DEADLOCK_ENCONTRADO_MUTEX);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		long* esi_id = list_get(BLOCKED_ESI_LIST , i);
-
+		DEADLOCK_ENCONTRADO = false;
 		t_list* bloqueados = buscar_deadlock_en_lista(*esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
 			long* id = list_get(bloqueados , j);
@@ -305,6 +310,7 @@ t_list* buscar_deadlock(){
 			}
 		}
 	}
+	pthread_mutex_unlock(&DEADLOCK_ENCONTRADO_MUTEX);
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 	pthread_mutex_unlock(&esi_map_mtx_6);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
@@ -333,7 +339,8 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 		esi *esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
 		list_add_id(corte, id);
 		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante->id, corte);
-		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function)){
+		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function) || DEADLOCK_ENCONTRADO){
+			DEADLOCK_ENCONTRADO = true;
 			return resultado;
 		}else{
 			list_add_id(resultado, id);
