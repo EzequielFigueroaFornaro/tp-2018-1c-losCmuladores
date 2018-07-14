@@ -184,7 +184,7 @@ int send_statement_to_instance_and_wait_for_result(t_instance* instance, t_sente
 	}
 
 	pthread_mutex_lock(&keys_mtx);
-	dictionary_put(keys_location, sentence -> key, instance);
+	dictionary_put_posta(keys_location, sentence -> key, instance);
 	pthread_mutex_unlock(&keys_mtx);
 
 	return result;
@@ -428,7 +428,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 				//}
 				//- Si es SET, podríamos ir a otra instancia, hay que validarlo...sino no pasa nada. lo único que también correspondiería avisarle al planif*/
 			}
-			dictionary_put(keys_location, sentence -> key, selected_instance);
+			dictionary_put_posta(keys_location, sentence -> key, selected_instance);
 			result_to_ise = send_to_instance_result;
 			pthread_mutex_unlock(&keys_mtx);
 		} else {

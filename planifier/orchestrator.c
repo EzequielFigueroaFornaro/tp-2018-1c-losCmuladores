@@ -70,7 +70,7 @@ long get_current_time() {
 
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx_6);
-	dictionary_put(esi_map,id_to_string(esi->id), esi);
+	dictionary_put_posta(esi_map,id_to_string(esi->id), esi);
 	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
@@ -218,7 +218,7 @@ void block_esi_by_resource(long esi_id, char* resource) {
 		blocked_esis = queue_create();
 	}
 	queue_push_id(blocked_esis, esi_id);
-	dictionary_put(esis_bloqueados_por_recurso, resource, blocked_esis);
+	dictionary_put_posta(esis_bloqueados_por_recurso, resource, blocked_esis);
 
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 }
@@ -263,7 +263,7 @@ bool bloquear_recurso(char* recurso, long esi_id) {
 			blocked_esis = queue_create();
 		}
 		queue_push_id(blocked_esis, esi_id);
-		dictionary_put(esis_bloqueados_por_recurso, recurso, blocked_esis);
+		dictionary_put_posta(esis_bloqueados_por_recurso, recurso, blocked_esis);
 
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
 		able_to_give_resource = true;

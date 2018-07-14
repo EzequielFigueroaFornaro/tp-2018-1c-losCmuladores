@@ -43,7 +43,7 @@ void list_add_id(t_list* list, long id) {
 void dictionary_put_id(t_dictionary* map, char* key, long id) {
 	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
-	dictionary_put(map, key, esi_id);
+	dictionary_put_posta(map, key, esi_id);
 }
 
 char* esi_status_to_string(estado status) {
