@@ -74,14 +74,23 @@ t_list* get_resources_taken_by_esi(long esi_id) {
 }
 
 bool is_resource_taken_by_esi(long esi_id, char* resource) {
-	t_list* resources = get_resources_taken_by_esi(esi_id);
+    long *esi_id_que_lo_tomo = malloc(sizeof(long));
+    pthread_mutex_lock(&blocked_resources_map_mtx);
+    if (!dictionary_is_empty(recurso_tomado_por_esi)) {
+        esi_id_que_lo_tomo =(long*) dictionary_get(recurso_tomado_por_esi, resource);
+    }
+    pthread_mutex_unlock(&blocked_resources_map_mtx);
+    bool taken = *esi_id_que_lo_tomo != 0 && *esi_id_que_lo_tomo == esi_id;
+    free(esi_id_que_lo_tomo);
+    return taken;
+    /*t_list* resources = get_resources_taken_by_esi(esi_id);
 
 	bool contains(char* r) {
 		return strcmp(r, resource) == 0;
 	}
 	bool taken = list_any_satisfy(resources, (void*) contains);
 	list_destroy(resources);
-	return taken;
+	return taken;*/
 }
 
 char* esi_to_string(esi* esi) {
