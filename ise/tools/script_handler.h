@@ -34,4 +34,6 @@ long get_script_size();
 
 void set_retry_current_sentence(bool retry);
 
+bool should_retry_current_sentence();
+
 #endif /* SCRIPT_HANDLER_H_ */

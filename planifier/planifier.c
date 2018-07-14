@@ -23,6 +23,8 @@ void load_configuration(char *config_file_path) {
 	char* algorithm_code = config_get_string_value(config, "ALGORITHM");
 	algorithm = atoi(dictionary_get(algorithms, algorithm_code));
 
+	log_debug(logger, "Algorithm is: %d (%s)", algorithm, algorithm_code);
+
 	alpha = config_get_int_value(config, "ALPHA");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
@@ -81,7 +83,7 @@ void connect_to_coordinator() {
                     case SET_SENTENCE:
                         log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->esi_id, sentence->resource);
                         execution_result result;
-                        if (strcmp(get_resource_taken_by_esi(sentence->esi_id), sentence->resource) == 0){
+                        if (is_resource_taken_by_esi(sentence->esi_id, sentence->resource)) {
                             log_info(logger, "Operacion SET exitosa");
                             result = OK;
                         }else{
@@ -147,8 +149,10 @@ void try_to_block_resource(char* resource, long esi_id){
 	log_debug(logger, "Trying to block resource %s for ESI%ld", resource, esi_id);
     bool took_resource = bloquear_recurso(resource, esi_id);
 	if (took_resource){
+		log_debug(logger, "Resource %s assigned to ESI%ld. Sending OK to coordinator", resource, esi_id);
 		send_execution_result_to_coordinator(OK);
 	}else{
+		log_debug(logger, "ESI%ld was added to waiting queue of resource %s. Sending KEY_BLOCKED to coordinator", esi_id, resource);
 		send_execution_result_to_coordinator(KEY_BLOCKED);
 	}
 }

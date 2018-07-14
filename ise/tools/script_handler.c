@@ -90,4 +90,8 @@ void set_retry_current_sentence(bool retry) {
 	retry_current_sentence = retry;
 }
 
+bool should_retry_current_sentence() {
+	return retry_current_sentence;
+}
+
 

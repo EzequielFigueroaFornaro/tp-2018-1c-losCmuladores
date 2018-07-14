@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <commons/string.h>
+#include <string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
@@ -72,7 +73,9 @@ bool string_is_blank(char* string);
 
 char* esi_status_to_string(estado status);
 
-char* get_resource_taken_by_esi(long esi_id);
+bool is_resource_taken_by_esi(long esi_id, char* resource);
+
+t_list* get_resources_taken_by_esi(long esi_id);
 
 float estimate_next_cpu_burst(esi* esi, int alpha);
 

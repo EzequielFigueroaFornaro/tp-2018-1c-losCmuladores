@@ -57,28 +57,36 @@ char* esi_status_to_string(estado status) {
 	return "DESCONOCIDO";
 }
 
-char* get_resource_taken_by_esi(long esi_id) {
-	char* resource = "";
+t_list* get_resources_taken_by_esi(long esi_id) {
+	t_list* resources = list_create();
 
 	void find_resource(char* key, long* value) {
 		if (esi_id == *value) {
-			resource = key;
+			list_add(resources, key);
 		}
 	}
 	pthread_mutex_lock(&blocked_resources_map_mtx);
-	if (dictionary_is_empty(recurso_tomado_por_esi)) {
-		pthread_mutex_unlock(&blocked_resources_map_mtx);
-		return "";
+	if (!dictionary_is_empty(recurso_tomado_por_esi)) {
+		dictionary_iterator(recurso_tomado_por_esi, (void*) find_resource);
 	}
-	dictionary_iterator(recurso_tomado_por_esi, (void*) find_resource);
 	pthread_mutex_unlock(&blocked_resources_map_mtx);
-	return resource;
+	return resources;
+}
+
+bool is_resource_taken_by_esi(long esi_id, char* resource) {
+	t_list* resources = get_resources_taken_by_esi(esi_id);
+
+	bool contains(char* r) {
+		return strcmp(r, resource) == 0;
+	}
+	bool taken = list_any_satisfy(resources, (void*) contains);
+	list_destroy(resources);
+	return taken;
 }
 
 char* esi_to_string(esi* esi) {
 	return string_from_format("{ id: %ld, "
 							  "estado: %s, "
-							  "recurso_tomado: %s, "
 							  "recurso_que_lo_bloquea: %s, "
 							  "instruccion_actual: %d/%d }",
 							  esi->id,
