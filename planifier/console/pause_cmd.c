@@ -11,11 +11,16 @@ command_result pause_cmd(command command) {
 	log_info(console_log, "Trying to pause planification");
 
 	pause_dispatcher();
-	log_on_both("Planification paused");
+	log_info(logger, "Planification paused");
 
-	printf("Presionar ENTER para reanudar planificacion... ");
-	getchar();
+	command_result result;
+	result.code = COMMAND_OK;
+	result.content = "Planificacion pausada!";
+	return result;
+}
 
+command_result resume_cmd(command command) {
+	log_info(console_log, "Trying to resume planification");
 	resume_dispatcher();
 	log_info(logger, "Planification resumed");
 

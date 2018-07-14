@@ -69,7 +69,9 @@ void execute_script() {
 			log_info(logger, get_execution_result_description(result));
 		}
 		handle_execution_result(result);
-		destruir_operacion(current_sentence.operation);
+		if (!should_retry_current_sentence()) {
+			destruir_operacion(current_sentence.operation);
+		}
 	}
 }
 

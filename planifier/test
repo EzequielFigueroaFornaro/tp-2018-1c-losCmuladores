@@ -4,4 +4,4 @@ cd "$run_dir"
 export LD_LIBRARY_PATH="../commons-library"
 make clean
 make
-./planifier planifier.conf
+./planifier $1

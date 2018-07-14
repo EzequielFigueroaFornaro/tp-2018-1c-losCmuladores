@@ -17,6 +17,7 @@
 typedef enum {
 	EXIT,
 	PAUSE,
+	RESUME,
 	BLOCK,
 	UNBLOCK,
 	LIST,

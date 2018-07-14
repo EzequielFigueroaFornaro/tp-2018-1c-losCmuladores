@@ -20,6 +20,7 @@ void load_commands() {
 	commands = dictionary_create();
 	add_command("exit", EXIT, 0);
 	add_command("pausar", PAUSE, 0);
+	add_command("reanudar", RESUME, 0);
 	add_command("bloquear", BLOCK, 2);
 	add_command("desbloquear", UNBLOCK, 1);
 	add_command("listar", LIST, 1);
