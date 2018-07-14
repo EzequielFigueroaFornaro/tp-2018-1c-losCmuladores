@@ -59,7 +59,7 @@ bool valid_esi_status(esi* esi) {
 			unlock_semaphores(true);
 		}
 		return false;
-	}
+	} 
 	return true;
 }
 
