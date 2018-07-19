@@ -235,7 +235,7 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	if(sentence -> value != NULL && !string_is_empty(sentence -> value)){
 		string_append_with_format(&string_to_save, " %s", sentence -> value);
 	}
-	string_append(&string_to_save, "\n");
+	//string_append(&string_to_save, "\n");
 
 	log_info(logger, "Saving operations log with: %s", string_to_save);
 
@@ -252,7 +252,7 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	pthread_mutex_unlock(&operations_log_file_mtx);
 
 	free(string_to_save);
-	log_info(logger, "Operations log successfully saved");
+	//log_info(logger, "Operations log successfully saved");
 }
 
 void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
