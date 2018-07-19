@@ -20,6 +20,7 @@
 #include "semaphores.h"
 #include "planifier_structures.h"
 #include "orchestrator.h"
+#include "console/console_log.h"
 
 void esi_connection_handler(int socket);
 

@@ -14,6 +14,7 @@ typedef struct {
 } t_ise_script;
 
 t_ise_script * script;
+char* script_name;
 
 typedef struct {
 	t_esi_operacion operation;

@@ -10,9 +10,7 @@ void sjf_add_esi(long esi){
 
 void sjf_block_esi(long block_esi_id){
 	pthread_mutex_lock(&running_esi_mtx_1);
-	pthread_mutex_lock(&next_running_esi_mtx_2);
 	pthread_mutex_lock(&blocked_list_mtx_3);
-	pthread_mutex_lock(&ready_list_mtx_4);
 
 	if(RUNNING_ESI == block_esi_id){
 		sjf_replan();
@@ -20,13 +18,13 @@ void sjf_block_esi(long block_esi_id){
 		bool equals_esi (long esi_id) {
 				  return block_esi_id == esi_id;
 		}
+		pthread_mutex_lock(&ready_list_mtx_4);
 		list_remove_by_condition(READY_ESI_LIST, (void*) equals_esi);
+		pthread_mutex_unlock(&ready_list_mtx_4);
 	}
 
-	pthread_mutex_unlock(&ready_list_mtx_4);
 	list_add_id(BLOCKED_ESI_LIST, block_esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
-	pthread_mutex_unlock(&next_running_esi_mtx_2);
 	pthread_mutex_unlock(&running_esi_mtx_1);
 }
 

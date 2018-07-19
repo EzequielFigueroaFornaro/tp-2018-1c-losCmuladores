@@ -494,6 +494,7 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_i
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
+	log_info(logger, "Received result '%s' from planifier for ISE with id: %ld", get_execution_result_description(result), ise_id);
 	return result;
 	//return OK;
 }

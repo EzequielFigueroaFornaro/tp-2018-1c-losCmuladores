@@ -13,6 +13,7 @@
 #include <pthread.h>
 
 #include "logging.h"
+#include "console/console_log.h"
 #include "orchestrator.h"
 #include "esi_connector.h"
 #include "exit_handler.h"

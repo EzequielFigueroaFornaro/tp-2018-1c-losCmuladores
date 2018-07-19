@@ -15,6 +15,7 @@
 
 typedef struct {
 	long id;
+	char* nombre;
 	int estado;
 	long tiempo_de_entrada;
 	long ultima_entrada_a_ready;

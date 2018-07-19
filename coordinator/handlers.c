@@ -247,6 +247,7 @@ void ise_connection_handler(int socket) {
 		// test_sentence_result(sentence, socket, ise_id);
 
 		int execution_result = process_sentence(sentence, ise_id);
+		log_info(logger, "Sending result '%s' to ISE with id: %ld", get_execution_result_description(execution_result), ise_id);
 		send_statement_result_to_ise(socket, ise_id, execution_result);
 
 		free(sentence);
