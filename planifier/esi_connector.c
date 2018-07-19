@@ -111,6 +111,7 @@ bool wait_execution_result(long esi_id, int* result) {
 	int socket = esi_to_get_result_from->socket_id;
 
 	if (recv_message(socket) != EXECUTION_RESULT) {
+		log_info_important(logger, "No se pudo recibir el mensaje 'EXECUTION_RESULT'");
 		return false;
 	}
 

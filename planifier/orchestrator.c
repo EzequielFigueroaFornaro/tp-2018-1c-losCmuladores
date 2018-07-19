@@ -216,6 +216,7 @@ t_queue* get_all_waiting_for_resource(char* resource) {
 
 void block_esi_by_resource(long esi_id, char* resource) {
 	block_esi(esi_id);
+	log_debug(logger, "Esi%ld bloqueado...", esi_id);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	t_queue* blocked_esis = get_all_waiting_for_resource(resource);
 	if (blocked_esis == NULL) {
@@ -255,10 +256,12 @@ char* get_all_waiting_for_resource_as_string(char* resource, char* separator) {
 
 bool bloquear_recurso(char* recurso, long esi_id) {
 	bool able_to_give_resource;
-
+	log_debug(logger, "Bloqueando...");
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	if (resource_taken(recurso, esi_id)) {
+		log_debug(logger, "Recurso tomado, agregando a lista de bloqueados...");
 		block_esi_by_resource(esi_id, recurso);
+		log_debug(logger, "Agregado a lista de bloqueados...");
 		cambiar_recurso_que_lo_bloquea(recurso,esi_id);
 		able_to_give_resource = false;
 	} else {
@@ -352,6 +355,7 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 }
 
 void free_resource(char* resource) {
+	log_debug(logger, "Liberando recurso %s...", resource);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
