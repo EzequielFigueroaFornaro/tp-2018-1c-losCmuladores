@@ -7,14 +7,14 @@
 
 #include "esi_connector.h"
 
-long new_esi(int socket, long esi_size);
+long new_esi(int socket, long esi_size, char* esi_name);
 module_type recv_module(int socket);
 long recv_esi_size(int socket);
 int send_id_to_esi(int socket, long esi_id);
 
 void esi_connection_handler(int socket) {
 	if (recv_message(socket) != MODULE_CONNECTED) {
-		log_info(logger, "Connection was received but the message type does not imply connection. Ignoring");
+		log_warning(logger, "Se recibio una conexion con intenciones desconocidas. Se ignora..");
 		close(socket);
 		return;
 	}
@@ -23,25 +23,33 @@ void esi_connection_handler(int socket) {
 		return;
 	}
 
-	log_info(logger, "ESI connected! (from %s)", get_client_address(socket));
+	char* esi_name;
+	if (recv_string(socket, &esi_name) <= 0) {
+		log_error(logger, "No se pudo recibir nombre del ESI");
+		close(socket);
+		return;
+	}
+
+	log_debug(logger, "Nuevo ESI conectado (desde %s)", get_client_address(socket));
 	long esi_size = recv_esi_size(socket);
 	if (esi_size <= 0) {
 		return;
 	}
 
-	long new_esi_id = new_esi(socket, esi_size);
-	log_info(logger, "New ESI created with id %ld was added to ready queue", new_esi_id);
+	long new_esi_id = new_esi(socket, esi_size, esi_name);
+	log_info_highlight(logger, "Se creo el ESI %s con el id: %ld y fue agregado a la cola de listos", esi_name, new_esi_id);
 
 	if (send_id_to_esi(socket, new_esi_id) < 0) {
-		log_error(logger, "Error sending the id to the new ESI. Client-Address %s", get_client_address(socket));
+		log_error(logger, "Error enviando el id al ESI. Client-Address %s", get_client_address(socket));
 		return;
 	}
 	notify_dispatcher();
 }
 
-long new_esi(int socket, long esi_size){
+long new_esi(int socket, long esi_size, char* esi_name) {
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = increment_id();
+	new_esi -> nombre = esi_name;
 	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = get_current_time();
 	new_esi -> socket_id = socket;
@@ -61,12 +69,12 @@ module_type recv_module(int socket) {
 	module_type module;
 	int module_received = recv(socket, &module, sizeof(module_type), MSG_WAITALL);
 	if (module_received <= 0) {
-		log_error(logger, "Error trying to receive module type. Closing connection");
+		log_error(logger, "No se pudo recibir el tipo de modulo conectado");
 		close(socket);
 		return module_received;
 	}
 	if (module != ISE) {
-		log_info(logger, "Ignoring connected client because it was not an ESI");
+		log_info(logger, "Ignorando conexion porque no fue un ESI");
 		close(socket);
 		return -1;
 	}
@@ -77,7 +85,7 @@ long recv_esi_size(int socket) {
 	long esi_size;
 	int result_esi_size = recv_long(socket, &esi_size);
 	if (result_esi_size <= 0) {
-		log_error(logger, "Error trying to receive ESI size. Closing connection");
+		log_error(logger, "No se pudo recibir el tamaño del ESI");
 		close(socket);
 		return result_esi_size;
 	}
@@ -106,10 +114,8 @@ bool wait_execution_result(long esi_id, int* result) {
 		return false;
 	}
 
-	int esi_execution_result_status = recv(socket, result, sizeof(execution_result), MSG_WAITALL);
+	int esi_execution_result_status = recv(socket, result, sizeof(int), MSG_WAITALL);
 	if (esi_execution_result_status <= 0) {
-		log_error(logger, "Error trying to receive the execution result");
-		//TODO QUE HAGO SI NO PUDE RECIBIR BIEN EL RESULTADO?
 		return false;
 	}
 	return true;
@@ -125,9 +131,7 @@ int send_message_to_esi(long esi_id, message_type message) {
 
 bool send_esi_to_run(long esi_id) {
 	if (send_message_to_esi(esi_id, ISE_EXECUTE) < 0){
-		log_error(logger, "Could not send ise %ld to run", esi_id);
 		return false;
-		//todo que pasa si no le puedo mandar un mensaje?
 	}
 	return true;
 }

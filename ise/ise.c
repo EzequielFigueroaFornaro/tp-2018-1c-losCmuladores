@@ -28,15 +28,18 @@ int main(int argc, char* argv[]) {
 }
 
 void connect_to_planifier() {
-	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(long);
+	int script_name_size = strlen(script_name) + 1;
+	int message_size = sizeof(message_type) + sizeof(module_type) + sizeof(int) + script_name_size + sizeof(long);
 	void* buffer = malloc(message_size);
 	void* offset = buffer;
 	concat_value(&offset, &MODULE_CONNECTED, sizeof(message_type));
 	concat_value(&offset, &self_module_type, sizeof(module_type));
+	concat_string(&offset, script_name, script_name_size);
 	long script_size = get_script_size();
 	concat_value(&offset, &script_size, sizeof(script_size));
 
 	handshake(PLANIFIER, buffer, message_size);
+
 	if (recv_long(get_socket(PLANIFIER), &self_id) <= 0) {
 		log_error(logger, "Could not receive my id from planifier. Aborting");
 		exit_with_error();

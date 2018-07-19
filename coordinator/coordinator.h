@@ -96,4 +96,6 @@ void exit_gracefully(int code);
 
 int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_id);
 
+void handle_instance_disconnection(t_instance* instance);
+
 #endif /* COORDINATOR_H_ */

@@ -26,4 +26,8 @@ void print_and_log(char* msg,...);
 
 void log_on_both(char* msg,...);
 
+void log_info_highlight(t_log* log, char* msg,...);
+
+void log_info_important(t_log* log, char* msg,...);
+
 #endif /* CONSOLE_CONSOLE_LOG_H_ */

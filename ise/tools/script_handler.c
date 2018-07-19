@@ -3,14 +3,26 @@
 t_ise_sentence current_sentence;
 bool retry_current_sentence = false;
 
-void load_script(char * file_name) {
-	FILE * script_file = fopen(file_name, "r");
+char* get_file_name(char* path) {
+	char** splitted_path = string_split(path, "/");
+	char** ptr = splitted_path;
+	char* file_name;
+	for (char* c = *ptr; c; c = *++ptr) {
+		file_name = c;
+	}
+	free(splitted_path);
+	return file_name;
+}
+
+void load_script(char * file_path) {
+	FILE * script_file = fopen(file_path, "r");
 
 	if (script_file == NULL) {
-		log_error(logger, "File %s not found", file_name);
+		log_error(logger, "File %s not found", file_path);
 		exit_with_error();
 	}
-
+	script_name = get_file_name(file_path);
+	log_info(logger, "Cargando script '%s'", script_name);
 	script = malloc(sizeof(t_ise_script));
 	script->lines = queue_create();
 	while (!(feof(script_file))) {
