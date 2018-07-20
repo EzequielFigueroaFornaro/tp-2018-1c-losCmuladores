@@ -20,6 +20,8 @@ long cpu_time = 0;
 long RUNNING_ESI = 0;
 long NEXT_RUNNING_ESI = 0;
 
+float initial_estimation;
+
 
 /*aca se pueden tener un par de funciones globales para todas las esis
  * ejemplo, podemos tener un mapa de esis por id y el puntero a la esi, desde ahi podemos modificarlas mas rapidametne
@@ -37,7 +39,7 @@ void replan_by_algorithm() {
 
 void notify_dispatcher() {
 	if (RUNNING_ESI == 0) {
-		replan_by_algorithm();
+//		replan_by_algorithm();
 		pthread_mutex_unlock(&dispatcher_manager);
 	}
 }
@@ -87,7 +89,6 @@ void add_esi(esi* esi){
 	dictionary_put(esi_map,id_to_string(esi->id), esi);
 //	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
-
 	add_esi_by_algorithm(esi);
 }
 
@@ -106,7 +107,7 @@ bool esi_exists(long esi_id) {
 }
 
 void modificar_estado(long esi_id, estado nuevo_estado){
-	log_debug(logger, "Changing ESI%ld's state to %d", esi_id, nuevo_estado);
+	log_debug(logger, "Cambiando estado del ESI%ld a %s", esi_id, esi_status_to_string(nuevo_estado));
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
 	esi -> estado = nuevo_estado;
@@ -179,11 +180,29 @@ long esi_se_va_a_ejecutar(){
 	pthread_mutex_lock(&running_esi_mtx_1);
 	pthread_mutex_lock(&next_running_esi_mtx_2);
 
+
+//	if(RUNNING_ESI != 0) { // hay algo corriendo
+//		pthread_mutex_lock(&esi_map_mtx_6);
+//		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
+//		if (RUNNING_ESI == NEXT_RUNNING_ESI) {
+//			esi->instruction_pointer++;
+//			pthread_mutex_unlock(&esi_map_mtx_6);
+//		} else {
+//			pthread_mutex_unlock(&esi_map_mtx_6);
+//			RUNNING_ESI = NEXT_RUNNING_ESI;
+//			if(RUNNING_ESI != 0) {
+//				modificar_estado(RUNNING_ESI, CORRIENDO);
+//			}
+//		}
+//	} else if (RUNNING_ESI != NEXT_RUNNING_ESI) {
+//		RUNNING_ESI = NEXT_RUNNING_ESI;
+//	}
+
 	if ((RUNNING_ESI == NEXT_RUNNING_ESI) && NEXT_RUNNING_ESI!=0) {
-		pthread_mutex_lock(&esi_map_mtx_6);
-		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
-		pthread_mutex_unlock(&esi_map_mtx_6);
-		esi->instruction_pointer++;
+//		pthread_mutex_lock(&esi_map_mtx_6);
+//		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
+//		pthread_mutex_unlock(&esi_map_mtx_6);
+//		esi->instruction_pointer++;
 	} else {
 		RUNNING_ESI = NEXT_RUNNING_ESI;
 		if(RUNNING_ESI != 0) {
@@ -379,7 +398,7 @@ void free_resource(char* resource) {
 
 float estimate_next_cpu_burst(esi* esi) {
 	float estimated_cpu_burst;
-	if (esi->estado == NUEVO) {
+	if (esi->estado == NUEVO || (esi->estado == CORRIENDO && RUNNING_ESI == 0)) {
 		estimated_cpu_burst = initial_estimation;
 	} else if (esi->estado == DESBLOQUEADO) {
 		float alpha_coef = alpha / 100;
@@ -394,4 +413,22 @@ float estimate_next_cpu_burst(esi* esi) {
 	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
 	log_debug(logger, "Rafaga estimada para el ESI%ld: %2.5f", esi->id, estimated_cpu_burst);
 	return estimated_cpu_burst;
+}
+
+bool all_same_estimation() {
+	if (READY_ESI_LIST != NULL) {
+		long* esi_id_peek = list_get(READY_ESI_LIST, 0);
+		if (esi_id_peek != NULL) {
+			esi* esi_peek = dictionary_get(esi_map, id_to_string(*esi_id_peek));
+			if (esi_peek != NULL) {
+				bool equals(long* esi_id) {
+					esi* esi = dictionary_get(esi_map, id_to_string(*esi_id));
+					return esi->estimacion_ultima_rafaga
+							== esi_peek->estimacion_ultima_rafaga;
+				}
+				return list_all_satisfy(READY_ESI_LIST, (void*) equals);
+			}
+		}
+	}
+	return false;
 }

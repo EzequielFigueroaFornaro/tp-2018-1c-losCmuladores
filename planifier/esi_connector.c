@@ -61,7 +61,7 @@ long new_esi(int socket, long esi_size, char* esi_name) {
 	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> estimacion_ultima_rafaga = initial_estimation;
 	new_esi -> blocking_resource = "";
-
+	new_esi -> estimacion_ultima_rafaga = initial_estimation;
 	add_esi(new_esi);
 	return new_esi -> id;
 }

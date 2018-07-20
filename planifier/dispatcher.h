@@ -28,4 +28,6 @@ void acquire_permission_to_block();
 
 void release_permission_to_block();
 
+void acquire_dispatcher();
+
 #endif /* DISPATCHER_H_ */
