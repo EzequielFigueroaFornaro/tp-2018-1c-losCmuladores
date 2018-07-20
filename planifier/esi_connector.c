@@ -49,7 +49,8 @@ void esi_connection_handler(int socket) {
 long new_esi(int socket, long esi_size, char* esi_name) {
 	esi* new_esi = malloc(sizeof(esi));
 	new_esi -> id = increment_id();
-	new_esi -> nombre = esi_name;
+	new_esi -> nombre = malloc(sizeof(char) * strlen(esi_name) + 1);
+	memcpy(new_esi -> nombre, esi_name, strlen(esi_name) + 1);
 	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = get_current_time();
 	new_esi -> socket_id = socket;
@@ -57,9 +58,11 @@ long new_esi(int socket, long esi_size, char* esi_name) {
 	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
-	new_esi -> blocking_resource = NULL;
+	//new_esi -> blocking_resource = NULL;
 	pthread_mutex_unlock(&cpu_time_mtx);
-	new_esi -> blocking_resource = "";
+	char* initial_blocking_resource_value = "";
+	new_esi -> blocking_resource = malloc(sizeof(char) * strlen(initial_blocking_resource_value) + 1);
+	memcpy(new_esi -> blocking_resource, initial_blocking_resource_value, strlen(initial_blocking_resource_value) + 1);
 
 	add_esi(new_esi);
 	return new_esi -> id;

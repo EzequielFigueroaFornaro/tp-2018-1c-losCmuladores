@@ -84,7 +84,7 @@ void add_esi_by_algorithm(esi* esi) {
 
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx_6);
-	dictionary_put(esi_map,id_to_string(esi->id), esi);
+	dictionary_put(esi_map, id_to_string(esi->id), esi);
 //	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
@@ -281,7 +281,8 @@ void cambiar_recurso_que_lo_bloquea(char* recurso, long esi_id){
 	log_debug(logger, "Changing ESI%ld's blocking resource to '%s'", esi_id, recurso);
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
-	esi -> blocking_resource = recurso;
+	//esi -> blocking_resource = recurso;
+	memcpy(esi -> blocking_resource , recurso, strlen(recurso) + 1); //TODO ver si hay que hacer free de RECURSO.
 //    log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
     pthread_mutex_unlock(&esi_map_mtx_6);
 }
@@ -337,17 +338,18 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 		return ids_en_deadlock;
 	} else {
 		esi* _esi = dictionary_get(esi_map, id_to_string(id));
-		if((_esi->estado) != BLOQUEADO){
+		if(_esi == NULL || (_esi->estado) != BLOQUEADO){
 			return list_create();
 		}
+
 		char* recurso = _esi -> blocking_resource;
-		esi *esi_bloqueante = dictionary_get(esis_bloqueados_por_recurso, recurso);
+		esi *esi_bloqueante = dictionary_get(recurso_tomado_por_esi, recurso);
 		list_add_id(corte, id);
-		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante->id, corte);
+		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante -> id, corte); //TODO acá llega vacío el ESI bloqueante.
 		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function) || DEADLOCK_ENCONTRADO){
 			DEADLOCK_ENCONTRADO = true;
 			return resultado;
-		}else{
+		} else {
 			list_add_id(resultado, id);
 			return resultado;
 		}
