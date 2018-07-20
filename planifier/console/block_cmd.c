@@ -16,13 +16,13 @@ command_result do_validations(char* resource, long esi_id) {
 	}
 
 	esi* esi = get_esi_by_id(esi_id);
-	if (esi->estado != CORRIENDO && esi->estado != LISTO && esi->estado != DESBLOQUEADO) {
+	if (esi->estado != CORRIENDO && esi->estado != NUEVO && esi->estado != DESBLOQUEADO) {
 		result.code = COMMAND_ERROR;
 		result.content = string_from_format("El ESI%ld no esta ni ejecutando ni en listos!", esi_id);
 		return result;
 	}
 
-	if (is_resource_taken_by_esi(esi_id, resource)) {
+	if (is_resource_taken_by_esi(esi_id, resource) && resource_taken_by_any_esi(resource)) {
 		result.code = COMMAND_ERROR;
 		result.content =
 				string_from_format(

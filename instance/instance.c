@@ -313,6 +313,7 @@ int instance_run(int argc, char* argv[]) {
 					coordinator_result = NEED_COMPACTION;
 				}
 				int used_entries = availability_get_taken_entries_count(entries_table->availability);
+				log_info(logger, "Used entries: %d", used_entries);
 				pthread_mutex_unlock(&atomic_operation);
 				send_sentence_result(coordinator_socket, coordinator_result, used_entries);
 			} else {

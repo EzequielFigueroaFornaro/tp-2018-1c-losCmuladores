@@ -43,16 +43,6 @@ void connect_to_coordinator();
 
 pthread_t start_console();
 
-//void exit_with_error(int socket, char* error_msg);
-//
-//void esi_connection_handler(int socket);
-//
-//bool el_esi_puede_tomar_el_recurso(long esi_id, char* resource);
-//
-//int get_resource(char** resource);
-//
-//int get_esi_id(long* esi_id);
-
 t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id);
 
 void try_to_block_resource(char* resource, long esi_id);

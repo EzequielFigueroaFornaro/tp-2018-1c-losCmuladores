@@ -10,11 +10,15 @@
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include "semaphores.h"
+#include "logging.h"
+#include "types.h"
 
 typedef struct {
 	long id;
+	char* nombre;
 	int estado;
 	long tiempo_de_entrada;
+	long ultima_entrada_a_ready;
 	int cantidad_de_instrucciones;
 	int instruction_pointer;
 	char* blocking_resource;
@@ -30,7 +34,7 @@ enum tipo_de_esi {
 };
 
 typedef enum {
-	LISTO = 1,
+	NUEVO = 1,
 	BLOQUEADO = 2,
 	CORRIENDO = 3,
 	FINALIZADO = 4,
@@ -76,8 +80,6 @@ char* esi_status_to_string(estado status);
 bool is_resource_taken_by_esi(long esi_id, char* resource);
 
 t_list* get_resources_taken_by_esi(long esi_id);
-
-float estimate_next_cpu_burst(esi* esi, int alpha);
 
 #endif
 

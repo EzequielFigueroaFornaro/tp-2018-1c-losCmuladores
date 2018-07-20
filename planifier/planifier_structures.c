@@ -43,12 +43,12 @@ void list_add_id(t_list* list, long id) {
 void dictionary_put_id(t_dictionary* map, char* key, long id) {
 	long* esi_id = malloc(sizeof(long));
 	*esi_id = id;
-	dictionary_put(map, key, esi_id);
+	dictionary_put_posta(map, key, esi_id);
 }
 
 char* esi_status_to_string(estado status) {
 	switch(status) {
-	case LISTO: return "LISTO";
+	case NUEVO: return "NUEVO";
 	case BLOQUEADO: return "BLOQUEADO";
 	case CORRIENDO: return "CORRIENDO";
 	case FINALIZADO: return "FINALIZADO";
@@ -74,14 +74,17 @@ t_list* get_resources_taken_by_esi(long esi_id) {
 }
 
 bool is_resource_taken_by_esi(long esi_id, char* resource) {
-	t_list* resources = get_resources_taken_by_esi(esi_id);
-
-	bool contains(char* r) {
-		return strcmp(r, resource) == 0;
-	}
-	bool taken = list_any_satisfy(resources, (void*) contains);
-	list_destroy(resources);
-	return taken;
+	long* esi_id_que_lo_tomo;
+    pthread_mutex_lock(&blocked_resources_map_mtx);
+    if (!dictionary_is_empty(recurso_tomado_por_esi)) {
+        esi_id_que_lo_tomo = dictionary_get(recurso_tomado_por_esi, resource);
+    }
+    pthread_mutex_unlock(&blocked_resources_map_mtx);
+    if (esi_id_que_lo_tomo == NULL) {
+    	 return false;
+    }
+    bool taken = *esi_id_que_lo_tomo != 0 && *esi_id_que_lo_tomo == esi_id;
+    return taken;
 }
 
 char* esi_to_string(esi* esi) {
@@ -123,13 +126,4 @@ esi* get_esi_by_id(long esi_id) {
 
 bool string_is_blank(char* string) {
 	return string == NULL || string_is_empty(string);
-}
-
-float estimate_next_cpu_burst(esi* esi, int alpha) {
-	float alpha_coef = alpha / 100;
-	float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
-	float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
-	float estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
-	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
-	return estimated_cpu_burst;
 }

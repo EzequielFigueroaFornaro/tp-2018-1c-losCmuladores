@@ -26,6 +26,7 @@ void load_configuration(char *config_file_path) {
 	log_debug(logger, "Algorithm is: %d (%s)", algorithm, algorithm_code);
 
 	alpha = config_get_int_value(config, "ALPHA");
+	initial_estimation = config_get_int_value(config, "INITIAL_ESTIMATION");
 
 	server_port = config_get_int_value(config, "SERVER_PORT");
 	server_max_connections = config_get_int_value(config,
@@ -76,36 +77,34 @@ void connect_to_coordinator() {
 			t_planifier_sentence* sentence = wait_for_statement_from_coordinator(coordinator_socket);
             log_info(logger, "Se recibio un nuevo mensaje del coordinador");
             switch(sentence->operation_id){
-                    case GET_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: GET ; Esi Id: %ld",sentence->esi_id);
-                        try_to_block_resource(sentence->resource, sentence->esi_id);
-                        break;
-                    case SET_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->esi_id, sentence->resource);
-                        execution_result result;
-                        if (is_resource_taken_by_esi(sentence->esi_id, sentence->resource)) {
-                            log_info(logger, "Operacion SET exitosa");
-                            result = OK;
-                        }else{
-                            log_error(logger, "No se pudo realizar el SET");
-                            result = KEY_LOCK_NOT_ACQUIRED;
-                        }
-                        send(coordinator_socket, &result, sizeof(execution_result), 0);
-                        break;
-                    case STORE_SENTENCE:
-                        log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->resource);
-                        free_resource(sentence->resource);
-                        execution_result result_store = OK;
-                        send(coordinator_socket, &result_store, sizeof(int), 0);
-                        break;
-                    case KEY_UNREACHABLE:
-                        log_info(logger, "Tipo de mensaje: KEY_UNREACHABLE");
-                        execution_result result_key = OK;
-                        send(coordinator_socket, &result_key, sizeof(int), 0);
-                        break;
-                    default:
-                        log_info(logger, "Connection was received but the operation its not supported. Ignoring");
-                        break;
+            	case GET_SENTENCE:
+            		log_info(logger, "Tipo de mensaje: GET ; Esi Id: %ld",sentence->esi_id);
+                    try_to_block_resource(sentence->resource, sentence->esi_id);
+                	break;
+                case SET_SENTENCE:
+                	log_info(logger, "Tipo de mensaje: SET ; Esi Id: %ld ; Resource: %s", sentence->esi_id, sentence->resource);
+                	execution_result result;
+                	if (is_resource_taken_by_esi(sentence->esi_id, sentence->resource)) {
+                		log_info(logger, "Operacion SET exitosa");
+                		result = OK;
+                	}else{
+                		log_error(logger, "No se pudo realizar el SET");
+                		result = KEY_LOCK_NOT_ACQUIRED;
+                	}
+					send_execution_result_to_coordinator(result);
+                	break;
+                case STORE_SENTENCE:
+                    log_info(logger, "Tipo de mensaje: STORE ; Resource: %s",sentence->resource);
+                    free_resource(sentence->resource);
+					send_execution_result_to_coordinator(OK);
+                    break;
+                case KEY_UNREACHABLE:
+                    log_info(logger, "Tipo de mensaje: KEY_UNREACHABLE");
+					send_execution_result_to_coordinator(OK);
+                    break;
+                default:
+                    log_info(logger, "Connection was received but the operation its not supported. Ignoring");
+                    break;
                 }
             planifier_sentence_destroy(sentence);
         }
@@ -139,9 +138,9 @@ t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id) {
 }
 
 void send_execution_result_to_coordinator(execution_result result){
-	if(send(coordinator_socket, &result, sizeof(execution_result), 0) <0){
-		log_info(logger, "Could not send response to coordinator");
-		//TODO que hago si no lo pude mandar?
+	if(send(coordinator_socket, &result, sizeof(int), 0) <0){
+		log_error(logger, "Could not send response %d to coordinator",result);
+		exit_with_error(coordinator_socket, "Error while sending execution result");
 	}
 }
 

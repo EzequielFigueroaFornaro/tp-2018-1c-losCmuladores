@@ -20,7 +20,7 @@ command_result unblock_cmd(command command) {
 	command_result result;
 	if (esis == NULL || queue_is_empty(esis)) {
 		pthread_mutex_lock(&blocked_resources_map_mtx);
-		if (resource_taken(resource)) {
+		if (resource_taken_by_any_esi(resource)) {
 			unblock_resource(resource);
 			result.code = COMMAND_OK;
 			result.content = string_from_format(

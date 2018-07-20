@@ -1,0 +1,2 @@
+IP=$1
+sed -i 's/^COORDINATOR_IP=.*$/COORDINATOR_IP='"${IP:-127.0.0.1}"'/g' conf/*.conf

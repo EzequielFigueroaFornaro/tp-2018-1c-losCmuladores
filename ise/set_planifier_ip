@@ -1,0 +1,2 @@
+IP=$1
+sed -i 's/^PLANIFIER_IP=.*$/PLANIFIER_IP='"${IP:-127.0.0.1}"'/g' *.conf

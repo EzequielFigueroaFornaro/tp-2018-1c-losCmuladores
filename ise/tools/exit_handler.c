@@ -10,7 +10,6 @@ void exit_gracefully(int code) {
 	destroy_script(script);
 	close_connections();
 	destroy_config();
-	log_info(logger, "Bye!");
 	log_destroy(logger);
 	exit(code);
 }

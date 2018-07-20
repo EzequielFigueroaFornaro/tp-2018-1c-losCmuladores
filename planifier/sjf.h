@@ -6,6 +6,7 @@
 #include "planifier_structures.h"
 #include "semaphores.h"
 #include "logging.h"
+#include "orchestrator.h"
 
 void sjf_add_esi(long esi);
 

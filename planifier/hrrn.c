@@ -7,9 +7,11 @@
 
 #include "hrrn.h"
 
-void hrrn_add_esi(long esi) {
+void hrrn_add_esi(long esi_id) {
 	pthread_mutex_lock(&ready_list_mtx_4);
-	list_add_id(READY_ESI_LIST, esi);
+	list_add_id(READY_ESI_LIST, esi_id);
+	esi* esi = get_esi_by_id(esi_id);
+	esi->ultima_entrada_a_ready = get_current_time();
 	pthread_mutex_unlock(&ready_list_mtx_4);
 }
 
@@ -34,9 +36,10 @@ void hrrn_block_esi(long block_esi_id) {
 
 float response_ratio(long* esi_id) {
 	esi* esi = get_esi_by_id(*esi_id);
-	float esi_estimated_burst = estimate_next_cpu_burst(esi, alpha);
-	int time_waiting = get_current_time() - esi->tiempo_de_entrada;
+	float esi_estimated_burst = estimate_next_cpu_burst(esi);
+	int time_waiting = get_current_time() - esi->ultima_entrada_a_ready;
 	float response_ratio = (time_waiting + esi_estimated_burst) / esi_estimated_burst;
+	log_debug(logger, "ESI%ld: S = %2.5f, W = %d", *esi_id, esi_estimated_burst, time_waiting);
 	log_debug(logger, "ESI%ld's response ratio is %2.5f", *esi_id, response_ratio);
 	return response_ratio;
 }

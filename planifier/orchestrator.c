@@ -10,6 +10,10 @@
 
 #include "orchestrator.h"
 
+#include <commons/log.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
 long id = 0;
 long cpu_time = 0;
 
@@ -68,12 +72,7 @@ long get_current_time() {
 	return time;
 }
 
-void add_esi(esi* esi){
-	pthread_mutex_lock(&esi_map_mtx_6);
-	dictionary_put(esi_map,id_to_string(esi->id), esi);
-//	log_debug(logger, "Status of ESIs: %s", esis_to_string());
-	pthread_mutex_unlock(&esi_map_mtx_6);
-
+void add_esi_by_algorithm(esi* esi) {
 	switch(algorithm) {
 		case FIFO: fifo_add_esi(esi->id); break;
 		case SJF: sjf_add_esi(esi->id); break;
@@ -81,6 +80,15 @@ void add_esi(esi* esi){
 		case HRRN: hrrn_add_esi(esi->id); break;
 		default: fifo_add_esi(esi->id);	break;
 	}
+}
+
+void add_esi(esi* esi){
+	pthread_mutex_lock(&esi_map_mtx_6);
+	dictionary_put(esi_map,id_to_string(esi->id), esi);
+//	log_debug(logger, "Status of ESIs: %s", esis_to_string());
+	pthread_mutex_unlock(&esi_map_mtx_6);
+
+	add_esi_by_algorithm(esi);
 }
 
 bool is_valid_esi(long esi_id){
@@ -129,13 +137,9 @@ void unblock_esi(long esi_id){
 	modificar_estado(esi_id, DESBLOQUEADO);
 	list_remove_esi(BLOCKED_ESI_LIST, esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
-	switch(algorithm) {
-		case FIFO: fifo_add_esi(esi_id); break;
-		case SJF: sjf_add_esi(esi_id); break;
-		case SJF_DESALOJO: sjf_desa_add_esi(esi_id); break;
-		case HRRN: hrrn_add_esi(esi_id); break;
-		default: fifo_add_esi(esi_id);	break;
-	}
+
+	add_esi_by_algorithm(get_esi_by_id(esi_id));
+
 	notify_dispatcher();
 }
 
@@ -212,6 +216,7 @@ t_queue* get_all_waiting_for_resource(char* resource) {
 
 void block_esi_by_resource(long esi_id, char* resource) {
 	block_esi(esi_id);
+	log_debug(logger, "Esi%ld bloqueado...", esi_id);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	t_queue* blocked_esis = get_all_waiting_for_resource(resource);
 	if (blocked_esis == NULL) {
@@ -251,25 +256,24 @@ char* get_all_waiting_for_resource_as_string(char* resource, char* separator) {
 
 bool bloquear_recurso(char* recurso, long esi_id) {
 	bool able_to_give_resource;
-
+	log_debug(logger, "Bloqueando...");
 	pthread_mutex_lock(&blocked_resources_map_mtx);
-	if (resource_taken(recurso)) {
+	if (resource_taken(recurso, esi_id)) {
+		log_debug(logger, "Recurso tomado, agregando a lista de bloqueados...");
 		block_esi_by_resource(esi_id, recurso);
+		log_debug(logger, "Agregado a lista de bloqueados...");
 		cambiar_recurso_que_lo_bloquea(recurso,esi_id);
 		able_to_give_resource = false;
 	} else {
-		t_queue* blocked_esis = get_all_waiting_for_resource(recurso);
-		if (blocked_esis == NULL) {
-			blocked_esis = queue_create();
-		}
-		queue_push_id(blocked_esis, esi_id);
-		dictionary_put(esis_bloqueados_por_recurso, recurso, blocked_esis);
-
 		dictionary_put_id(recurso_tomado_por_esi, recurso, esi_id);
 		able_to_give_resource = true;
 	}
 	pthread_mutex_unlock(&blocked_resources_map_mtx);
 	return able_to_give_resource;
+}
+
+bool resource_taken_by_any_esi(char* resource) {
+	return dictionary_has_key(recurso_tomado_por_esi, resource);
 }
 
 
@@ -286,8 +290,9 @@ pthread_mutex_t DEADLOCK_ENCONTRADO_MUTEX = PTHREAD_MUTEX_INITIALIZER;
 bool DEADLOCK_ENCONTRADO = PTHREAD_MUTEX_INITIALIZER;
 
 
-bool resource_taken(char* resource) {
-	return dictionary_has_key(recurso_tomado_por_esi, resource);
+bool resource_taken(char* resource, long esi_id) {
+	long* esi = dictionary_get(recurso_tomado_por_esi, resource);
+	return esi != NULL && *esi != esi_id;
 }
 
 t_list* buscar_deadlock(){
@@ -350,12 +355,13 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 }
 
 void free_resource(char* resource) {
+	log_debug(logger, "Liberando recurso %s...", resource);
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
 	dictionary_remove(recurso_tomado_por_esi, resource);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
-	if(!queue_is_empty(esi_queue)){
+	if(esi_queue != NULL && !queue_is_empty(esi_queue)){
 		long* esi_id = queue_pop(esi_queue);
 		while (!is_valid_esi(*esi_id)) {
 			esi_id = queue_pop(esi_queue);
@@ -369,4 +375,23 @@ void free_resource(char* resource) {
 		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 	}
 	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
+}
+
+float estimate_next_cpu_burst(esi* esi) {
+	float estimated_cpu_burst;
+	if (esi->estado == NUEVO) {
+		estimated_cpu_burst = initial_estimation;
+	} else if (esi->estado == DESBLOQUEADO) {
+		float alpha_coef = alpha / 100;
+		float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
+		float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
+		estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
+	} else if (esi->estado == CORRIENDO) {
+		estimated_cpu_burst = esi->estimacion_ultima_rafaga - esi->duracion_real_ultima_rafaga;
+	} else {
+		log_error(logger, "ESTO NO DEBERIA PASAR!!");
+	}
+	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
+	log_debug(logger, "Rafaga estimada para el ESI%ld: %2.5f", esi->id, estimated_cpu_burst);
+	return estimated_cpu_burst;
 }

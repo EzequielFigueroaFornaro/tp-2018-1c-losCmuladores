@@ -235,7 +235,7 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	if(sentence -> value != NULL && !string_is_empty(sentence -> value)){
 		string_append_with_format(&string_to_save, " %s", sentence -> value);
 	}
-	string_append(&string_to_save, "\n");
+	//string_append(&string_to_save, "\n");
 
 	log_info(logger, "Saving operations log with: %s", string_to_save);
 
@@ -252,7 +252,7 @@ void save_operation_log(t_sentence* sentence, long ise_id){
 	pthread_mutex_unlock(&operations_log_file_mtx);
 
 	free(string_to_save);
-	log_info(logger, "Operations log successfully saved");
+	//log_info(logger, "Operations log successfully saved");
 }
 
 void send_statement_result_to_ise(int socket, long ise_id, execution_result result) {
@@ -476,7 +476,7 @@ int process_sentence(t_sentence* sentence, long ise_id){
 
 //TODO ver qué se puede reutilizar...cuando se envía la instrucción a la instancia hace algo parecido.
 int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_id){
-/*	log_info(logger, "Asking for sentence and resource to planifier %s", key);
+	log_info(logger, "Asking for sentence and resource to planifier %s", key);
 
 	t_buffer buffer = serialize_operation_resource_request(operation_id, key, ise_id);
 
@@ -494,8 +494,9 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_i
 		_exit_with_error(planifier_socket, "Could not receive resource response to planifier.", NULL);
 	}
 
-	return result;*/
-	return OK;
+	log_info(logger, "Received result '%s' from planifier for ISE with id: %ld", get_execution_result_description(result), ise_id);
+	return result;
+	//return OK;
 }
 
 int main(int argc, char* argv[]) {

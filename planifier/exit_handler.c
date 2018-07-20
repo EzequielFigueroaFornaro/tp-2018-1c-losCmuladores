@@ -19,7 +19,7 @@ void close_console(char* msg, int code) {
 	} else {
 		print_and_log_error(msg);
 	}
-	close(0);
+//	close(0);
 	destroy_command_config();
 	log_destroy(console_log);
 	console_closed = true;
