@@ -27,8 +27,8 @@ typedef enum {
 } planifier_algorithm;
 
 planifier_algorithm algorithm;
-int alpha;
-int initial_estimation;
+float alpha;
+float initial_estimation;
 
 void add_esi(esi* esi);
 
