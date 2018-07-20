@@ -237,20 +237,21 @@ int _calculate_value_entries_count(t_entry_table * table, char *value) {
 }
 
 char* _calculate_data_address(t_entry_table * table, int index) {
-	int offset = sizeof(char) * (table->entry_size * index);
+	int offset = sizeof(char) * table->entry_size * index;
 	return table->data + offset;
 }
 
 void _copy_value_in_data(t_entry_table * table, char *value, int value_length, int index_data) {
 	char *data_address = _calculate_data_address(table, index_data);
-	memcpy(data_address, value, value_length + 1);
+	memcpy(data_address, value, value_length);
 }
 
 char* _get_value_from_data(t_entry_table * table, int value_length, int index_data) {
 	char *data_address = _calculate_data_address(table, index_data);
 	int size = value_length + 1;
 	char *value = malloc(sizeof(char) * size);
-	memcpy(value, data_address, size);
+	memcpy(value, data_address, sizeof(char) * size);
+	*(value + size - 1) = '\0';
 	return value;
 }
 

@@ -42,8 +42,9 @@ char* file_system_read(char* name) {
 
 		void *map_file = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, file, 0);
 
-		char *value = malloc(length);
+		char *value = malloc(length + sizeof(char));
 		memcpy(value, map_file, length);
+		*(value + length) = '\0';
 
 		munmap(map_file, length);
 		close(file);
