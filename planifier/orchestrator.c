@@ -84,7 +84,8 @@ void add_esi_by_algorithm(esi* esi) {
 
 void add_esi(esi* esi){
 	pthread_mutex_lock(&esi_map_mtx_6);
-	dictionary_put(esi_map, id_to_string(esi->id), esi);
+	char* key = id_to_string(esi->id);
+	dictionary_put(esi_map, key, esi);
 //	log_debug(logger, "Status of ESIs: %s", esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
@@ -323,8 +324,6 @@ t_list* buscar_deadlock(){
 	return resultado;
 }
 
-
-//TODO buscar nombre copado para la funcion
 t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 
 	bool id_function(long* list_id){
@@ -332,20 +331,19 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 	}
 
 	if(list_any_satisfy(corte,(void*)id_function)){
-		log_debug(logger, "Me fijo si ya pase por aca: %ld",id);
 		t_list* ids_en_deadlock = list_create();
 		list_add_id(ids_en_deadlock, id);
 		return ids_en_deadlock;
 	} else {
-		esi* _esi = dictionary_get(esi_map, id_to_string(id));
+		esi* _esi = (esi*) dictionary_get(esi_map, id_to_string(id));
 		if(_esi == NULL || (_esi->estado) != BLOQUEADO){
 			return list_create();
 		}
 
 		char* recurso = _esi -> blocking_resource;
-		esi *esi_bloqueante = dictionary_get(recurso_tomado_por_esi, recurso);
+		long* esi_bloqueante_id = (long*) dictionary_get(recurso_tomado_por_esi, recurso);
 		list_add_id(corte, id);
-		t_list* resultado = buscar_deadlock_en_lista(esi_bloqueante -> id, corte); //TODO acá llega vacío el ESI bloqueante.
+		t_list* resultado = buscar_deadlock_en_lista(*esi_bloqueante_id, corte);
 		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function) || DEADLOCK_ENCONTRADO){
 			DEADLOCK_ENCONTRADO = true;
 			return resultado;
