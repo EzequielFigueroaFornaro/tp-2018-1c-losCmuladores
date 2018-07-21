@@ -1,10 +1,12 @@
 #include "sjf.h"
 
-void sjf_add_esi(long esi){
+void sjf_add_esi(long esi_id){
 	pthread_mutex_lock(&ready_list_mtx_4);
 	//TODO pasa el mapa de esis, hacer la cuenta , solo hay que pasar el que esta corriendo y el nuevo, si tiene mas prioridad
 	// el nuvo lo pongo a correr sino lo pongo en la lista, en un add no hace falta ver todos los que estan en la cola
-	list_add_id(READY_ESI_LIST, esi);
+	list_add_id(READY_ESI_LIST, esi_id);
+	esi* esi = get_esi_by_id(esi_id);
+	esi->estimacion_ultima_rafaga = estimate_next_cpu_burst(esi);
 	pthread_mutex_unlock(&ready_list_mtx_4);
 }
 
@@ -39,16 +41,21 @@ void sjf_replan(){
 //		long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //		long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //		return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
-		int rafaga_estimada_esi = estimate_next_cpu_burst(_esi);
-		int rafaga_estimada_other_esi = estimate_next_cpu_burst(other_esi);
-		return (rafaga_estimada_other_esi > rafaga_estimada_esi)
+		int rafaga_estimada_esi = _esi->estimacion_ultima_rafaga;
+		int rafaga_estimada_other_esi = other_esi->estimacion_ultima_rafaga;
+		return (rafaga_estimada_esi > rafaga_estimada_other_esi)
 				|| (rafaga_estimada_esi == rafaga_estimada_other_esi
 						&& _esi->estado == DESBLOQUEADO);
 	}
 	pthread_mutex_lock(&next_running_esi_mtx_2);
 	pthread_mutex_lock(&ready_list_mtx_4);
 	pthread_mutex_lock(&esi_map_mtx_6);
-	list_sort(READY_ESI_LIST, (void*) shortest_job);
+
+	if (!all_same_estimation()) {
+		list_sort(READY_ESI_LIST, (void*) shortest_job);
+	}
+	log_info_important(logger, "--SJF-- Orden de la cola de listos: [%s]", list_join(READY_ESI_LIST));
+
 	long* next_esi = list_remove(READY_ESI_LIST, 0);
 	if (next_esi == NULL) {
 		NEXT_RUNNING_ESI = 0;

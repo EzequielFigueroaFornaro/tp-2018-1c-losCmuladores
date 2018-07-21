@@ -55,14 +55,13 @@ long new_esi(int socket, long esi_size, char* esi_name) {
 	new_esi -> tiempo_de_entrada = get_current_time();
 	new_esi -> socket_id = socket;
 	new_esi -> esi_thread = pthread_self();
-	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
-	//new_esi -> blocking_resource = NULL;
-	pthread_mutex_unlock(&cpu_time_mtx);
+	new_esi -> blocking_resource = NULL;
 	char* initial_blocking_resource_value = "";
 	new_esi -> blocking_resource = malloc(sizeof(char) * strlen(initial_blocking_resource_value) + 1);
 	memcpy(new_esi -> blocking_resource, initial_blocking_resource_value, strlen(initial_blocking_resource_value) + 1);
+	new_esi -> estimacion_ultima_rafaga = initial_estimation;
 
 	add_esi(new_esi);
 	return new_esi -> id;

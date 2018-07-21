@@ -27,8 +27,8 @@ typedef enum {
 } planifier_algorithm;
 
 planifier_algorithm algorithm;
-int alpha;
-int initial_estimation;
+float alpha;
+float initial_estimation;
 
 void add_esi(esi* esi);
 
@@ -76,5 +76,9 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte);
 void free_resource(char* resource);
 
 float estimate_next_cpu_burst(esi* esi);
+
+bool all_same_estimation();
+
+void modificar_estado(long esi_id, estado nuevo_estado);
 
 #endif

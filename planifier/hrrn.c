@@ -12,6 +12,7 @@ void hrrn_add_esi(long esi_id) {
 	list_add_id(READY_ESI_LIST, esi_id);
 	esi* esi = get_esi_by_id(esi_id);
 	esi->ultima_entrada_a_ready = get_current_time();
+	esi->estimacion_ultima_rafaga = estimate_next_cpu_burst(esi);
 	pthread_mutex_unlock(&ready_list_mtx_4);
 }
 
@@ -36,11 +37,13 @@ void hrrn_block_esi(long block_esi_id) {
 
 float response_ratio(long* esi_id) {
 	esi* esi = get_esi_by_id(*esi_id);
-	float esi_estimated_burst = estimate_next_cpu_burst(esi);
-	int time_waiting = get_current_time() - esi->ultima_entrada_a_ready;
+	float esi_estimated_burst = esi->estimacion_ultima_rafaga;
+	long time_when_it_would_execute = get_current_time() + 1;
+	log_debug(logger, "--HRRN-- tiempo en el que seria ejecutado: %ld", time_when_it_would_execute);
+	int time_waiting = time_when_it_would_execute - esi->ultima_entrada_a_ready;
 	float response_ratio = (time_waiting + esi_estimated_burst) / esi_estimated_burst;
-	log_debug(logger, "ESI%ld: S = %2.5f, W = %d", *esi_id, esi_estimated_burst, time_waiting);
-	log_debug(logger, "ESI%ld's response ratio is %2.5f", *esi_id, response_ratio);
+	log_debug(logger, "--HRRN-- ESI%ld: S = %2.5f, W = %d", *esi_id, esi_estimated_burst, time_waiting);
+	log_debug(logger, "--HRRN-- ESI%ld's response ratio is %2.5f", *esi_id, response_ratio);
 	return response_ratio;
 }
 
@@ -48,9 +51,10 @@ void hrrn_replan() {
 	log_info(logger, "Replaning...");
 
 	bool higher_response_ratio(long* esi_id, long* other_esi_id) {
-		return response_ratio(esi_id) >= response_ratio(other_esi_id);
+		return response_ratio(other_esi_id) >= response_ratio(esi_id);
 	}
 	list_sort(READY_ESI_LIST, (void*) higher_response_ratio);
+	log_info_important(logger, "--HRRN-- Orden de la cola de listos: [%s]", list_join(READY_ESI_LIST));
 
 	long* next_esi = list_remove(READY_ESI_LIST, 0);
 	if (next_esi == NULL) {
