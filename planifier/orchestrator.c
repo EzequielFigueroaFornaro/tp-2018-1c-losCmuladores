@@ -198,19 +198,15 @@ void finish_esi(long esi_id){
 	}
 }
 
+
 void borrado_de_finish(){
 	pthread_mutex_lock(&finished_list_mtx_5);
 	log_debug(logger, "Deleting finished ESIs... Found %d to delete: [%s]", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
-	while(!queue_is_empty(FINISHED_ESI_LIST)) {
-		long *esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
+	while(!queue_is_empty(FINISHED_ESI_LIST)){
+		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
 		pthread_mutex_lock(&esi_map_mtx_6);
-		esi *selected_esi = (esi *) dictionary_remove(esi_map, id_to_string(*esi_to_be_freed)); /*como mierda liberar el espacio del esi*/
-		if (selected_esi != NULL) {
-			log_debug(logger, "cerrando la conecion con esi");
-			close(selected_esi->socket_id);
-			log_debug(logger, "cierro posta la coneccion");
-			free(selected_esi);
-		}
+		esi* selected_esi = (esi*) dictionary_remove(esi_map, id_to_string(*esi_to_be_freed)); /*como mierda liberar el espacio del esi*/
+		free(selected_esi);
 		pthread_mutex_unlock(&esi_map_mtx_6);
 	}
 	pthread_mutex_unlock(&finished_list_mtx_5);
