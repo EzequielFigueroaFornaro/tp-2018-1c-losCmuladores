@@ -27,6 +27,8 @@ int _entry_table_try_put(t_entry_table * table, char *key, char *value);
 bool _entry_table_has_key(t_entry_table * table, char *key);
 int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value);
 void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int destination_index);
+void _entry_table_replacement_add(t_entry_table *entry_table, char *key, int value_length);
+int _entry_table_store(t_entry_table * entry_table, char* mount_path, char *key);
 /**
  * Usado para la compactacion
  * Busca la primer entrada
@@ -40,6 +42,7 @@ t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacem
 	t_dictionary *entries = dictionary_create();
 	t_availability *availability = availability_create(max_entries);
 	char *data = (char*) malloc(sizeof(char) * data_size);
+	memset(data, ' ', sizeof(char) * data_size);
 
 	t_entry_table *table = (t_entry_table*) malloc(sizeof(t_entry_table));
 	table->entries = entries;
@@ -114,17 +117,12 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 }
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
-	char *file_name = _make_full_file_name(mount_path, key);
-	char * value = entry_table_get(entry_table, key);
-	int result = -1;
-	if (NULL != value) {
-		int length = _calculate_value_length(value);
-		replacement_add(entry_table->replacement, key, length);
-		result = file_system_save(file_name, value);
-	}
-	free(file_name);
+	char *value = entry_table_get(entry_table, key);
+	int length = _calculate_value_length(value);
+	_entry_table_replacement_add(entry_table, key, length);
 	free(value);
-	return result;
+
+	return _entry_table_store(entry_table, mount_path, key);
 }
 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -165,7 +163,7 @@ int entry_table_store_all(t_entry_table * entry_table, char* mount_path) {
 	int keys_count = list_size(keys);
 	for (int i = 0; i < keys_count; ++i) {
 		char *key = (char *)list_get(keys, i);
-		int result = entry_table_store(entry_table, mount_path, key);
+		int result = _entry_table_store(entry_table, mount_path, key);
 		if (result < 0) {
 			log_error(logger, "Error while loading entry %s", key);
 			break;
@@ -244,6 +242,15 @@ char* _calculate_data_address(t_entry_table * table, int index) {
 void _copy_value_in_data(t_entry_table * table, char *value, int value_length, int index_data) {
 	char *data_address = _calculate_data_address(table, index_data);
 	memcpy(data_address, value, value_length);
+
+	int remainder = value_length % table -> entry_size;
+	int difference = 0;
+	if (remainder > 0) {
+		difference = table -> entry_size - remainder;
+	}
+	for (int i = 0; i < difference; ++i) {
+		*(data_address + value_length + i) = ' ';
+	}
 }
 
 char* _get_value_from_data(t_entry_table * table, int value_length, int index_data) {
@@ -284,10 +291,11 @@ int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) 
 		int start_index_to_free = index + entries_new_value;
 		int entries_to_free = entries_old_value - entries_new_value;
 		availability_free_space(entry_table->availability, start_index_to_free, entries_to_free);
-		_copy_value_in_data(entry_table, new_value, entry->length, index);
 		entry->length = _calculate_value_length(new_value);
 
-		replacement_add(entry_table->replacement, key, entry->length);
+		_copy_value_in_data(entry_table, new_value, entry->length, index);
+
+		_entry_table_replacement_add(entry_table, key, entry->length);
 
 		result = entries_to_free;
 	}
@@ -303,13 +311,7 @@ int _entry_table_try_put(t_entry_table * table, char *key, char *value) {
 		availability_take_space(table->availability, index, entries_needed);
 		_copy_value_in_data(table, value, value_length, index);
 		_add_entry_in_table_dictionary(table, key, value, index);
-		if (_is_atomic(table, key)) {
-			log_debug(logger, "Adding key %s to replacement list", key);
-			replacement_add(table->replacement, key, _calculate_value_length(value));
-			//replacement_log_debug(table->replacement);
-		} else {
-			log_debug(logger, "Skipping add key %s to replacement list because is not atomic", key);
-		}
+		_entry_table_replacement_add(table, key, value_length);
 		return index;
 	} else {
 		return -1;
@@ -350,6 +352,28 @@ void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int de
 	} else {
 		log_debug(logger, "Skipping move entry. Destination index is equal to current index (%d)", destination_index);
 	}
+}
+
+void _entry_table_replacement_add(t_entry_table *entry_table, char *key, int value_length) {
+	if (_is_atomic(entry_table, key)) {
+		log_debug(logger, "Adding key %s to replacement list", key);
+		replacement_add(entry_table->replacement, key, value_length);
+		//replacement_log_debug(table->replacement);
+	} else {
+		log_debug(logger, "Skipping add key %s to replacement list because is not atomic", key);
+	}
+}
+
+int _entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
+	char *file_name = _make_full_file_name(mount_path, key);
+	char * value = entry_table_get(entry_table, key);
+	int result = -1;
+	if (NULL != value) {
+		result = file_system_save(file_name, value);
+	}
+	free(file_name);
+	free(value);
+	return result;
 }
 
 
