@@ -10,5 +10,5 @@
 
 
 <p align="center">
-  <img width="345" height="466" src="https://media.ratingcero.com/adjuntos/154/imagenes/022/164/0022164033.jpg" />
+  <img width="345" height="466" src="https://k30.kn3.net/5/A/2/B/9/B/F83.jpg" />
 </p>
