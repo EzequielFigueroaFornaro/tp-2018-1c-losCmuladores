@@ -121,8 +121,12 @@ void block_esi(long esi_id){
 
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* selected_esi = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
-	selected_esi -> duracion_real_ultima_rafaga = selected_esi -> instruction_pointer - selected_esi -> anterior_instruction_pointer;
-    selected_esi -> anterior_instruction_pointer= selected_esi -> instruction_pointer;
+	selected_esi->duracion_real_ultima_rafaga = selected_esi -> instruction_pointer - selected_esi -> anterior_instruction_pointer;
+	if (selected_esi->anterior_instruction_pointer != 0) {
+		selected_esi->duracion_real_ultima_rafaga++;
+	}
+
+    selected_esi -> anterior_instruction_pointer = selected_esi -> instruction_pointer;
 	log_debug(logger, "Duracion ultima rafaga: %d", selected_esi -> duracion_real_ultima_rafaga);
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
@@ -161,6 +165,7 @@ void finish_esi(long esi_id){
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* selected_esi = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
 	pthread_mutex_unlock(&esi_map_mtx_6);
+
 	//TODO el terminar un esi exigue liberar los recursos que tien etomados?
 	switch(selected_esi -> estado) {
 		case BLOQUEADO:
@@ -186,6 +191,11 @@ void finish_esi(long esi_id){
 	t_list* resources_taken = get_resources_taken_by_esi(selected_esi->id);
 	list_iterate(resources_taken, (void*) free_resource);
 	list_destroy(resources_taken);
+
+	if(list_is_empty(READY_ESI_LIST) && NEXT_RUNNING_ESI == 0 && RUNNING_ESI == 0){
+		replan_by_algorithm();
+		notify_dispatcher();
+	}
 }
 
 void borrado_de_finish(){
@@ -352,11 +362,10 @@ void free_resource(char* resource) {
 	pthread_mutex_lock(&blocked_by_resource_map_mtx);
 	pthread_mutex_lock(&blocked_resources_map_mtx);
 	//TODO ver que onda desbloqueo todo o una sola. UPDATE: habiamos quedado en desbloquear solo una, no?
-	dictionary_remove(recurso_tomado_por_esi, resource);
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
 	if(esi_queue != NULL && !queue_is_empty(esi_queue)){
 		long* esi_id = queue_pop(esi_queue);
-		while ((!is_valid_esi(*esi_id)) && esi_id!=NULL) {
+		while (esi_id!=NULL && (!is_valid_esi(*esi_id))) {
 			esi_id = queue_pop(esi_queue);
 		}
 		if(esi_id!= NULL) {
@@ -372,6 +381,7 @@ void free_resource(char* resource) {
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 	}
+	dictionary_remove(recurso_tomado_por_esi, resource);
 	//TODO OJO AL PIOJO el free de datos como el id que guardamos de la esi bloqueada;
 }
 
@@ -381,16 +391,18 @@ float estimate_next_cpu_burst(esi* esi) {
 		log_debug(logger,
 				"Seteando rafaga estimada inicial para el ESI%ld: %2.2f", esi->id, initial_estimation);
 		estimated_cpu_burst = initial_estimation;
+        esi->estimacion_ultima_rafaga = estimated_cpu_burst;
 	} else if (esi->estado == DESBLOQUEADO) {
 		log_debug(logger,
-				"Recalculando rafaga estimada del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
-				esi->id,
-				esi->duracion_real_ultima_rafaga,
-				esi->estimacion_ultima_rafaga);
+						"Recalculando rafaga estimada del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
+						esi->id,
+						esi->duracion_real_ultima_rafaga,
+						esi->estimacion_ultima_rafaga);
 		float alpha_coef = alpha / 100;
 		float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
 		float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
 		estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
+        esi->estimacion_ultima_rafaga = estimated_cpu_burst;
 	} else if (esi->estado == CORRIENDO) {
 		log_debug(logger,
 				"Calculando diferencia de rafagas del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
@@ -401,7 +413,7 @@ float estimate_next_cpu_burst(esi* esi) {
 	} else {
 		log_error(logger, "ESTO NO DEBERIA PASAR!!");
 	}
-	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
+
 	log_debug(logger, "Rafaga estimada para el ESI%ld: %2.2f", esi->id, estimated_cpu_burst);
 	return estimated_cpu_burst;
 }
