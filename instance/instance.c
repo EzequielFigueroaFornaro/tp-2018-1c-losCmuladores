@@ -22,6 +22,7 @@ pthread_mutex_t atomic_operation = PTHREAD_MUTEX_INITIALIZER;
 bool instance_running = true;
 
 void _exit_with_error(char *error_msg, ...);
+void _entry_table_log_data(t_entry_table *entry_table);
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
 
 void init_logger() {
@@ -305,6 +306,8 @@ int instance_run(int argc, char* argv[]) {
 				int sentence_result = process_sentence(sentence);
 				sentence_destroy(sentence);
 
+				_entry_table_log_data(entries_table);
+
 				int coordinator_result = sentence_result;
 				if (sentence_result >= 0) {
 					coordinator_result = OK;
@@ -415,3 +418,14 @@ void _exit_with_error(char *error_msg, ...) {
 	exit_gracefully(1);
 }
 
+void _entry_table_log_data(t_entry_table *entry_table) {
+	int size = sizeof(char) * entry_table->max_entries * entry_table->entry_size;
+	char *data = malloc(size + 1);
+
+	memcpy(data, entry_table->data, size);
+	*(data + size) = '\0';
+
+	log_debug(logger, "Data table: %s", data);
+
+	free(data);
+}
