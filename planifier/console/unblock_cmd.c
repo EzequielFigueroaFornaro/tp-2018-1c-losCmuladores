@@ -32,12 +32,36 @@ command_result unblock_cmd(command command) {
 		}
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 	} else {
+		pthread_mutex_lock(&esi_map_mtx_6);
+
 		long* esi_id = queue_pop(esis);
-		unblock_esi(*esi_id);
-		result.code = COMMAND_OK;
-		result.content = string_from_format(
-				"El ESI%ld fue desbloqueado y ya no espera por el recurso %s",
-				*esi_id, resource);
+		while ((!is_valid_esi(*esi_id)) && esi_id!=NULL) {
+			esi_id = queue_pop(esis);
+		}
+		if(esi_id!=NULL) {
+			unblock_esi(*esi_id);
+			result.code = COMMAND_OK;
+			result.content = string_from_format(
+					"El ESI%ld fue desbloqueado y ya no espera por el recurso %s",
+					*esi_id, resource);
+		} else {
+			pthread_mutex_lock(&blocked_resources_map_mtx);
+			if (resource_taken_by_any_esi(resource)) {
+				unblock_resource(resource);
+				result.code = COMMAND_OK;
+				result.content = string_from_format(
+						"No hay ESIs esperando. El recurso %s fue desbloqueado",
+						resource);
+			} else {
+				result.code = COMMAND_ERROR;
+				result.content = string_from_format("El recurso %s no esta tomado por nadie y nadie esta esperando", resource);
+			}
+			pthread_mutex_unlock(&blocked_resources_map_mtx);
+		}
+
+
+		pthread_mutex_unlock(&esi_map_mtx_6);
+
 	}
 
 	pthread_mutex_unlock(&blocked_by_resource_map_mtx);

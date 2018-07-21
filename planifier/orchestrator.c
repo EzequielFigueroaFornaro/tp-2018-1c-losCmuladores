@@ -384,14 +384,19 @@ void free_resource(char* resource) {
 	t_queue* esi_queue = dictionary_get(esis_bloqueados_por_recurso, resource);
 	if(esi_queue != NULL && !queue_is_empty(esi_queue)){
 		long* esi_id = queue_pop(esi_queue);
-		while (!is_valid_esi(*esi_id)) {
+		while ((!is_valid_esi(*esi_id)) && esi_id!=NULL) {
 			esi_id = queue_pop(esi_queue);
 		}
-		cambiar_recurso_que_lo_bloquea("", *esi_id);
-		pthread_mutex_unlock(&blocked_resources_map_mtx);
-		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
-		unblock_esi(*esi_id);
-	}else{
+		if(esi_id!= NULL) {
+			cambiar_recurso_que_lo_bloquea("", *esi_id);
+            pthread_mutex_unlock(&blocked_resources_map_mtx);
+            pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+            unblock_esi(*esi_id);
+        }else{
+            pthread_mutex_unlock(&blocked_resources_map_mtx);
+            pthread_mutex_unlock(&blocked_by_resource_map_mtx);
+        }
+    }else{
 		pthread_mutex_unlock(&blocked_resources_map_mtx);
 		pthread_mutex_unlock(&blocked_by_resource_map_mtx);
 	}
