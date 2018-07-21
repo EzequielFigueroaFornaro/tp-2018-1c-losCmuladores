@@ -109,8 +109,8 @@ bool esi_exists(long esi_id) {
 void modificar_estado(long esi_id, estado nuevo_estado){
 	log_debug(logger, "Changing ESI%ld's state to %d", esi_id, nuevo_estado);
 	pthread_mutex_lock(&esi_map_mtx_6);
-	esi* esi = dictionary_get(esi_map, id_to_string(esi_id));
-	esi -> estado = nuevo_estado;
+	esi* selected_esi = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
+	selected_esi -> estado = nuevo_estado;
 //	log_debug(logger, "Status of all ESIs after modifying status of ESI%ld: %s", esi_id, esis_to_string());
 	pthread_mutex_unlock(&esi_map_mtx_6);
 }
@@ -305,6 +305,7 @@ t_list* buscar_deadlock(){
 	pthread_mutex_lock(&DEADLOCK_ENCONTRADO_MUTEX);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		long* esi_id = list_get(BLOCKED_ESI_LIST , i);
+		log_debug(logger, "Buscando dependencia circular para ESI id: %lu", *esi_id);
 		DEADLOCK_ENCONTRADO = false;
 		t_list* bloqueados = buscar_deadlock_en_lista(*esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
@@ -337,17 +338,27 @@ t_list* buscar_deadlock_en_lista(long id, t_list* corte){
 	} else {
 		esi* _esi = (esi*) dictionary_get(esi_map, id_to_string(id));
 		if(_esi == NULL || (_esi->estado) != BLOQUEADO){
+
+			if(_esi == NULL){ //Esto no debería venir en NULL para algunos casos.
+				log_debug(logger, "Quise pedir un esi que tuviera el id %lu y vino en null", id);
+			} else if((_esi -> estado) != BLOQUEADO){
+				log_debug(logger, "El estado del ESI %lu es distinto de bloqueado", id);
+			}
+
+			log_debug(logger, "No encontré dependencia circular para ESI %lu", id);
 			return list_create();
 		}
 
 		char* recurso = _esi -> blocking_resource;
 		long* esi_bloqueante_id = (long*) dictionary_get(recurso_tomado_por_esi, recurso);
+		log_debug(logger, "Esi bloqueante para %lu es el ESI %lu", id, *esi_bloqueante_id);
 		list_add_id(corte, id);
 		t_list* resultado = buscar_deadlock_en_lista(*esi_bloqueante_id, corte);
 		if(list_is_empty(resultado) || list_any_satisfy(resultado, (void*)id_function) || DEADLOCK_ENCONTRADO){
 			DEADLOCK_ENCONTRADO = true;
 			return resultado;
 		} else {
+			log_debug(logger, "Dependencia circular encontrada con ESI: %lu", id);
 			list_add_id(resultado, id);
 			return resultado;
 		}
