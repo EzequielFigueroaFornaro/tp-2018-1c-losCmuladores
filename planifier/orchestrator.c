@@ -121,7 +121,8 @@ void block_esi(long esi_id){
 
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* selected_esi = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
-	selected_esi -> duracion_real_ultima_rafaga = selected_esi -> instruction_pointer;
+	selected_esi -> duracion_real_ultima_rafaga = selected_esi -> instruction_pointer - selected_esi -> anterior_instruction_pointer;
+    selected_esi -> anterior_instruction_pointer= selected_esi -> instruction_pointer;
 	log_debug(logger, "Duracion ultima rafaga: %d", selected_esi -> duracion_real_ultima_rafaga);
 	pthread_mutex_unlock(&esi_map_mtx_6);
 

@@ -21,6 +21,7 @@ typedef struct {
 	long ultima_entrada_a_ready;
 	int cantidad_de_instrucciones;
 	int instruction_pointer;
+	int anterior_instruction_pointer;
 	char* blocking_resource;
 	pthread_t esi_thread;
 	int socket_id;
