@@ -377,19 +377,31 @@ void free_resource(char* resource) {
 float estimate_next_cpu_burst(esi* esi) {
 	float estimated_cpu_burst;
 	if (esi->estado == NUEVO || (esi->estado == CORRIENDO && RUNNING_ESI == 0)) {
+		log_debug(logger,
+				"Seteando rafaga estimada inicial para el ESI%ld: %2.2f", esi->id, initial_estimation);
 		estimated_cpu_burst = initial_estimation;
 	} else if (esi->estado == DESBLOQUEADO) {
+		log_debug(logger,
+				"Recalculando rafaga estimada del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
+				esi->id,
+				esi->duracion_real_ultima_rafaga,
+				esi->estimacion_ultima_rafaga);
 		float alpha_coef = alpha / 100;
 		float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
 		float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
 		estimated_cpu_burst = last_cpu_burst_coef + last_estimated_cpu_burst_coef;
 	} else if (esi->estado == CORRIENDO) {
+		log_debug(logger,
+				"Calculando diferencia de rafagas del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
+				esi->id,
+				esi->duracion_real_ultima_rafaga,
+				esi->estimacion_ultima_rafaga);
 		estimated_cpu_burst = esi->estimacion_ultima_rafaga - esi->duracion_real_ultima_rafaga;
 	} else {
 		log_error(logger, "ESTO NO DEBERIA PASAR!!");
 	}
 	esi->estimacion_ultima_rafaga = estimated_cpu_burst;
-	log_debug(logger, "Rafaga estimada para el ESI%ld: %2.5f", esi->id, estimated_cpu_burst);
+	log_debug(logger, "Rafaga estimada para el ESI%ld: %2.2f", esi->id, estimated_cpu_burst);
 	return estimated_cpu_burst;
 }
 

@@ -110,6 +110,10 @@ void dispatch() {
 		borrado_de_finish();
 
 
+		if (esi->estado == BLOQUEADO) {
+			esi->instruction_pointer--;
+		}
+
 		if(RUNNING_ESI != NEXT_RUNNING_ESI && NEXT_RUNNING_ESI != 0 && esi->estado == BLOQUEADO) {
 			log_info(logger, "El ESI%ld fue desalojado, se continua con el proximo ESI", esi->id);
 			pthread_mutex_unlock(&dispatcher_manager);
