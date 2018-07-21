@@ -36,8 +36,8 @@ void sjf_finish_esi(){
 
 void sjf_replan(){
 	bool shortest_job(long* esi_id, long* other_esi_id){
-		esi* other_esi =	 dictionary_get(esi_map, id_to_string(*esi_id));
-		esi* _esi = dictionary_get(esi_map, id_to_string(*other_esi_id));
+		esi* other_esi = (esi*) dictionary_get(esi_map, id_to_string(*esi_id));
+		esi* _esi = (esi*) dictionary_get(esi_map, id_to_string(*other_esi_id));
 //		long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //		long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //		return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);

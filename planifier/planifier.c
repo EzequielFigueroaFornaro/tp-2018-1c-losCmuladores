@@ -48,7 +48,7 @@ void load_configuration(char *config_file_path) {
 			long esi_id = ESI_BLOQUEADO;
 			dictionary_put_id(recurso_tomado_por_esi, c, esi_id);
 		}
-		free(splitted_command);
+		//free(splitted_command);
 	}
 	log_info(logger, "Orchestrator loaded");
 	config_destroy(config);

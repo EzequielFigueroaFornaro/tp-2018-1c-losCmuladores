@@ -47,22 +47,25 @@ void esi_connection_handler(int socket) {
 }
 
 long new_esi(int socket, long esi_size, char* esi_name) {
+	long id = increment_id();
+	log_info(logger, "NEW ESI ID %lu", id);
 	esi* new_esi = malloc(sizeof(esi));
-	new_esi -> id = increment_id();
-	new_esi -> nombre = esi_name;
+	new_esi -> id = id;
+	new_esi -> nombre = malloc(sizeof(char) * strlen(esi_name) + 1);
+	memcpy(new_esi -> nombre, esi_name, strlen(esi_name) + 1);
 	new_esi -> estado = NUEVO;
 	new_esi -> tiempo_de_entrada = get_current_time();
 	new_esi -> socket_id = socket;
 	new_esi -> esi_thread = pthread_self();
-	pthread_mutex_unlock(&cpu_time_mtx);
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
-	new_esi -> blocking_resource = NULL;
-	pthread_mutex_unlock(&cpu_time_mtx);
+	char* initial_blocking_resource_value = "";
+	new_esi -> blocking_resource = malloc(sizeof(char) * strlen(initial_blocking_resource_value) + 1);
+	memcpy(new_esi -> blocking_resource, initial_blocking_resource_value, strlen(initial_blocking_resource_value) + 1);
 	new_esi -> estimacion_ultima_rafaga = initial_estimation;
-	new_esi -> blocking_resource = "";
-	new_esi -> estimacion_ultima_rafaga = initial_estimation;
+
 	add_esi(new_esi);
+
 	return new_esi -> id;
 }
 
@@ -108,7 +111,7 @@ int send_id_to_esi(int socket, long esi_id) {
 }
 
 bool wait_execution_result(long esi_id, int* result) {
-	esi* esi_to_get_result_from = dictionary_get(esi_map, id_to_string(esi_id));
+	esi* esi_to_get_result_from = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
 	int socket = esi_to_get_result_from->socket_id;
 
 	if (recv_message(socket) != EXECUTION_RESULT) {
@@ -125,7 +128,7 @@ bool wait_execution_result(long esi_id, int* result) {
 
 int send_message_to_esi(long esi_id, message_type message) {
 	pthread_mutex_lock(&esi_map_mtx_6);
-	esi* esi_to_notify = dictionary_get(esi_map, id_to_string(esi_id));
+	esi* esi_to_notify = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
 	pthread_mutex_unlock(&esi_map_mtx_6);
 	int socket_id = esi_to_notify->socket_id;
 	return send(socket_id, &message, sizeof(message_type), 0);
