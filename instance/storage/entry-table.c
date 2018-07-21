@@ -327,7 +327,7 @@ t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int 
 
 	void _compare_entry_index(char *key, void *entry_param) {
 		t_entry *entry = (t_entry *)entry_param;
-		if (entry->index >= start_index && (selected_entry == NULL || selected_entry->index < start_index)) {
+		if (entry->index >= start_index && (selected_entry == NULL || entry->index < selected_entry->index)) {
 			selected_entry = entry;
 		}
 	}
@@ -340,14 +340,14 @@ void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int de
 	if (entry->index != destination_index) {
 		log_debug(logger, "Moving entry from index %d to %d. Bytes: %d", entry->index, destination_index, entry->length);
 
-		entry->index = destination_index;
-
 		int entries_count = _calculate_value_length_entries_count(entry_table, entry->length);
 		availability_free_space(entry_table->availability, entry->index, entries_count);
 		availability_take_space(entry_table->availability, destination_index, entries_count);
 
 		char *data_address = _calculate_data_address(entry_table, entry->index);
 		char *destination_data_address = _calculate_data_address(entry_table, destination_index);
+
+		entry->index = destination_index;
 		memmove(destination_data_address, data_address, entry->length);
 	} else {
 		log_debug(logger, "Skipping move entry. Destination index is equal to current index (%d)", destination_index);
