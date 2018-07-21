@@ -305,7 +305,7 @@ t_list* buscar_deadlock(){
 	pthread_mutex_lock(&DEADLOCK_ENCONTRADO_MUTEX);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		long* esi_id = list_get(BLOCKED_ESI_LIST , i);
-		log_debug(logger, "Buscando dependencia circular para ESI id: %lu", *esi_id);
+		log_debug(logger, "Buscando dependencia circular para ESI id: %ld", *esi_id);
 		DEADLOCK_ENCONTRADO = false;
 		t_list* bloqueados = buscar_deadlock_en_lista(*esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {

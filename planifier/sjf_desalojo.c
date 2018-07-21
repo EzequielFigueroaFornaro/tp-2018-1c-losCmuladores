@@ -48,7 +48,7 @@ bool _shortest_job(long* esi_id, long* other_esi_id){
 //	return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
 	//int rafaga_estimada_esi = estimate_next_cpu_burst(_esi);
 	//int rafaga_estimada_other_esi = estimate_next_cpu_burst(other_esi);
-	return (other_esi->estimacion_ultima_rafaga > _esi->estimacion_ultima_rafaga)
+	return (_esi->estimacion_ultima_rafaga > other_esi->estimacion_ultima_rafaga)
 			|| (_esi->estimacion_ultima_rafaga == other_esi->estimacion_ultima_rafaga
 							&& _esi->estado == DESBLOQUEADO);
 }
@@ -66,8 +66,9 @@ void replan_for_new_esi() {
 		NEXT_RUNNING_ESI = 0;
 		READY_ESI_LIST = list_create();
 	} else {
-		if(_shortest_job(&RUNNING_ESI,next_esi)){
-			long* next_esi = list_remove(READY_ESI_LIST, 0);
+		if(_shortest_job(next_esi,&RUNNING_ESI)){
+		    long* next_esi = list_remove(READY_ESI_LIST, 0);
+		    list_add_id(READY_ESI_LIST, RUNNING_ESI);
 			NEXT_RUNNING_ESI = *next_esi;
 			log_debug(logger, "Next ESI to run is ESI%ld", NEXT_RUNNING_ESI);
 		}
