@@ -1,33 +1,37 @@
 #include "sjf_desalojo.h"
 
-void sjf_desa_add_esi(long esi){
+void sjf_desa_add_esi(long esi_id){
 	pthread_mutex_lock(&ready_list_mtx_4);
 	//TODO pasa el mapa de esis, hacer la cuenta , solo hay que pasar el que esta corriendo y el nuevo, si tiene mas prioridad
 	// el nuvo lo pongo a correr sino lo pongo en la lista, en un add no hace falta ver todos los que estan en la cola
-	list_add_id(READY_ESI_LIST, esi);
+	list_add_id(READY_ESI_LIST, esi_id);
+    esi* esi = get_esi_by_id(esi_id);
+    esi->estimacion_ultima_rafaga = estimate_next_cpu_burst(esi);
 	pthread_mutex_unlock(&ready_list_mtx_4);
-	replan_for_new_esi();
+	pthread_mutex_lock(&running_esi_mtx_1);
+	if(RUNNING_ESI != 0){
+        replan_for_new_esi();
+    }
+	pthread_mutex_unlock(&running_esi_mtx_1);
 }
 
 void sjf_desa_block_esi(long block_esi_id){
 	pthread_mutex_lock(&running_esi_mtx_1);
-	pthread_mutex_lock(&next_running_esi_mtx_2);
 	pthread_mutex_lock(&blocked_list_mtx_3);
-	pthread_mutex_lock(&ready_list_mtx_4);
 
-	if(RUNNING_ESI == block_esi_id){
-		sjf_desa_replan();
-	}else{
-		bool equals_esi (long esi_id) {
+    if(RUNNING_ESI == block_esi_id){
+        sjf_desa_replan();
+    }else{
+        bool equals_esi (long esi_id) {
 				  return block_esi_id == esi_id;
 		}
-		list_remove_by_condition(READY_ESI_LIST, (void*) equals_esi);
-	}
+        pthread_mutex_lock(&ready_list_mtx_4);
+        list_remove_by_condition(READY_ESI_LIST, (void*) equals_esi);
+        pthread_mutex_unlock(&ready_list_mtx_4);
+    }
 
-	pthread_mutex_unlock(&ready_list_mtx_4);
 	list_add_id(BLOCKED_ESI_LIST, block_esi_id);
 	pthread_mutex_unlock(&blocked_list_mtx_3);
-	pthread_mutex_unlock(&next_running_esi_mtx_2);
 	pthread_mutex_unlock(&running_esi_mtx_1);
 }
 

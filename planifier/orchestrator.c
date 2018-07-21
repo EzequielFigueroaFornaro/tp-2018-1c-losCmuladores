@@ -133,6 +133,16 @@ void block_esi(long esi_id){
 	}
 }
 
+void finish_running_esi(){
+    switch(algorithm) {
+        case FIFO: fifo_finish_esi(); break;
+        case SJF: sjf_finish_esi(); break;
+        case SJF_DESALOJO: sjf_desa_finish_esi(); break;
+        case HRRN: hrrn_finish_esi(); break;
+        default: fifo_finish_esi(); break;
+    }
+}
+
 void unblock_esi(long esi_id){
 	pthread_mutex_lock(&blocked_list_mtx_3);
 	modificar_estado(esi_id, DESBLOQUEADO);
@@ -157,7 +167,7 @@ void finish_esi(long esi_id){
 			pthread_mutex_unlock(&blocked_list_mtx_3);
 			break;
 		case CORRIENDO:
-			fifo_finish_esi();
+            finish_running_esi();
 			break;
 		default:
 			pthread_mutex_lock(&ready_list_mtx_4);
@@ -174,45 +184,6 @@ void finish_esi(long esi_id){
 	t_list* resources_taken = get_resources_taken_by_esi(esi->id);
 	list_iterate(resources_taken, (void*) free_resource);
 	list_destroy(resources_taken);
-}
-
-long esi_se_va_a_ejecutar(){
-	pthread_mutex_lock(&running_esi_mtx_1);
-	pthread_mutex_lock(&next_running_esi_mtx_2);
-
-
-//	if(RUNNING_ESI != 0) { // hay algo corriendo
-//		pthread_mutex_lock(&esi_map_mtx_6);
-//		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
-//		if (RUNNING_ESI == NEXT_RUNNING_ESI) {
-//			esi->instruction_pointer++;
-//			pthread_mutex_unlock(&esi_map_mtx_6);
-//		} else {
-//			pthread_mutex_unlock(&esi_map_mtx_6);
-//			RUNNING_ESI = NEXT_RUNNING_ESI;
-//			if(RUNNING_ESI != 0) {
-//				modificar_estado(RUNNING_ESI, CORRIENDO);
-//			}
-//		}
-//	} else if (RUNNING_ESI != NEXT_RUNNING_ESI) {
-//		RUNNING_ESI = NEXT_RUNNING_ESI;
-//	}
-
-	if ((RUNNING_ESI == NEXT_RUNNING_ESI) && NEXT_RUNNING_ESI!=0) {
-//		pthread_mutex_lock(&esi_map_mtx_6);
-//		esi* esi = dictionary_get(esi_map, id_to_string(RUNNING_ESI));
-//		pthread_mutex_unlock(&esi_map_mtx_6);
-//		esi->instruction_pointer++;
-	} else {
-		RUNNING_ESI = NEXT_RUNNING_ESI;
-		if(RUNNING_ESI != 0) {
-			modificar_estado(RUNNING_ESI, CORRIENDO);
-		}
-	}
-
-	pthread_mutex_unlock(&next_running_esi_mtx_2);
-	pthread_mutex_unlock(&running_esi_mtx_1);
-	return RUNNING_ESI;
 }
 
 void borrado_de_finish(){

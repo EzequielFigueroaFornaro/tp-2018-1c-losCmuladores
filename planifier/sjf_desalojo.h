@@ -9,7 +9,7 @@
 #include "logging.h"
 #include "orchestrator.h"
 
-void sjf_desa_add_esi(long esi);
+void sjf_desa_add_esi(long esi_id);
 void sjf_desa_block_esi(long block_esi_id);
 void sjf_desa_replan();
 void sjf_desa_finish_esi();
