@@ -54,7 +54,10 @@ void hrrn_replan() {
 	log_info(logger, "Replaning...");
 
 	bool higher_response_ratio(long* esi_id, long* other_esi_id) {
-		return response_ratio(other_esi_id) >= response_ratio(esi_id);
+		float ratio1 = response_ratio(other_esi_id);
+		float ratio2 = response_ratio(esi_id);
+		return ratio1 <= ratio2;
+//		return response_ratio(other_esi_id) >= response_ratio(esi_id);
 	}
 	list_sort(READY_ESI_LIST, (void*) higher_response_ratio);
 	log_info_important(logger, "--HRRN-- Orden de la cola de listos: [%s]", list_join(READY_ESI_LIST));
