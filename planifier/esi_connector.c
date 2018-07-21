@@ -59,6 +59,7 @@ long new_esi(int socket, long esi_size, char* esi_name) {
 	new_esi -> esi_thread = pthread_self();
 	new_esi -> cantidad_de_instrucciones = esi_size;
 	new_esi -> instruction_pointer = 0;
+	new_esi -> anterior_instruction_pointer = 0;
 	char* initial_blocking_resource_value = "";
 	new_esi -> blocking_resource = malloc(sizeof(char) * strlen(initial_blocking_resource_value) + 1);
 	memcpy(new_esi -> blocking_resource, initial_blocking_resource_value, strlen(initial_blocking_resource_value) + 1);

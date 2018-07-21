@@ -45,7 +45,7 @@ void instance_config_destroy(t_instance_config *instance_config);
 pthread_t start_dump_interval();
 
 //Global variables.
-t_log * logger = NULL;
+extern t_log * logger;
 t_instance_config *instance_config = NULL;
 t_entry_table* entries_table = NULL;
 int coordinator_socket;

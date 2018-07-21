@@ -21,6 +21,8 @@ pthread_mutex_t atomic_operation = PTHREAD_MUTEX_INITIALIZER;
 
 bool instance_running = true;
 
+t_log * logger;
+
 void _exit_with_error(char *error_msg, ...);
 void _entry_table_log_data(t_entry_table *entry_table);
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
@@ -177,7 +179,6 @@ void signal_handler(int sig){
     	log_info(logger, "Caught signal for Ctrl+C");
     	close(coordinator_socket);
     	instance_running = false;
-    	exit_gracefully(0);
     }
 }
 
@@ -239,38 +240,36 @@ void wait_for_key_value_requests(int socket) {
 	char* key;
 	int key_received = recv_string(socket, &key);
 	if (key_received == 0) {
-		_exit_with_error("[KeyInfoRequest] Coordinator has disconnected!");
-	}
-	if (key_received < 0) {
+		log_error(logger, "[KeyInfoRequest] Coordinator has disconnected!");
+		instance_running = false;
+	} else if (key_received < 0) {
 		log_error(logger, "[KeyInfoRequest] Could not receive key");
-		return;
-	}
-	char* value = entry_table_get(entries_table, key);
-	if (value != NULL) {
-		int value_size = strlen(value) + 1;
-		int buffer_size = sizeof(execution_result) + sizeof(int) + value_size;
-		void* buffer = malloc(buffer_size);
-		void* offset = buffer;
-		execution_result result = KEY_VALUE_FOUND;
-		concat_value(&offset, &result, sizeof(execution_result));
-		concat_string(&offset, value, value_size);
-
-		if (send(socket, buffer, buffer_size, 0) < 0) {
-			log_error(logger, "[KeyInfoRequest] Could not send value");
-			return;
-		}
 	} else {
-		execution_result result = KEY_VALUE_NOT_FOUND;
-		if (send(socket, &result, sizeof(execution_result), 0) < 0) {
-			log_error(logger,
-					"[KeyInfoRequest] Could not send key value not found message");
-			return;
+		char* value = entry_table_get(entries_table, key);
+		if (value != NULL) {
+			int value_size = strlen(value) + 1;
+			int buffer_size = sizeof(execution_result) + sizeof(int) + value_size;
+			void* buffer = malloc(buffer_size);
+			void* offset = buffer;
+			execution_result result = KEY_VALUE_FOUND;
+			concat_value(&offset, &result, sizeof(execution_result));
+			concat_string(&offset, value, value_size);
+
+			if (send(socket, buffer, buffer_size, 0) < 0) {
+				log_error(logger, "[KeyInfoRequest] Could not send value");
+			}
+			free(buffer);
+		} else {
+			execution_result result = KEY_VALUE_NOT_FOUND;
+			if (send(socket, &result, sizeof(execution_result), 0) < 0) {
+				log_error(logger,
+						"[KeyInfoRequest] Could not send key value not found message");
+			}
 		}
 	}
 }
 
 int instance_run(int argc, char* argv[]) {
-	init_logger();
 	log_info(logger, "Initializing instance...");
     signal(SIGINT,signal_handler);
 
@@ -286,7 +285,7 @@ int instance_run(int argc, char* argv[]) {
 	free(configuration);
 	t_list *keys_to_load = receive_keys_to_load(coordinator_socket);
 	entry_table_load_list(entries_table, instance_config->mount_path, keys_to_load);
-	list_destroy(keys_to_load);
+	list_destroy_and_destroy_elements(keys_to_load, free);
 
 	log_info(logger, "Initializing instance... OK");
 
@@ -297,9 +296,9 @@ int instance_run(int argc, char* argv[]) {
 
 		message_type request = recv_message(coordinator_socket);
 		if (request == 0) {
-			_exit_with_error("Coordinator has disconnected!");
-		}
-		if (request == PROCESS_SENTENCE) {
+			log_error(logger, "Coordinator has disconnected!");
+			instance_running = false;
+		} else if (request == PROCESS_SENTENCE) {
 			t_sentence* sentence = wait_for_statement(coordinator_socket);
 			if (NULL != sentence) {
 				pthread_mutex_lock(&atomic_operation);
@@ -334,6 +333,7 @@ int instance_run(int argc, char* argv[]) {
 		}
 	}
 
+	log_info(logger, "Waiting dump thread to finish");
 	pthread_join(dump_thread, NULL);
 	exit_gracefully(1);
 	return 0;
