@@ -118,7 +118,9 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *value = entry_table_get(entry_table, key);
+
 	int length = _calculate_value_length(value);
+
 	_entry_table_replacement_add(entry_table, key, length);
 	free(value);
 
@@ -218,7 +220,11 @@ char* _make_full_file_name(char *mount_path, char *key) {
 }
 
 int _calculate_value_length(char *value) {
-	return strlen(value);
+	if (value == NULL) {
+		return 0;
+	} else {
+		return strlen(value);
+	}
 }
 
 int _calculate_value_length_entries_count(t_entry_table * table, int value_len) {
@@ -356,7 +362,9 @@ void _entry_table_move_entry(t_entry_table *entry_table, t_entry * entry, int de
 }
 
 void _entry_table_replacement_add(t_entry_table *entry_table, char *key, int value_length) {
-	if (_is_atomic(entry_table, key)) {
+	if (value_length == 0) {
+			log_debug(logger, "Skipping add key %s to replacement list because is is empty", key);
+	} else if (_is_atomic(entry_table, key)) {
 		log_debug(logger, "Adding key %s to replacement list", key);
 		replacement_add(entry_table->replacement, key, value_length);
 		//replacement_log_debug(table->replacement);
