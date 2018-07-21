@@ -25,7 +25,6 @@
         <entry file="file://$PROJECT_DIR$/planifier_structures.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="336">
-
               <caret line="21" column="0" lean-forward="false" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
               <folding />
             </state>
@@ -336,7 +335,7 @@
     <option name="totallyTimeSpent" value="6217000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1920" height="1053" extended-state="1" />
+    <frame x="0" y="0" width="1920" height="1053" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18613139" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -450,7 +449,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="359">
           <caret line="42" column="18" lean-forward="false" selection-start-line="42" selection-start-column="10" selection-end-line="42" selection-end-column="18" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -539,7 +537,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="359">
           <caret line="42" column="18" lean-forward="false" selection-start-line="42" selection-start-column="10" selection-end-line="42" selection-end-column="18" />
-          <folding />
         </state>
       </provider>
     </entry>
