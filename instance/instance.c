@@ -240,32 +240,31 @@ void wait_for_key_value_requests(int socket) {
 	char* key;
 	int key_received = recv_string(socket, &key);
 	if (key_received == 0) {
-		_exit_with_error("[KeyInfoRequest] Coordinator has disconnected!");
-	}
-	if (key_received < 0) {
+		log_error(logger, "[KeyInfoRequest] Coordinator has disconnected!");
+		instance_running = false;
+	} else if (key_received < 0) {
 		log_error(logger, "[KeyInfoRequest] Could not receive key");
-		return;
-	}
-	char* value = entry_table_get(entries_table, key);
-	if (value != NULL) {
-		int value_size = strlen(value) + 1;
-		int buffer_size = sizeof(execution_result) + sizeof(int) + value_size;
-		void* buffer = malloc(buffer_size);
-		void* offset = buffer;
-		execution_result result = KEY_VALUE_FOUND;
-		concat_value(&offset, &result, sizeof(execution_result));
-		concat_string(&offset, value, value_size);
-
-		if (send(socket, buffer, buffer_size, 0) < 0) {
-			log_error(logger, "[KeyInfoRequest] Could not send value");
-			return;
-		}
 	} else {
-		execution_result result = KEY_VALUE_NOT_FOUND;
-		if (send(socket, &result, sizeof(execution_result), 0) < 0) {
-			log_error(logger,
-					"[KeyInfoRequest] Could not send key value not found message");
-			return;
+		char* value = entry_table_get(entries_table, key);
+		if (value != NULL) {
+			int value_size = strlen(value) + 1;
+			int buffer_size = sizeof(execution_result) + sizeof(int) + value_size;
+			void* buffer = malloc(buffer_size);
+			void* offset = buffer;
+			execution_result result = KEY_VALUE_FOUND;
+			concat_value(&offset, &result, sizeof(execution_result));
+			concat_string(&offset, value, value_size);
+
+			if (send(socket, buffer, buffer_size, 0) < 0) {
+				log_error(logger, "[KeyInfoRequest] Could not send value");
+			}
+			free(buffer);
+		} else {
+			execution_result result = KEY_VALUE_NOT_FOUND;
+			if (send(socket, &result, sizeof(execution_result), 0) < 0) {
+				log_error(logger,
+						"[KeyInfoRequest] Could not send key value not found message");
+			}
 		}
 	}
 }
@@ -297,9 +296,9 @@ int instance_run(int argc, char* argv[]) {
 
 		message_type request = recv_message(coordinator_socket);
 		if (request == 0) {
-			_exit_with_error("Coordinator has disconnected!");
-		}
-		if (request == PROCESS_SENTENCE) {
+			log_error(logger, "Coordinator has disconnected!");
+			instance_running = false;
+		} else if (request == PROCESS_SENTENCE) {
 			t_sentence* sentence = wait_for_statement(coordinator_socket);
 			if (NULL != sentence) {
 				pthread_mutex_lock(&atomic_operation);
