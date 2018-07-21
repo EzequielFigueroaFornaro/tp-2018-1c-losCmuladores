@@ -128,6 +128,7 @@ int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) 
 int entry_table_load(t_entry_table * entry_table, char* mount_path, char *key) {
 	char *file_name = _make_full_file_name(mount_path, key);
 	char *value = file_system_read(file_name);
+	free(file_name);
 	int result = 1;
 	if (NULL == value) {
 		log_debug(logger, "Skipping load key %s. Not found in disk", key);

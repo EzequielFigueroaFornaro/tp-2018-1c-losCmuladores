@@ -21,6 +21,8 @@ pthread_mutex_t atomic_operation = PTHREAD_MUTEX_INITIALIZER;
 
 bool instance_running = true;
 
+t_log * logger;
+
 void _exit_with_error(char *error_msg, ...);
 void _entry_table_log_data(t_entry_table *entry_table);
 t_replacement_algorithm _replacement_algorithm_to_enum(char *replacement);
@@ -177,7 +179,6 @@ void signal_handler(int sig){
     	log_info(logger, "Caught signal for Ctrl+C");
     	close(coordinator_socket);
     	instance_running = false;
-    	exit_gracefully(0);
     }
 }
 
@@ -270,7 +271,6 @@ void wait_for_key_value_requests(int socket) {
 }
 
 int instance_run(int argc, char* argv[]) {
-	init_logger();
 	log_info(logger, "Initializing instance...");
     signal(SIGINT,signal_handler);
 
@@ -286,7 +286,7 @@ int instance_run(int argc, char* argv[]) {
 	free(configuration);
 	t_list *keys_to_load = receive_keys_to_load(coordinator_socket);
 	entry_table_load_list(entries_table, instance_config->mount_path, keys_to_load);
-	list_destroy(keys_to_load);
+	list_destroy_and_destroy_elements(keys_to_load, free);
 
 	log_info(logger, "Initializing instance... OK");
 
@@ -334,6 +334,7 @@ int instance_run(int argc, char* argv[]) {
 		}
 	}
 
+	log_info(logger, "Waiting dump thread to finish");
 	pthread_join(dump_thread, NULL);
 	exit_gracefully(1);
 	return 0;
