@@ -269,10 +269,19 @@ void wait_for_key_value_requests(int socket) {
 	}
 }
 
+void assert_not_blank(char* msg, char* arg) {
+	if (arg == NULL || string_is_empty(arg)) {
+		log_error(logger, msg);
+		log_destroy(logger);
+		exit(1);
+	}
+}
+
 int instance_run(int argc, char* argv[]) {
 	log_info(logger, "Initializing instance...");
     signal(SIGINT,signal_handler);
 
+    assert_not_blank("Archivo de configuracion requerido!", argv[1]);
 	instance_config = load_configuration(argv[1]);
 	create_mount_path(instance_config->mount_path);
 

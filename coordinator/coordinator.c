@@ -274,7 +274,7 @@ void configure_logger() {
 }
 
 void exit_gracefully(int code) {
-	config_destroy(config);
+	if (config != NULL) config_destroy(config);
 	log_destroy(logger);
 	free(instance_configuration);
 
@@ -499,12 +499,21 @@ int notify_sentence_and_ise_to_planifier(int operation_id, char* key, long ise_i
 	//return OK;
 }
 
+void assert_not_blank(char* msg, char* arg) {
+	if (arg == NULL || string_is_empty(arg)) {
+		log_error(logger, msg);
+		exit_gracefully(1);
+	}
+}
+
 int main(int argc, char* argv[]) {
 	instances_thread_list = list_create();
 	ise_thread_list = list_create();
 	configure_logger();
     signal(SIGINT,signal_handler);
 	log_info(logger, "Initializing...");
+
+	assert_not_blank("Archivo de configuracion requerido!", argv[1]);
 	load_configuration(argv[1]);
 
 	pthread_mutex_t instances_mtx_aux = PTHREAD_MUTEX_INITIALIZER;

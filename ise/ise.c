@@ -12,8 +12,8 @@ void assert_not_blank(char* msg, char* arg);
 int main(int argc, char* argv[]) {
 	init_logger();
 
-	assert_not_blank("Configuration file required!", argv[1]);
-	assert_not_blank("Script file required!", argv[2]);
+	assert_not_blank("Archivo de configuracion requerido!", argv[1]);
+	assert_not_blank("Script requerido!", argv[2]);
 
 	load_config(argv[1]);
 	load_script(argv[2]);

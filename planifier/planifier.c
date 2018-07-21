@@ -155,8 +155,19 @@ void try_to_block_resource(char* resource, long esi_id){
 		send_execution_result_to_coordinator(KEY_BLOCKED);
 	}
 }
+
+void assert_not_blank(char* msg, char* arg) {
+	if (arg == NULL || string_is_empty(arg)) {
+		log_error(logger, msg);
+		log_destroy(logger);
+		exit(1);
+	}
+}
+
 int main(int argc, char* argv[]) {
 	init_logger();
+
+	assert_not_blank("Archivo de configuracion requerido!", argv[1]);
 	load_configuration(argv[1]);
 
 	init_dispatcher();
