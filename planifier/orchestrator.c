@@ -198,12 +198,12 @@ void finish_esi(long esi_id){
 	}
 }
 
+
 void borrado_de_finish(){
 	pthread_mutex_lock(&finished_list_mtx_5);
 	log_debug(logger, "Deleting finished ESIs... Found %d to delete: [%s]", queue_size(FINISHED_ESI_LIST), list_join(FINISHED_ESI_LIST->elements));
 	while(!queue_is_empty(FINISHED_ESI_LIST)){
 		long* esi_to_be_freed = queue_pop(FINISHED_ESI_LIST);
-
 		pthread_mutex_lock(&esi_map_mtx_6);
 		esi* selected_esi = (esi*) dictionary_remove(esi_map, id_to_string(*esi_to_be_freed)); /*como mierda liberar el espacio del esi*/
 		free(selected_esi);
@@ -305,7 +305,7 @@ t_list* buscar_deadlock(){
 	pthread_mutex_lock(&DEADLOCK_ENCONTRADO_MUTEX);
 	for(int i=0; i<list_size(BLOCKED_ESI_LIST); i++){
 		long* esi_id = list_get(BLOCKED_ESI_LIST , i);
-		log_debug(logger, "Buscando dependencia circular para ESI id: %lu", *esi_id);
+		log_debug(logger, "Buscando dependencia circular para ESI id: %ld", *esi_id);
 		DEADLOCK_ENCONTRADO = false;
 		t_list* bloqueados = buscar_deadlock_en_lista(*esi_id, list_create());
 		for(int j=0; j<list_size(bloqueados); j++) {
