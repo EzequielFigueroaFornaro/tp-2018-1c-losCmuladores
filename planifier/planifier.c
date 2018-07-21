@@ -120,7 +120,7 @@ t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id) {
         if (recv_string(socket_id, &sentence->resource) > 0) {
             if (recv_long(socket_id, &sentence->esi_id) > 0) {
                 char *sentence_str = planifier_sentence_to_string(sentence);
-                log_info(logger, "Sentence successfully received: %s", sentence_str);
+                log_info_highlight(logger, "Sentence successfully received: %s", sentence_str);
                 free(sentence_str);
                 return sentence;
             } else {

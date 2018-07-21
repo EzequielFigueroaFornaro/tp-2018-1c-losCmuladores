@@ -13,6 +13,10 @@ void hrrn_add_esi(long esi_id) {
 	esi* esi = get_esi_by_id(esi_id);
 	esi->ultima_entrada_a_ready = get_current_time();
 	esi->estimacion_ultima_rafaga = estimate_next_cpu_burst(esi);
+	log_info_highlight(logger,
+			"--HRRN--Se agrego el %s a la cola de listos. tiempo de entrada: %ld, ultima refaga: %2.2f",
+			esi->nombre, esi->ultima_entrada_a_ready,
+			esi->estimacion_ultima_rafaga);
 	pthread_mutex_unlock(&ready_list_mtx_4);
 }
 
@@ -39,11 +43,10 @@ float response_ratio(long* esi_id) {
 	esi* esi = get_esi_by_id(*esi_id);
 	float esi_estimated_burst = esi->estimacion_ultima_rafaga;
 	long time_when_it_would_execute = get_current_time() + 1;
-	log_debug(logger, "--HRRN-- tiempo en el que seria ejecutado: %ld", time_when_it_would_execute);
+	log_debug(logger, "--HRRN-- %s: tiempo en el que seria ejecutado: %ld", esi->nombre, time_when_it_would_execute);
 	int time_waiting = time_when_it_would_execute - esi->ultima_entrada_a_ready;
 	float response_ratio = (time_waiting + esi_estimated_burst) / esi_estimated_burst;
-	log_debug(logger, "--HRRN-- ESI%ld: S = %2.5f, W = %d", *esi_id, esi_estimated_burst, time_waiting);
-	log_debug(logger, "--HRRN-- ESI%ld's response ratio is %2.5f", *esi_id, response_ratio);
+	log_info_highlight(logger, "--HRRN-- %s: S = %2.2f, W = %d, RR = %2.2f", esi->nombre, esi_estimated_burst, time_waiting, response_ratio);
 	return response_ratio;
 }
 

@@ -30,11 +30,11 @@ void atomic_execution() {
 bool valid_esi_status(esi* esi) {
 	if (esi->estado == BLOQUEADO) {
 		if (NEXT_RUNNING_ESI == 0) {
-			log_info(logger, "El ESI%ld fue desalojado y la cola de listos esta vacia, durmiendo...", esi->id);
+			log_info(logger, "El ESI%ld fue desalojado/bloqueado y la cola de listos esta vacia, durmiendo...", esi->id);
 //			unlock_next_and_running_semaphores();
 			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
 		} else {
-			log_info(logger, "El ESI%ld fue desalojado, se sigue con el siguiente ESI...", esi->id);
+			log_info(logger, "El ESI%ld fue desalojado/bloqueado, se sigue con el siguiente ESI...", esi->id);
 //			unlock_next_and_running_semaphores();
 			pthread_mutex_unlock(&dispatcher_manager);
 		}
