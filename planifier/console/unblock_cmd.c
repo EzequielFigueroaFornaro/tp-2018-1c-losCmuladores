@@ -35,7 +35,7 @@ command_result unblock_cmd(command command) {
 		pthread_mutex_lock(&esi_map_mtx_6);
 
 		long* esi_id = queue_pop(esis);
-		while ((!is_valid_esi(*esi_id)) && esi_id!=null) {
+		while ((!is_valid_esi(*esi_id)) && esi_id!=NULL) {
 			esi_id = queue_pop(esis);
 		}
 		if(esi_id!=NULL) {
