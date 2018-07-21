@@ -46,10 +46,10 @@ bool _shortest_job(long* esi_id, long* other_esi_id){
 //	long remanente_del_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //	long remanente_del_otro_esi = (_esi -> cantidad_de_instrucciones) - (_esi -> cantidad_de_instrucciones);
 //	return (remanente_del_esi > remanente_del_otro_esi) || (remanente_del_esi == remanente_del_otro_esi && (other_esi->estado)==DESBLOQUEADO);
-	int rafaga_estimada_esi = estimate_next_cpu_burst(_esi);
-	int rafaga_estimada_other_esi = estimate_next_cpu_burst(other_esi);
-	return (rafaga_estimada_other_esi > rafaga_estimada_esi)
-			|| (rafaga_estimada_esi == rafaga_estimada_other_esi
+	//int rafaga_estimada_esi = estimate_next_cpu_burst(_esi);
+	//int rafaga_estimada_other_esi = estimate_next_cpu_burst(other_esi);
+	return (other_esi->estimacion_ultima_rafaga > _esi->estimacion_ultima_rafaga)
+			|| (_esi->estimacion_ultima_rafaga == other_esi->estimacion_ultima_rafaga
 							&& _esi->estado == DESBLOQUEADO);
 }
 
