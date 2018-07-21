@@ -10,20 +10,6 @@
 bool paused = false;
 bool permission_to_block_acquired = false;
 
-void acquire_dispatcher() {
-	pthread_mutex_lock(&dispatcher_manager);
-}
-
-void acquire_next_and_running_semaphores() {
-	pthread_mutex_lock(&running_esi_mtx_1);
-	pthread_mutex_lock(&next_running_esi_mtx_2);
-}
-
-void unlock_next_and_running_semaphores() {
-	pthread_mutex_unlock(&next_running_esi_mtx_2);
-	pthread_mutex_unlock(&running_esi_mtx_1);
-}
-
 void atomic_execution() {
 	if (paused) {
 		pthread_cond_signal(&paused_planification);
@@ -75,62 +61,151 @@ void dispatch() {
 		log_info(logger, "Esperando para despachar...");
 		acquire_dispatcher();
 
-		long current_esi = esi_se_va_a_ejecutar();
-		if (current_esi == 0) {
-			log_info(logger, "Cola de listos vacia, durmiendo...");
-			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
-//			unlock_next_and_running_semaphores();
-			continue;
-		}
-
-		esi* esi = get_esi_by_id(current_esi);
-		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
-//			unlock_next_and_running_semaphores();
-			pthread_mutex_unlock(&dispatcher_manager);
-
-			log_info_important(logger, "%s (id: %ld) finalizo su ejecucion!", esi->nombre, esi->id);
-			finish_esi(esi->id);
-			continue;
-		}
-
 		atomic_execution();
-		if (!valid_esi_status(esi)) {
-			continue;
+
+		if (RUNNING_ESI == 0) {
+			replan_by_algorithm();
 		}
+
+		RUNNING_ESI = NEXT_RUNNING_ESI;
+		modificar_estado(RUNNING_ESI, CORRIENDO);
+		esi* esi = get_esi_by_id(RUNNING_ESI);
+		esi->instruction_pointer++;
+
 		if (send_esi_to_run(esi->id)) {
-			log_info_highlight(logger, "Se dio aviso a %s (id: %ld) para que ejecute", esi->nombre, esi->id);
+			log_info_highlight(logger,
+					"Se dio aviso a %s (id: %ld) para que ejecute", esi->nombre,
+					esi->id);
 		} else {
-//			unlock_next_and_running_semaphores();
+			//			unlock_next_and_running_semaphores();
 			pthread_mutex_unlock(&dispatcher_manager);
 
-			log_error(logger, "Error al avisar a %s (id: %ld) que corra", esi->nombre, esi->id);
+			log_error(logger, "Error al avisar a %s (id: %ld) que corra",
+					esi->nombre, esi->id);
 			finish_esi(RUNNING_ESI);
 			continue;
 		}
 
-		log_info(logger, "Esperando resultado de ejecucion de %s (id: %ld)...", esi->nombre, esi->id);
+		log_info(logger, "Esperando resultado de ejecucion de %s (id: %ld)...",
+				esi->nombre, esi->id);
 		int result;
 		if (!wait_execution_result(RUNNING_ESI, &result)) {
-//			unlock_next_and_running_semaphores();
+			//			unlock_next_and_running_semaphores();
 			pthread_mutex_unlock(&dispatcher_manager);
 
-			log_error(logger, "No se pudo recibir el resultado de ejecucion de %s (id: %ld)", esi->nombre, esi->id);
+			log_error(logger,
+					"No se pudo recibir el resultado de ejecucion de %s (id: %ld)",
+					esi->nombre, esi->id);
 			finish_esi(RUNNING_ESI);
 			continue;
 		}
 
-		log_info_highlight(logger, "Resultado de ejecucion de %s (id: %ld): %s", esi->nombre, esi->id, get_execution_result_description(result));
+		log_info_highlight(logger, "Resultado de ejecucion de %s (id: %ld): %s",
+				esi->nombre, esi->id, get_execution_result_description(result));
 		check_execution_error(result);
 
 		log_info(logger, "Incrementando clock de CPU (actual: %ld)", get_current_time());
 		cpu_time_incrementate();
-		log_debug(logger, "Clock de CPU incrementado (ahora es: %ld)", get_current_time());
+		log_debug(logger, "Clock de CPU incrementado (ahora es: %ld)",get_current_time());
 		borrado_de_finish();
 
-//		unlock_next_and_running_semaphores();
+
+		if(RUNNING_ESI != NEXT_RUNNING_ESI && NEXT_RUNNING_ESI != 0 && esi->estado == BLOQUEADO) {
+			log_info(logger, "El ESI%ld fue desalojado, se continua con el proximo ESI", esi->id);
+			pthread_mutex_unlock(&dispatcher_manager);
+			continue;
+		}
+
+		// RUNNING_ESI == NEXT_RUNNING_ESI {
+
+		if(NEXT_RUNNING_ESI == 0) {
+			if (esi->estado == BLOQUEADO) {
+				log_info(logger, "El ESI%ld fue desalojado y la cola de listos esta vacia, durmiendo...", esi->id);
+			}
+			RUNNING_ESI = 0;
+			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
+			continue;
+		}
+
+		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
+			log_info_important(logger, "%s (id: %ld) finalizo su ejecucion!",
+					esi->nombre, esi->id);
+			finish_esi(esi->id);
+			if (NEXT_RUNNING_ESI == 0) {
+				RUNNING_ESI = 0;
+				// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
+				log_info(logger, "Finalizo el ultimo ESI (id: %ld) y no hay mas ESIs en la cola de listos...", esi->id);
+				continue;
+			}
+		} else {
+			log_info_important(logger,
+					"El ESI%ld aun no termino, van %d/%d instrucciones",
+					esi->id, esi->instruction_pointer, esi->cantidad_de_instrucciones);
+		}
 		pthread_mutex_unlock(&dispatcher_manager);
 	}
 }
+
+
+//while(true) {
+//		log_info(logger, "Esperando para despachar...");
+//		acquire_dispatcher();
+//
+//		long current_esi = esi_se_va_a_ejecutar();
+//		if (current_esi == 0) {
+//			log_info(logger, "Cola de listos vacia, durmiendo...");
+//			// No deslockeo dispatcher_manager para que se lockee en la proxima iteracion
+////			unlock_next_and_running_semaphores();
+//			continue;
+//		}
+//
+//		esi* esi = get_esi_by_id(current_esi);
+//		if (esi->instruction_pointer == esi->cantidad_de_instrucciones) {
+////			unlock_next_and_running_semaphores();
+//			pthread_mutex_unlock(&dispatcher_manager);
+//
+//			log_info_important(logger, "%s (id: %ld) finalizo su ejecucion!", esi->nombre, esi->id);
+//			finish_esi(esi->id);
+//			continue;
+//		}
+//
+//		atomic_execution();
+//		if (!valid_esi_status(esi)) {
+//			continue;
+//		}
+//		if (send_esi_to_run(esi->id)) {
+//			log_info_highlight(logger, "Se dio aviso a %s (id: %ld) para que ejecute", esi->nombre, esi->id);
+//		} else {
+////			unlock_next_and_running_semaphores();
+//			pthread_mutex_unlock(&dispatcher_manager);
+//
+//			log_error(logger, "Error al avisar a %s (id: %ld) que corra", esi->nombre, esi->id);
+//			finish_esi(RUNNING_ESI);
+//			continue;
+//		}
+//
+//		log_info(logger, "Esperando resultado de ejecucion de %s (id: %ld)...", esi->nombre, esi->id);
+//		int result;
+//		if (!wait_execution_result(RUNNING_ESI, &result)) {
+////			unlock_next_and_running_semaphores();
+//			pthread_mutex_unlock(&dispatcher_manager);
+//
+//			log_error(logger, "No se pudo recibir el resultado de ejecucion de %s (id: %ld)", esi->nombre, esi->id);
+//			finish_esi(RUNNING_ESI);
+//			continue;
+//		}
+//
+//		log_info_highlight(logger, "Resultado de ejecucion de %s (id: %ld): %s", esi->nombre, esi->id, get_execution_result_description(result));
+//		check_execution_error(result);
+//
+//		log_info(logger, "Incrementando clock de CPU (actual: %ld)", get_current_time());
+//		cpu_time_incrementate();
+//		log_debug(logger, "Clock de CPU incrementado (ahora es: %ld)", get_current_time());
+//		borrado_de_finish();
+//
+////		unlock_next_and_running_semaphores();
+//		pthread_mutex_unlock(&dispatcher_manager);
+//	}
 
 void init_dispatcher() {
 	acquire_dispatcher();
@@ -140,7 +215,6 @@ void init_dispatcher() {
 		exit_gracefully(EXIT_FAILURE);
 	}
 }
-
 
 void pause_dispatcher() {
 	paused = true;
@@ -168,3 +242,17 @@ void release_permission_to_block() {
 	pthread_cond_signal(&permission_to_block_released);
 	pthread_mutex_unlock(&permission_to_block_manager);
 }
+
+void acquire_dispatcher() {
+	pthread_mutex_lock(&dispatcher_manager);
+}
+
+//void acquire_next_and_running_semaphores() {
+//	pthread_mutex_lock(&running_esi_mtx_1);
+//	pthread_mutex_lock(&next_running_esi_mtx_2);
+//}
+//
+//void unlock_next_and_running_semaphores() {
+//	pthread_mutex_unlock(&next_running_esi_mtx_2);
+//	pthread_mutex_unlock(&running_esi_mtx_1);
+//}

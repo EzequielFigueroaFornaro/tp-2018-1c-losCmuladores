@@ -62,6 +62,7 @@ long new_esi(int socket, long esi_size, char* esi_name) {
 	char* initial_blocking_resource_value = "";
 	new_esi -> blocking_resource = malloc(sizeof(char) * strlen(initial_blocking_resource_value) + 1);
 	memcpy(new_esi -> blocking_resource, initial_blocking_resource_value, strlen(initial_blocking_resource_value) + 1);
+	new_esi -> estimacion_ultima_rafaga = initial_estimation;
 
 	add_esi(new_esi);
 

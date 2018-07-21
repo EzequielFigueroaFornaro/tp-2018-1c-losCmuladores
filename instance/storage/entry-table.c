@@ -19,8 +19,8 @@ int _calculate_value_length(char *value);
 int _calculate_value_length_entries_count(t_entry_table * table, int value_len);
 int _calculate_value_entries_count(t_entry_table * table, char *value);
 char* _calculate_data_address(t_entry_table * table, int index);
-void _copy_value_in_data(t_entry_table * table, char *value, int index_data);
-char* _get_value_from_data(t_entry_table * table, int index_data);
+void _copy_value_in_data(t_entry_table * table, char *value, int value_length, int index_data);
+char* _get_value_from_data(t_entry_table * table, int value_length, int index_data);
 void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *value, int index);
 bool _is_atomic(t_entry_table *entry_table, char *key);
 int _entry_table_try_put(t_entry_table * table, char *key, char *value);
@@ -35,7 +35,7 @@ t_entry* _entry_table_find_first_entry_by_index(t_entry_table *entry_table, int 
 
 
 t_entry_table *entry_table_create(int max_entries, size_t entry_size, t_replacement_algorithm algorithm) {
-	size_t data_size = max_entries * entry_size + max_entries;
+	size_t data_size = max_entries * entry_size;
 
 	t_dictionary *entries = dictionary_create();
 	t_availability *availability = availability_create(max_entries);
@@ -97,7 +97,7 @@ char* entry_table_get(t_entry_table * entry_table, char *key) {
 	t_dictionary* entries = entry_table->entries;
 	if (dictionary_has_key(entries, key)) {
 		t_entry *entry = (t_entry*) dictionary_get(entries, key);
-		return _get_value_from_data(entry_table, entry->index);
+		return _get_value_from_data(entry_table, entry->length, entry->index);
 	} else {
 		return NULL;
 	}
@@ -110,7 +110,7 @@ void entry_table_remove(t_entry_table * entry_table, char *key) {
 	dictionary_remove_and_destroy(entry_table->entries, key, free);
 
 	replacement_remove(entry_table->replacement, key);
-	replacement_log_debug(entry_table->replacement);
+	// replacement_log_debug(entry_table->replacement);
 }
 
 int entry_table_store(t_entry_table * entry_table, char* mount_path, char *key) {
@@ -219,7 +219,7 @@ char* _make_full_file_name(char *mount_path, char *key) {
 }
 
 int _calculate_value_length(char *value) {
-	return strlen(value) + 1;
+	return strlen(value);
 }
 
 int _calculate_value_length_entries_count(t_entry_table * table, int value_len) {
@@ -237,18 +237,22 @@ int _calculate_value_entries_count(t_entry_table * table, char *value) {
 }
 
 char* _calculate_data_address(t_entry_table * table, int index) {
-	int offset = sizeof(char) * (table->entry_size * index + index);
+	int offset = sizeof(char) * table->entry_size * index;
 	return table->data + offset;
 }
 
-void _copy_value_in_data(t_entry_table * table, char *value, int index_data) {
+void _copy_value_in_data(t_entry_table * table, char *value, int value_length, int index_data) {
 	char *data_address = _calculate_data_address(table, index_data);
-	strcpy(data_address, value);
+	memcpy(data_address, value, value_length);
 }
 
-char* _get_value_from_data(t_entry_table * table, int index_data) {
+char* _get_value_from_data(t_entry_table * table, int value_length, int index_data) {
 	char *data_address = _calculate_data_address(table, index_data);
-	return strdup(data_address);
+	int size = value_length + 1;
+	char *value = malloc(sizeof(char) * size);
+	memcpy(value, data_address, sizeof(char) * size);
+	*(value + size - 1) = '\0';
+	return value;
 }
 
 void _add_entry_in_table_dictionary(t_entry_table * table, char *key, char *value, int index) {
@@ -280,7 +284,7 @@ int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) 
 		int start_index_to_free = index + entries_new_value;
 		int entries_to_free = entries_old_value - entries_new_value;
 		availability_free_space(entry_table->availability, start_index_to_free, entries_to_free);
-		_copy_value_in_data(entry_table, new_value, index);
+		_copy_value_in_data(entry_table, new_value, entry->length, index);
 		entry->length = _calculate_value_length(new_value);
 
 		replacement_add(entry_table->replacement, key, entry->length);
@@ -292,16 +296,17 @@ int _entry_table_update(t_entry_table *entry_table, char *key, char *new_value) 
 }
 
 int _entry_table_try_put(t_entry_table * table, char *key, char *value) {
+	int value_length = _calculate_value_length(value);
 	int entries_needed = _calculate_value_entries_count(table, value);
 	int index = availability_find_free_countinuous_index(table->availability, entries_needed);
 	if (index >= 0) {
 		availability_take_space(table->availability, index, entries_needed);
-		_copy_value_in_data(table, value, index);
+		_copy_value_in_data(table, value, value_length, index);
 		_add_entry_in_table_dictionary(table, key, value, index);
 		if (_is_atomic(table, key)) {
 			log_debug(logger, "Adding key %s to replacement list", key);
 			replacement_add(table->replacement, key, _calculate_value_length(value));
-			replacement_log_debug(table->replacement);
+			//replacement_log_debug(table->replacement);
 		} else {
 			log_debug(logger, "Skipping add key %s to replacement list because is not atomic", key);
 		}
