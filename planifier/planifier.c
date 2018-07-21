@@ -116,7 +116,7 @@ t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id) {
 
 	t_planifier_sentence *sentence = planifier_sentence_create();
 
-    if (recv_sentence_operation(socket_id, &sentence->operation_id) > 0) {
+    if (recv_int(socket_id, &sentence->operation_id) > 0) {
         if (recv_string(socket_id, &sentence->resource) > 0) {
             if (recv_long(socket_id, &sentence->esi_id) > 0) {
                 char *sentence_str = planifier_sentence_to_string(sentence);
