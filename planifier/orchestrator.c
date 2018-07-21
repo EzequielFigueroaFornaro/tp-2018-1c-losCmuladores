@@ -121,8 +121,12 @@ void block_esi(long esi_id){
 
 	pthread_mutex_lock(&esi_map_mtx_6);
 	esi* selected_esi = (esi*) dictionary_get(esi_map, id_to_string(esi_id));
-	selected_esi -> duracion_real_ultima_rafaga = selected_esi -> instruction_pointer - selected_esi -> anterior_instruction_pointer;
-    selected_esi -> anterior_instruction_pointer= selected_esi -> instruction_pointer;
+	selected_esi->duracion_real_ultima_rafaga = selected_esi -> instruction_pointer - selected_esi -> anterior_instruction_pointer;
+	if (selected_esi->anterior_instruction_pointer != 0) {
+		selected_esi->duracion_real_ultima_rafaga++;
+	}
+
+    selected_esi -> anterior_instruction_pointer = selected_esi -> instruction_pointer;
 	log_debug(logger, "Duracion ultima rafaga: %d", selected_esi -> duracion_real_ultima_rafaga);
 	pthread_mutex_unlock(&esi_map_mtx_6);
 
@@ -384,10 +388,10 @@ float estimate_next_cpu_burst(esi* esi) {
         esi->estimacion_ultima_rafaga = estimated_cpu_burst;
 	} else if (esi->estado == DESBLOQUEADO) {
 		log_debug(logger,
-				"Recalculando rafaga estimada del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
-				esi->id,
-				esi->duracion_real_ultima_rafaga,
-				esi->estimacion_ultima_rafaga);
+						"Recalculando rafaga estimada del ESI%ld: real anterior: %d, estimada anterior: %2.2f",
+						esi->id,
+						esi->duracion_real_ultima_rafaga,
+						esi->estimacion_ultima_rafaga);
 		float alpha_coef = alpha / 100;
 		float last_cpu_burst_coef = esi->duracion_real_ultima_rafaga * alpha_coef;
 		float last_estimated_cpu_burst_coef = (1 - alpha_coef) * esi->estimacion_ultima_rafaga;
