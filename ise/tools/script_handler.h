@@ -14,6 +14,7 @@ typedef struct {
 } t_ise_script;
 
 t_ise_script * script;
+char* script_name;
 
 typedef struct {
 	t_esi_operacion operation;
@@ -33,5 +34,7 @@ t_sentence* map_to_sentence(t_esi_operacion operation);
 long get_script_size();
 
 void set_retry_current_sentence(bool retry);
+
+bool should_retry_current_sentence();
 
 #endif /* SCRIPT_HANDLER_H_ */

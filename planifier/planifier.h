@@ -10,28 +10,32 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
-#include <netdb.h> // Para getaddrinfo
 #include <unistd.h> // Para close
-#include <readline/readline.h> // Para usar readline
 #include <pthread.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <commons/collections/queue.h>
+#include "commons/collections/list.h"
+
 #include "commons-sockets.h"
+#include <types.h>
+#include "logging.h"
+#include <response_codes.h>
+
+#include "orchestrator.h"
+#include "planifier_structures.h"
+#include "exit_handler.h"
+#include "console/console.h"
+#include "console/console_log.h"
+#include "dispatcher.h"
+#include "console/key_info.h"
 
 int server_port;
 int server_max_connections;
-
 int coordinator_port;
-char *coordinator_ip;
-
+char* coordinator_ip;
 int coordinator_socket;
-
-//Global variables.
-t_log * logger;
-
-void configure_logger();
 
 void load_configuration(char *config_file_path);
 
@@ -39,8 +43,10 @@ void connect_to_coordinator();
 
 pthread_t start_console();
 
-void exit_with_error(int socket, char* error_msg);
+t_planifier_sentence* wait_for_statement_from_coordinator(int socket_id);
 
-void esi_connection_handler(int socket);
+void try_to_block_resource(char* resource, long esi_id);
+
+void send_execution_result_to_coordinator(execution_result result);
 
 #endif /* PLANIFIER_H_ */

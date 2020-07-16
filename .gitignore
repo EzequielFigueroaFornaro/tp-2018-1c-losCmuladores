@@ -1,4 +1,4 @@
-# Prerequisites
+﻿# Prerequisites
 *.d
 
 # Object files
@@ -62,7 +62,15 @@ dkms.conf
 *.settings
 *.cproject
 *.project
+.metadata/
+cmake-build-debug/
+*.xml
+*.iml
+
 **/Debug
 
 #GIT
 *.orig
+
+.idea/
+.settings/

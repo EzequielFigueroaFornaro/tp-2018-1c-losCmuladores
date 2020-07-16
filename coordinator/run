@@ -2,4 +2,6 @@
 run_dir="$(dirname "$0")"
 cd "$run_dir"
 export LD_LIBRARY_PATH="../commons-library"
-./coordinator coordinator.conf
+#CONFIG_FILE=$1
+#./coordinator ${CONFIG_FILE:-coordinator.conf}
+./coordinator $1

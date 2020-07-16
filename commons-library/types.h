@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "commons/string.h"
+#include "commons/collections/dictionary.h"
 
 typedef struct {
 	long entries_size;
@@ -24,6 +25,12 @@ typedef struct {
 	char* key;
 	char* value;
 } t_sentence;
+
+typedef struct {
+	int operation_id;
+	char* resource;
+	long esi_id;
+} t_planifier_sentence;
 
 typedef struct {
 	void* buffer_content;
@@ -42,16 +49,29 @@ typedef int message_type;
 extern message_type MODULE_CONNECTED;
 extern message_type CONNECTION_SUCCESS;
 extern message_type EXECUTION_RESULT;
+extern message_type PROCESS_SENTENCE;
+extern message_type START_COMPACTION;
 extern message_type ISE_STOP;
 extern message_type ISE_EXECUTE;
+extern message_type ISE_KILL;
+extern message_type KEY_INFO_REQUEST;
+extern message_type GET_INSTANCE;
+extern message_type GET_KEY_VALUE;
+extern message_type CALCULATE_INSTANCE;
+extern message_type KEY_INFO_REQUEST_FINISHED;
+extern message_type HEALTH_CHECK;
 
 t_sentence* sentence_create();
 
+t_sentence* sentence_create_with(int operation_id, char* key, char* value);
+
 void sentence_destroy(t_sentence* sentence);
+
+void planifier_sentence_destroy(t_planifier_sentence* sentence);
 
 bool is_valid_operation(int operation);
 
-t_buffer serialize_operation_resource_request(int operation_id, char* key, int ise_id);
+t_buffer serialize_operation_resource_request(int operation_id, char* key, long ise_id);
 
 //Devuelve un buffer y su size a partir de una sentencia.
 t_buffer serialize_sentence(t_sentence* sentence); // TODO [Lu] no deberia devolver un puntero a t_buffer?
@@ -68,5 +88,16 @@ void concat_string(void** mem_address, void* string, int string_length);
 char* get_operation_as_string(int operation_id);
 
 char* sentence_to_string(t_sentence* sentence);
+char* planifier_sentence_to_string(t_planifier_sentence* sentence);
+
+char* get_operation_as_string(int operation_id);
+
+t_planifier_sentence* planifier_sentence_create();
+
+void planifier_sentence_destroy(t_planifier_sentence* sentence);
+
+char* planifier_sentence_to_string(t_planifier_sentence* sentence);
+
+void dictionary_put_posta(t_dictionary *self, char *key, void *data);
 
 #endif /* TYPES_H_ */

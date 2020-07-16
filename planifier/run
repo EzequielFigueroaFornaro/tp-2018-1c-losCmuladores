@@ -2,4 +2,4 @@
 run_dir="$(dirname "$0")"
 cd "$run_dir"
 export LD_LIBRARY_PATH="../commons-library"
-./planifier planifier.conf
+./planifier $1

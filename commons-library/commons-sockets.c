@@ -93,7 +93,9 @@ int connect_to(char* ip, int port) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	getaddrinfo(ip, string_itoa(port), &hints, &server_info);
+	char *port_string = string_itoa(port);
+	getaddrinfo(ip, port_string, &hints, &server_info);
+	free(port_string);
 
 	int server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	if (server_socket < 0) {
@@ -147,7 +149,7 @@ int recv_string(int socket, char** string) {
 	int length;
 	int length_result = recv_int(socket, &length);
 	if (length_result > 0) {
-		*string = malloc(length);
+		*string = malloc(length); //TODO leak.
 		int result = recv(socket, *string, length, MSG_WAITALL);
 		if (result < 0) {
 			free(*string);
@@ -178,7 +180,7 @@ message_type recv_message(int socket) {
 	message_type message_type;
 	int message_type_result = recv(socket, &message_type, sizeof(message_type), MSG_WAITALL);
 	if (message_type_result <= 0) {
-		return -1;
+		return message_type_result;
 	}
 	return message_type;
 }

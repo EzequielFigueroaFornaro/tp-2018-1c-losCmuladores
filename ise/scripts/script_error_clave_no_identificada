@@ -1,7 +1,0 @@
-GET deportes:futbol:messi
-SET deportes:futbol:messi Lionel Messi
-# Intento hacer store de una variable que no fue creada y por lo tanto aborta el ESI.
-STORE   deportes:basquet:ginobili
-# Estas instrucciones no se llegan a ejecutar.
-GET deportes:basquet:ginobili
-SET deportes:basquet:ginobili Emanuel Ginobili

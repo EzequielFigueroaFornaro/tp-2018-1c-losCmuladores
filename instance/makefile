@@ -8,7 +8,7 @@ print-%  :
 # Definimos la tarea que va a ejecutar make por defecto Y el nombre del binario final
 TARGET = instance
 # Incluimos las bibliotecas que necesitamos, las commos y la biblio para el MD5
-LIBS = -lcunit -lcommons -lcommons-library
+LIBS = -lcunit -lcommons -lcommons-library -lpthread
 # Vamos a usar gcc como compilador, porque nos encanta!
 CC = gcc
 # Compilamos con los flags -g (con simbolos de debug) y -Wall (que nos muestre todos los warnings)
